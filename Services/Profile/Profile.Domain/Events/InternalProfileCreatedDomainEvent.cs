@@ -1,0 +1,19 @@
+﻿using Shared.Domain.Interfaces;
+using System;
+using System.Collections.Generic;
+using System.Text;
+
+namespace Profile.Domain.Events;
+
+public sealed record InternalProfileCreatedDomainEvent(
+    Guid ProfileId,
+    Guid UserId,
+    string PhoneNumber
+) : IDomainEvent
+{
+    public Guid EventId { get; } = Guid.NewGuid();
+    public DateTime OccurredOn { get; } = DateTime.UtcNow;
+
+    public int Version => 1;
+}
+

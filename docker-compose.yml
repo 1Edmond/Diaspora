@@ -1,0 +1,280 @@
+name: donation-services
+
+services:
+  vault:
+    image: hashicorp/vault:1.21.1
+    container_name: vault
+    cap_add:
+      - IPC_LOCK
+    ports:
+      - "8200:8200"
+    volumes:
+      - vault_data:/vault/data
+      - vault_logs:/vault/logs
+      - ./vault/config.hcl:/vault/config.hcl:ro
+    entrypoint: >
+      sh -c "
+      mkdir -p /vault/data /vault/logs &&
+      chown -R vault:vault /vault/data /vault/logs &&
+      vault server -config=/vault/config.hcl
+      "
+    networks:
+      - donation-net
+    healthcheck:
+      test: ["CMD", "sh", "-c", "vault status || exit 0"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+  vault-init:
+    image: hashicorp/vault:1.21.1
+    container_name: vault-init
+    depends_on:
+      vault:
+        condition: service_healthy
+    volumes:
+      - vault_credentials:/vault-credentials
+      - vault_logs:/vault/logs
+      - ./scripts/init-vault.sh:/init-vault.sh:ro
+    environment:
+      - VAULT_TOKEN=${VAULT_TOKEN:-}
+    entrypoint: ["/bin/sh", "/init-vault.sh"]
+    networks:
+      - donation-net
+    restart: "no"
+
+  identity-vault-agent:
+    image: hashicorp/vault:1.21.1
+    container_name: identity-vault-agent
+    depends_on:
+      vault-init:
+        condition: service_completed_successfully
+    volumes:
+      - vault_identity:/vault
+      - vault_credentials:/vault-credentials:ro
+      - ./configs/vault-agent.hcl:/vault-agent.hcl:ro
+    command: >
+       sh -c "
+        mkdir -p /vault/creds &&
+        cp /vault-credentials/identity/role-id /vault/creds/role-id &&
+        cp /vault-credentials/identity/secret-id /vault/creds/secret-id &&
+        vault agent -config=/vault-agent.hcl"
+    networks:
+      - donation-net
+    restart: unless-stopped
+
+  kyc-vault-agent:
+    image: hashicorp/vault:1.21.1
+    container_name: kyc-vault-agent
+    depends_on:
+      vault-init:
+        condition: service_completed_successfully
+    volumes:
+      - vault_kyc:/vault
+      - vault_credentials:/vault-credentials:ro 
+      - ./configs/vault-agent.hcl:/vault-agent.hcl:ro
+    command: >
+      sh -c "
+      mkdir -p /vault/creds &&
+      cp /vault-credentials/kyc/role-id /vault/creds/role-id &&
+      cp /vault-credentials/kyc/secret-id /vault/creds/secret-id &&
+      vault agent -config=/vault-agent.hcl"
+    networks:
+      - donation-net
+    restart: unless-stopped
+
+  identityservice.api:
+    container_name: identityservice
+    build:
+      context: .
+      dockerfile: Services/Identity/IdentityService.API/Dockerfile
+    image: wicode/identityservice:1.0.0
+    environment:
+       - ASPNETCORE_ENVIRONMENT=Docker
+    ports:
+      - "8080:8080"
+      - "8443:8443"
+    volumes:
+      - ./certs:/https:ro
+      - vault_identity:/vault:ro
+    depends_on:
+      postgres:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+      elasticsearch:
+        condition: service_healthy
+      identity-vault-agent:
+        condition: service_started
+    networks:
+      - donation-net
+    healthcheck:
+      test: ["CMD-SHELL", "curl -k -f https://localhost:8443/health || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    restart: unless-stopped
+
+  notification.api:
+    container_name: notificationservice
+    build:
+      context: .
+      dockerfile: Services/Notification/Notification.Api/Dockerfile
+    image: wicode/notificationservice:1.0.0
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Docker
+    ports:
+      - "8081:8081"
+      - "8444:8444"
+    volumes:
+      - ./certs:/https:ro
+    depends_on:
+      postgres:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+      elasticsearch:
+        condition: service_healthy
+    networks:
+      - donation-net
+    healthcheck:
+      test: ["CMD-SHELL", "curl -k -f https://localhost:8444/health || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    restart: unless-stopped
+
+  kyc.api:
+    container_name: kycservice
+    build:
+      context: .
+      dockerfile: Services/KYC/KYC.Api/Dockerfile
+    image: wicode/kycservice:1.0.0
+    environment:
+       - ASPNETCORE_ENVIRONMENT=Docker
+    ports:
+      - "8082:8082"
+      - "8445:8445"
+    volumes:
+      - ./certs:/https:ro
+      - vault_kyc:/vault:ro
+    depends_on:
+      postgres:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+      elasticsearch:
+        condition: service_healthy
+      kyc-vault-agent:
+        condition: service_started
+    networks:
+      - donation-net
+    healthcheck:
+      test: ["CMD-SHELL", "curl -k -f https://localhost:8445/health || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    restart: unless-stopped
+
+  rabbitmq:
+    container_name: rabbitmq
+    image: rabbitmq:4.2.3-management-alpine
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    environment:
+      RABBITMQ_DEFAULT_USER: admin
+      RABBITMQ_DEFAULT_PASS: admin123
+    volumes:
+      - rabbitmq_data:/var/lib/rabbitmq
+    networks:
+      - donation-net
+    healthcheck:
+      test: ["CMD", "rabbitmqctl", "status"]
+      interval: 10s
+      timeout: 30s
+      retries: 10
+      start_period: 4m30s
+    restart: unless-stopped
+
+  postgres:
+    container_name: postgres
+    image: postgres:17.7-alpine
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_USER: donation_user
+      POSTGRES_PASSWORD: donation_pass
+      POSTGRES_DB: donation_db
+      POSTGRES_HOST_AUTH_METHOD: md5
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - donation-net
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U donation_user -d donation_db -h localhost"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 850s
+    restart: unless-stopped
+
+  elasticsearch:
+    container_name: elasticsearch
+    image: docker.elastic.co/elasticsearch/elasticsearch:9.2.3
+    environment:
+      discovery.type: single-node
+      xpack.security.enabled: "true"
+      ELASTIC_PASSWORD: elastic123
+      ES_JAVA_OPTS: "-Xms1g -Xmx1g"
+    ulimits:
+      memlock:
+        soft: -1
+        hard: -1
+    ports:
+      - "9200:9200"
+    volumes:
+      - es_data:/usr/share/elasticsearch/data
+    networks:
+      - donation-net
+    healthcheck:
+      test: ["CMD-SHELL", "curl -k -u elastic:elastic123 -f https://localhost:9200/_cluster/health?wait_for_status=yellow&timeout=5s || exit 0"]
+      interval: 15s
+      timeout: 10s
+      retries: 10
+      start_period: 90s
+    restart: unless-stopped
+
+  kibana:
+    container_name: kibana
+    image: docker.elastic.co/kibana/kibana:9.2.3
+    depends_on:
+      elasticsearch:
+        condition: service_healthy
+    ports:
+      - "5601:5601"
+    environment:
+      ELASTICSEARCH_HOSTS: https://elasticsearch:9200
+      ELASTICSEARCH_USERNAME: kibana_system
+      ELASTICSEARCH_PASSWORD: kibana123
+    networks:
+      - donation-net
+    restart: unless-stopped
+
+networks:
+  donation-net:
+    driver: bridge
+
+volumes:
+  rabbitmq_data:
+  postgres_data:
+  es_data:
+  vault_data:
+  vault_logs:
+  vault_credentials:
+  vault_identity:
+  vault_kyc:
