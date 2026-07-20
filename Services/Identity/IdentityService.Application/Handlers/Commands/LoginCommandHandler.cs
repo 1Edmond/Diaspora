@@ -1,4 +1,5 @@
 ﻿using IdentityService.Application.Commands;
+using IdentityService.Application.Dtos;
 using IdentityService.Application.Models;
 using IdentityService.Domain.Entities;
 using Microsoft.Extensions.Logging;
@@ -81,7 +82,7 @@ public static class LoginCommandHandler
 
         return Result.Success(new LoginResponse(
             user.Id,
-            user.Email.Value,
+            user.ToDto(),
             [..user.UserRoles.Select(r => r.Role.Name)],
             accessToken,
             refreshToken,

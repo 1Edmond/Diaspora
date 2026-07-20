@@ -1,0 +1,240 @@
+@page "/notification"
+@attribute [Authorize]
+@inject IHttpClientFactory HttpClientFactory
+@inject IJSRuntime JSRuntime
+
+<PageTitle>Notifications | Diaspora Backoffice</PageTitle>
+
+<PageBreadcrumb Title="Centre de Notifications" SubTitle="Gestion des notifications et alertes" />
+
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h4 class="card-title mb-0">
+                    <i class="ti ti-bell me-2"></i>Envoyer une Notification
+                </h4>
+            </div>
+            <div class="card-body">
+                <EditForm Model="_notificationModel" OnValidSubmit="SendNotification">
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Type de Notification</label>
+                            <InputSelect @bind-Value="_notificationModel.Type" class="form-select">
+                                <option value="Broadcast">Broadcast (Tous les utilisateurs)</option>
+                                <option value="Boursiers">Boursiers uniquement</option>
+                                <option value="Contractuels">Contractuels uniquement</option>
+                                <option value="Specific">Utilisateur spécifique</option>
+                            </InputSelect>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Canal</label>
+                            <div class="d-flex gap-3">
+                                <div class="form-check">
+                                    <input type="checkbox" class="form-check-input" id="channelEmail" checked />
+                                    <label class="form-check-label" for="channelEmail">Email</label>
+                                </div>
+                                <div class="form-check">
+                                    <input type="checkbox" class="form-check-input" id="channelSMS" />
+                                    <label class="form-check-label" for="channelSMS">SMS</label>
+                                </div>
+                                <div class="form-check">
+                                    <input type="checkbox" class="form-check-input" id="channelPush" checked />
+                                    <label class="form-check-label" for="channelPush">Push</label>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    @if (_notificationModel.Type == "Specific")
+                    {
+                        <div class="mb-3">
+                            <label class="form-label">ID Utilisateur</label>
+                            <InputText @bind-Value="_notificationModel.UserId" class="form-control" placeholder="Guid de l'utilisateur" />
+                        </div>
+                    }
+
+                    <div class="mb-3">
+                        <label class="form-label">Titre *</label>
+                        <InputText @bind-Value="_notificationModel.Title" class="form-control" placeholder="Titre de la notification" />
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">Message *</label>
+                        <InputTextArea @bind-Value="_notificationModel.Message" class="form-control" rows="4" placeholder="Contenu du message" />
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">Action (Lien optionnel)</label>
+                        <InputText @bind-Value="_notificationModel.ActionUrl" class="form-control" placeholder="/path/to/action" />
+                    </div>
+
+                    <div class="text-end">
+                        <button type="submit" class="btn btn-primary" disabled="@_isSending">
+                            @if (_isSending)
+                            {
+                                <span class="spinner-border spinner-border-sm me-1"></span>
+                            }
+                            <i class="ti ti-send me-1"></i> Envoyer
+                        </button>
+                    </div>
+                </EditForm>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row mt-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h4 class="card-title mb-0">Historique des Notifications</h4>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-centered table-hover">
+                        <thead>
+                            <tr>
+                                <th>Date</th>
+                                <th>Type</th>
+                                <th>Titre</th>
+                                <th>Destinataires</th>
+                                <th>Canaux</th>
+                                <th>Statut</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var notif in _notifications)
+                            {
+                                <tr>
+                                    <td>@notif.SentAt.ToString("dd/MM/yyyy HH:mm")</td>
+                                    <td><span class="badge bg-info">@notif.Type</span></td>
+                                    <td>@notif.Title</td>
+                                    <td>@notif.RecipientCount</td>
+                                    <td>
+                                        @foreach (var channel in notif.Channels)
+                                        {
+                                            <span class="badge bg-secondary me-1">@channel</span>
+                                        }
+                                    </td>
+                                    <td>
+                                        <span class="badge @GetStatusBadge(notif.Status)">@notif.Status</span>
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@code {
+    private HttpClient _client = default!;
+    private NotificationModel _notificationModel = new();
+    private List<NotificationHistoryViewModel> _notifications = new();
+    private bool _isSending = false;
+
+    protected override void OnInitialized()
+    {
+        _client = HttpClientFactory.CreateClient("GatewayClient");
+        LoadMockData();
+    }
+
+    private void LoadMockData()
+    {
+        _notifications = new List<NotificationHistoryViewModel>
+        {
+            new NotificationHistoryViewModel
+            {
+                Id = Guid.NewGuid(),
+                SentAt = DateTime.Now.AddDays(-1),
+                Type = "Broadcast",
+                Title = "Mise à jour importante",
+                RecipientCount = 1245,
+                Channels = new List<string> { "Email", "Push" },
+                Status = "Sent"
+            },
+            new NotificationHistoryViewModel
+            {
+                Id = Guid.NewGuid(),
+                SentAt = DateTime.Now.AddDays(-2),
+                Type = "Boursiers",
+                Title = "Paiement bourse Mars 2024",
+                RecipientCount = 856,
+                Channels = new List<string> { "Email", "SMS" },
+                Status = "Sent"
+            },
+            new NotificationHistoryViewModel
+            {
+                Id = Guid.NewGuid(),
+                SentAt = DateTime.Now.AddDays(-3),
+                Type = "Specific",
+                Title = "Alerte document expirant",
+                RecipientCount = 1,
+                Channels = new List<string> { "Email", "Push" },
+                Status = "Sent"
+            }
+        };
+    }
+
+    private async Task SendNotification()
+    {
+        _isSending = true;
+        try
+        {
+            await Task.Delay(1000);
+            
+            _notifications.Insert(0, new NotificationHistoryViewModel
+            {
+                Id = Guid.NewGuid(),
+                SentAt = DateTime.Now,
+                Type = _notificationModel.Type,
+                Title = _notificationModel.Title,
+                RecipientCount = _notificationModel.Type == "Specific" ? 1 : 1245,
+                Channels = new List<string> { "Email", "Push" },
+                Status = "Sent"
+            });
+
+            _notificationModel = new NotificationModel();
+            await JSRuntime.InvokeVoidAsync("alert", "Notification envoyée avec succès!");
+        }
+        catch (Exception ex)
+        {
+            await JSRuntime.InvokeVoidAsync("alert", $"Erreur: {ex.Message}");
+        }
+        finally
+        {
+            _isSending = false;
+        }
+    }
+
+    private string GetStatusBadge(string status) => status switch
+    {
+        "Sent" => "bg-success",
+        "Pending" => "bg-warning",
+        "Failed" => "bg-danger",
+        _ => "bg-secondary"
+    };
+
+    public class NotificationModel
+    {
+        public string Type { get; set; } = "Broadcast";
+        public string? UserId { get; set; }
+        public string Title { get; set; } = string.Empty;
+        public string Message { get; set; } = string.Empty;
+        public string? ActionUrl { get; set; }
+    }
+
+    public class NotificationHistoryViewModel
+    {
+        public Guid Id { get; set; }
+        public DateTime SentAt { get; set; }
+        public string Type { get; set; } = string.Empty;
+        public string Title { get; set; } = string.Empty;
+        public int RecipientCount { get; set; }
+        public List<string> Channels { get; set; } = new();
+        public string Status { get; set; } = string.Empty;
+    }
+}

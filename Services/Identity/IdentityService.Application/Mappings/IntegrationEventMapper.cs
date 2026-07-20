@@ -22,6 +22,7 @@ public class IntegrationEventMapper : IIntegrationEventMapper
             UserLoggedInEvent e => new UserLoggedInIntegrationEvent(e.UserId, e.Email, e.LoginAt),
             UserRestoredEvent e => new UserRestoredIntegrationEvent(e.UserId, e.Email),
             UserSuspendedEvent e => new UserSuspendedIntegrationEvent(e.UserId, e.Email, e.Reason),
+            UserActivatedEvent e => new UserActivatedIntegrationEvent(e.UserId, e.PhoneNumber, e.FirstName, e.LastName, e.DateOfBirth, e.Email),
             _ => null
         };
     }

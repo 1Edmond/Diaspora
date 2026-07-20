@@ -17,7 +17,9 @@ public static class VerifyEmailHandler
         IUnitOfWork unitOfWork,
         ILogger<VerifyEmailCommand> logger)
     {
-        var user = await repository.GetByIdAsync(command.UserId);
+        var user = 
+            (await repository.FindAsync(e => e.Email.Value.Equals(command.Email))
+            ).First();
 
         if (user == null)
         {
@@ -31,7 +33,9 @@ public static class VerifyEmailHandler
             return result;
         }
 
+        await repository.UpdateAsync(user);
         await unitOfWork.SaveChangesAsync();
+
 
         logger.LogInformation("Email verified for user: {UserId}", user.Id);
 

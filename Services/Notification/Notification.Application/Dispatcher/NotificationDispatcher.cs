@@ -26,30 +26,26 @@ public class NotificationDispatcher
 
     public async Task<NotificationLog?> DispatchAsync(NotificationContext context)
     {
-        var alreadySent = await _logs.FirstOrDefaultAsync(
-            x => x.MessageId == context.MessageId
-        );
-
+        var alreadySent = await _logs.FirstOrDefaultAsync(x => x.MessageId == context.MessageId);
         if (alreadySent != null)
             return null;
 
-        var rule = await _rules.FirstOrDefaultAsync(
-            x => x.EventType == context.EventType && x.IsActive
-        );
-
+        var rule = await _rules.FirstOrDefaultAsync(x => x.EventType == context.EventType && x.IsActive);
         if (rule == null)
             return null;
 
-        bool sent = false;
+       
+        var anySent = false;
         foreach (var sender in _senders)
         {
             if (rule.Channels.HasFlag(sender.Channel))
             {
-               sent = (await sender.SendAsync(context)).IsSuccess;
+                var result = await sender.SendAsync(context);
+                anySent = anySent || result.IsSuccess;
             }
         }
 
-        if (!sent)
+        if (!anySent)
             return null;
 
         return new NotificationLog(context.MessageId, context.EventType);

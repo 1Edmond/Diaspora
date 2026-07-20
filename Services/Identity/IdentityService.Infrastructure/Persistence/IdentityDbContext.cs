@@ -40,6 +40,8 @@ public class IdentityDbContext(
         base.OnModelCreating(modelBuilder);
 
         modelBuilder.ApplyConfigurationsFromAssembly(typeof(IdentityDbContext).Assembly);
+
+        modelBuilder.HasDefaultSchema("identity");
     }
 
   }

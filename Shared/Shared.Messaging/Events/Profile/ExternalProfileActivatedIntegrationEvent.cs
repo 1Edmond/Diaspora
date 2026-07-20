@@ -6,8 +6,11 @@ namespace Shared.Messaging.Events.Profile;
 
 public sealed record ExternalProfileActivatedIntegrationEvent(
     Guid ProfileId,
+    Guid ProfileTypeId,
     Guid UserId,
     string CountryCode,
-    DateTime ActivatedAt
+    string Currency,
+    DateTime ActivatedAt,
+    string? DisplayName = null
 ) : IntegrationEvent;
 

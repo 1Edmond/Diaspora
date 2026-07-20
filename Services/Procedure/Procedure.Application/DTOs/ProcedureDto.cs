@@ -15,8 +15,7 @@ public sealed record ProcedureDto(
     Guid ProfileTypeId,
     int EstimatedDurationDays,
     bool IsActive,
-    Guid? LocationId,
-    LocationDto? Location,
+    IReadOnlyList<LocationDto> Locations,
     IReadOnlyList<Guid> DependencyIds,
     IReadOnlyList<Guid> RequiredDocumentTypeIds,
     DateTime CreatedAt

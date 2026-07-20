@@ -1,0 +1,17 @@
+@rendermode InteractiveServer
+@inject IJSRuntime JsRuntime;
+<!-- Footer Start -->
+<footer class="footer">
+    <div class="container-fluid" data-content>
+        <div class="row">
+            <div class="col-12 text-center">
+                @FullYear © UBold By <span class="fw-semibold">Coderthemes</span> 
+            </div>
+        </div>
+    </div>
+</footer>
+<!-- end Footer -->
+
+@code {
+    public string FullYear = DateTime.Now.Year.ToString();
+}

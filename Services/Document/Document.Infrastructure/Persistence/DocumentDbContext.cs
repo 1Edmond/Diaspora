@@ -19,5 +19,10 @@ public sealed class DocumentDbContext(
 {
     public DbSet<Domain.Entities.Document> Documents => Set<Domain.Entities.Document>();
     public DbSet<DocumentType> DocumentTypes => Set<DocumentType>();
-
+    protected override void OnModelCreating(ModelBuilder modelBuilder)
+    {
+        base.OnModelCreating(modelBuilder);
+        modelBuilder.ApplyConfigurationsFromAssembly(typeof(DocumentDbContext).Assembly);
+        modelBuilder.HasDefaultSchema("document");
+    }
 }

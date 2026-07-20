@@ -68,7 +68,7 @@ public static class DependencyInjection
             options.PersistMessagesWithPostgresql(
                 optimizedConnectionString, "wolverine_procedure");
 
-            options.ListenToRabbitQueue(QueuesConstants.ProcedureServiceQueue)
+            options.ListenToRabbitQueue(ExchangesConstants.ProcedureEventsExchange)
                 .PreFetchCount(10)
                 .UseDurableInbox();
 
@@ -97,7 +97,12 @@ public static class DependencyInjection
 
         using var scope = app.ApplicationServices.CreateScope();
         var context = scope.ServiceProvider.GetRequiredService<ProcedureDbContext>();
+
+
         await context.Database.MigrateAsync();
+
+        var seeder = new ProcedureSeeder(context, scope.ServiceProvider.GetRequiredService<ILogger<ProcedureSeeder>>());
+        await seeder.SeedAsync();
     }
 
     public static async Task PublishProcedureResources<T>(this WebApplication app)
@@ -117,7 +122,7 @@ public static class DependencyInjection
 
         if (logger.IsEnabled(LogLevel.Information))
             logger.LogInformation(
-                "Registered {Count} permissions for ProcedureService",
+                "Publish {Count} permissions for ProcedureService",
                 declarationEvent.Resources.Sum(r => r.Permissions.Count));
     }
 }

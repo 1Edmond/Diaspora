@@ -12,4 +12,5 @@ public enum NotificationChannel
     Whatsapp = 4,
     Telegram = 8,
     Push = 16,
+    InApp = 32,
 }

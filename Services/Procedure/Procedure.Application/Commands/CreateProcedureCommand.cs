@@ -1,4 +1,5 @@
-﻿using Procedure.Application.Responses;
+﻿using Procedure.Application.Requests;
+using Procedure.Application.Responses;
 using Shared.Application.Abstractions;
 using Shared.Domain.Commons;
 using Shared.Domain.Enums;
@@ -17,7 +18,8 @@ public sealed record CreateProcedureCommand(
     ProcedureProfileType ProfileType,
     Guid ProfileTypeId,
     int EstimatedDurationDays,
-    Guid? LocationId,
+    List<Guid> LocationIds,
+    List<InlineLocationRequest> InlineLocations,
     List<Guid> DependencyIds,
     List<Guid> RequiredDocumentTypeIds
 ) : ICommand<Result<CreateProcedureResponse>>;

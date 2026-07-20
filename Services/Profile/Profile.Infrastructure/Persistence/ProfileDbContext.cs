@@ -25,7 +25,6 @@ public sealed class ProfileDbContext(
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);
-        // Schéma dédié — pas de collision avec les autres services
         modelBuilder.HasDefaultSchema("profile");
     }
 }

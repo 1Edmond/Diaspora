@@ -13,11 +13,11 @@ using System.Text;
 namespace Profile.Infrastructure.Repositories;
 
 public sealed class ExternalProfileRepository(
-    ProfileDbContext context,
+    DbContext context,
     IEncryptionService encryptionService,
     IKeyManagementService keyManagement,
     IEncryptionMetadataRepository metadataRepository,
-    ILogger<Repository<ExternalProfile>> logger,
+    ILogger<ExternalProfileRepository> logger,
     IDistributedCache cache
     )
     : Repository<ExternalProfile>(
@@ -29,7 +29,7 @@ public sealed class ExternalProfileRepository(
         cache
         ), IExternalProfileRepository
 {
-    private readonly ProfileDbContext _context = context;
+    private readonly ProfileDbContext _context = (ProfileDbContext)context;
 
     public async Task<IEnumerable<ExternalProfile>> GetByInternalProfileIdAsync(
         Guid internalProfileId,

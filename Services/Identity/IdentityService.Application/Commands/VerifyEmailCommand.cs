@@ -6,4 +6,4 @@ using System.Text;
 
 namespace IdentityService.Application.Commands;
 
-public record VerifyEmailCommand(Guid UserId, string Code) : ICommand<Result>;
+public record VerifyEmailCommand(string Email, string Code) : ICommand<Result>;

@@ -12,7 +12,7 @@ namespace IdentityService.API.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
-public class AuthController(IMessageBus _messageBus, ILogger<AuthController> logger, ICurrentUserService _currentUserService) : ControllerBase
+public partial class AuthController(IMessageBus _messageBus, ILogger<AuthController> logger, ICurrentUserService _currentUserService) : ControllerBase
 {
    
 
@@ -35,12 +35,7 @@ public class AuthController(IMessageBus _messageBus, ILogger<AuthController> log
         return Ok();
     }
 
-    [Permission(
-        resourceKey: "identity.auth",
-        action: "login",
-        description: "Login",
-        recommendedRoles: new[] { "Admin", "User", "Moderator" }
-    )]
+
     [HttpPost("login")]
     public async Task<IActionResult> Login(LoginCommand command)
     {
@@ -77,12 +72,6 @@ public class AuthController(IMessageBus _messageBus, ILogger<AuthController> log
         return Ok(result.Value);
     }
 
-    [Permission(
-        resourceKey: "identity.auth",
-        action: "verify-email",
-        description: "Verify user email address",
-        recommendedRoles: new[] { "Admin", "User", "Moderator" }
-    )]
     [HttpPost("verify-email")]
     public async Task<IActionResult> VerifyEmail(VerifyEmailCommand command)
     {
@@ -94,12 +83,7 @@ public class AuthController(IMessageBus _messageBus, ILogger<AuthController> log
         return Ok(new { message = "Email verified successfully" });
     }
 
-    [Permission(
-        resourceKey: "identity.auth",
-        action: "resend-verification",
-        description: "Resend email verification code",
-        recommendedRoles: new[] { "Admin", "User", "Moderator" }
-    )]
+
     [HttpPost("resend-verification")]
     public async Task<IActionResult> ResendVerificationCode([FromBody] RegenerateVerificationCodeCommand command)
     {

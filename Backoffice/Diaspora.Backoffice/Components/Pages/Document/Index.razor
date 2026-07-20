@@ -1,0 +1,561 @@
+@page "/document"
+@attribute [Authorize]
+@inject IHttpClientFactory HttpClientFactory
+@inject IJSRuntime JSRuntime
+
+<PageTitle>Documents | Diaspora Backoffice</PageTitle>
+
+<PageBreadcrumb Title="Gestion des Documents" SubTitle="Documents sécurisés et validation" />
+
+<!-- Stats -->
+<div class="row mb-3">
+    <div class="col-xl-3 col-md-6">
+        <div class="card bg-danger text-white">
+            <div class="card-body">
+                <div class="d-flex align-items-center">
+                    <div class="flex-shrink-0">
+                        <i class="ti ti-alert-triangle fs-24"></i>
+                    </div>
+                    <div class="flex-grow-1 ms-3">
+                        <h5 class="mb-1 text-white">@_stats.ExpiringSoon</h5>
+                        @* <p class="mb-0 opacity-75">Expirent < 30j</p> *@
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-xl-3 col-md-6">
+        <div class="card">
+            <div class="card-body">
+                <div class="d-flex align-items-center">
+                    <div class="flex-shrink-0">
+                        <div class="avatar-sm rounded-circle bg-warning-subtle text-warning">
+                            <i class="ti ti-clock fs-24"></i>
+                        </div>
+                    </div>
+                    <div class="flex-grow-1 ms-3">
+                        <h5 class="mb-1">@_stats.PendingValidation</h5>
+                        <p class="text-muted mb-0">En attente</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-xl-3 col-md-6">
+        <div class="card">
+            <div class="card-body">
+                <div class="d-flex align-items-center">
+                    <div class="flex-shrink-0">
+                        <div class="avatar-sm rounded-circle bg-success-subtle text-success">
+                            <i class="ti ti-check fs-24"></i>
+                        </div>
+                    </div>
+                    <div class="flex-grow-1 ms-3">
+                        <h5 class="mb-1">@_stats.Validated</h5>
+                        <p class="text-muted mb-0">Validés</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-xl-3 col-md-6">
+        <div class="card">
+            <div class="card-body">
+                <div class="d-flex align-items-center">
+                    <div class="flex-shrink-0">
+                        <div class="avatar-sm rounded-circle bg-info-subtle text-info">
+                            <i class="ti ti-files fs-24"></i>
+                        </div>
+                    </div>
+                    <div class="flex-grow-1 ms-3">
+                        <h5 class="mb-1">@_stats.TotalStorage</h5>
+                        <p class="text-muted mb-0">Stockage</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Tabs -->
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <ul class="nav nav-tabs card-header-tabs">
+                    <li class="nav-item">
+                        <button class="nav-link @(_activeTab == "expiring" ? "active" : "")" @onclick='() => SwitchTab("expiring")'>
+                            <i class="ti ti-calendar-off me-1 text-danger"></i> Expirent Bientôt
+                        </button>
+                    </li>
+                    <li class="nav-item">
+                        <button class="nav-link @(_activeTab == "pending" ? "active" : "")" @onclick='() => SwitchTab("pending")'>
+                            <i class="ti ti-clock me-1 text-warning"></i> En Attente Validation
+                        </button>
+                    </li>
+                    <li class="nav-item">
+                        <button class="nav-link @(_activeTab == "all" ? "active" : "")" @onclick='() => SwitchTab("all")'>
+                            <i class="ti ti-files me-1"></i> Tous les Documents
+                        </button>
+                    </li>
+                    <li class="nav-item">
+                        <button class="nav-link @(_activeTab == "types" ? "active" : "")" @onclick='() => SwitchTab("types")'>
+                            <i class="ti ti-category me-1"></i> Types de Documents
+                        </button>
+                    </li>
+                </ul>
+            </div>
+            <div class="card-body">
+                @if (_activeTab == "expiring")
+                {
+                    <div class="alert alert-danger">
+                        <i class="ti ti-alert-triangle me-2"></i> Documents expirant dans moins de 30 jours
+                    </div>
+                    <div class="table-responsive">
+                        <table class="table table-centered table-hover">
+                            <thead class="table-danger">
+                                <tr>
+                                    <th>Document</th>
+                                    <th>Utilisateur</th>
+                                    <th>Type</th>
+                                    <th>Date d'Expiration</th>
+                                    <th>Jours Restants</th>
+                                    <th>Priorité</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var doc in _expiringDocuments.OrderBy(d => d.DaysRemaining))
+                                {
+                                    <tr>
+                                        <td>
+                                            <div class="d-flex align-items-center">
+                                                <i class="ti ti-file-text me-2 text-primary fs-20"></i>
+                                                <span>@doc.Name</span>
+                                            </div>
+                                        </td>
+                                        <td>@doc.UserName</td>
+                                        <td><span class="badge bg-info">@doc.DocumentType</span></td>
+                                        <td>@doc.ExpiryDate.ToString("dd/MM/yyyy")</td>
+                                        <td>
+                                            <span class="badge @(doc.DaysRemaining <= 7 ? "bg-danger" : doc.DaysRemaining <= 15 ? "bg-warning" : "bg-info") fs-14">
+                                                @doc.DaysRemaining jours
+                                            </span>
+                                        </td>
+                                        <td>
+                                            @if (doc.DaysRemaining <= 7)
+                                            {
+                                                <span class="badge bg-danger">Urgent</span>
+                                            }
+                                            else if (doc.DaysRemaining <= 15)
+                                            {
+                                                <span class="badge bg-warning">Important</span>
+                                            }
+                                            else
+                                            {
+                                                <span class="badge bg-info">Normal</span>
+                                            }
+                                        </td>
+                                        <td>
+                                            <div class="d-flex gap-1">
+                                                <button class="btn btn-sm btn-outline-primary" @onclick="() => ViewDocument(doc)">
+                                                    <i class="ti ti-eye"></i>
+                                                </button>
+                                                <button class="btn btn-sm btn-success" @onclick="() => NotifyUser(doc)">
+                                                    <i class="ti ti-bell"></i>
+                                                </button>
+                                                <button class="btn btn-sm btn-warning" @onclick="() => RequestRenewal(doc)">
+                                                    <i class="ti ti-refresh"></i>
+                                                </button>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                }
+                else if (_activeTab == "pending")
+                {
+                    <div class="alert alert-warning">
+                        <i class="ti ti-clock me-2"></i> Documents en attente de validation par un administrateur
+                    </div>
+                    <div class="table-responsive">
+                        <table class="table table-centered table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Document</th>
+                                    <th>Utilisateur</th>
+                                    <th>Type</th>
+                                    <th>Uploadé le</th>
+                                    <th>Taille</th>
+                                    <th>Chiffré</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var doc in _pendingDocuments)
+                                {
+                                    <tr>
+                                        <td>
+                                            <div class="d-flex align-items-center">
+                                                <i class="ti ti-file-text me-2 text-primary fs-20"></i>
+                                                <span>@doc.Name</span>
+                                            </div>
+                                        </td>
+                                        <td>@doc.UserName</td>
+                                        <td><span class="badge bg-info">@doc.DocumentType</span></td>
+                                        <td>@doc.UploadedAt.ToString("dd/MM/yyyy HH:mm")</td>
+                                        <td>@doc.FileSize</td>
+                                        <td>
+                                            @if (doc.IsEncrypted)
+                                            {
+                                                <span class="badge bg-success"><i class="ti ti-lock me-1"></i>Oui</span>
+                                            }
+                                            else
+                                            {
+                                                <span class="badge bg-secondary">Non</span>
+                                            }
+                                        </td>
+                                        <td>
+                                            <div class="d-flex gap-1">
+                                                <button class="btn btn-sm btn-outline-primary" @onclick="() => ViewDocument(doc)">
+                                                    <i class="ti ti-eye"></i>
+                                                </button>
+                                                <button class="btn btn-sm btn-success" @onclick="() => ValidateDocument(doc.Id)">
+                                                    <i class="ti ti-check"></i>
+                                                </button>
+                                                <button class="btn btn-sm btn-danger" @onclick="() => ShowRejectModal(doc)">
+                                                    <i class="ti ti-x"></i>
+                                                </button>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                }
+                else if (_activeTab == "all")
+                {
+                    <div class="d-flex justify-content-between mb-3">
+                        <div class="input-group" style="width: 300px;">
+                            <input type="text" class="form-control" placeholder="Rechercher..." @bind="_searchTerm" />
+                            <button class="btn btn-primary" @onclick="SearchDocuments">
+                                <i class="ti ti-search"></i>
+                            </button>
+                        </div>
+                        <select class="form-select" style="width: 150px;" @bind="_statusFilter">
+                            <option value="">Tous statuts</option>
+                            <option value="Validated">Validé</option>
+                            <option value="Pending">En attente</option>
+                            <option value="Rejected">Rejeté</option>
+                        </select>
+                    </div>
+                    <div class="table-responsive">
+                        <table class="table table-centered table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Document</th>
+                                    <th>Utilisateur</th>
+                                    <th>Type</th>
+                                    <th>Uploadé le</th>
+                                    <th>Expire le</th>
+                                    <th>Statut</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var doc in _allDocuments)
+                                {
+                                    <tr>
+                                        <td>@doc.Name</td>
+                                        <td>@doc.UserName</td>
+                                        <td><span class="badge bg-info">@doc.DocumentType</span></td>
+                                        <td>@doc.UploadedAt.ToString("dd/MM/yyyy")</td>
+                                        <td>@(doc.ExpiryDate?.ToString("dd/MM/yyyy") ?? "-")</td>
+                                        <td>
+                                            <span class="badge @GetDocumentStatusBadge(doc.Status)">@doc.Status</span>
+                                        </td>
+                                        <td>
+                                            <div class="d-flex gap-1">
+                                                <button class="btn btn-sm btn-outline-primary" @onclick="() => ViewDocument(doc)">
+                                                    <i class="ti ti-eye"></i>
+                                                </button>
+                                                <button class="btn btn-sm btn-info" @onclick="() => DownloadDocument(doc)">
+                                                    <i class="ti ti-download"></i>
+                                                </button>
+                                                <button class="btn btn-sm btn-danger" @onclick="() => DeleteDocument(doc.Id)">
+                                                    <i class="ti ti-trash"></i>
+                                                </button>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                }
+                else if (_activeTab == "types")
+                {
+                    <div class="d-flex justify-content-between mb-3">
+                        <h5>Configuration des types de documents</h5>
+                        <button class="btn btn-success" @onclick="ShowCreateTypeModal">
+                            <i class="ti ti-plus me-1"></i> Nouveau Type
+                        </button>
+                    </div>
+                    <div class="row">
+                        @foreach (var type in _documentTypes)
+                        {
+                            <div class="col-md-6 col-xl-4 mb-3">
+                                <div class="card h-100">
+                                    <div class="card-header bg-light">
+                                        <div class="d-flex justify-content-between align-items-center">
+                                            <h6 class="mb-0"><code>@type.Code</code></h6>
+                                            <div class="dropdown">
+                                                <button class="btn btn-sm btn-link" data-bs-toggle="dropdown">
+                                                    <i class="ti ti-dots-vertical"></i>
+                                                </button>
+                                                <ul class="dropdown-menu dropdown-menu-end">
+                                                    <li><a class="dropdown-item" href="#" @onclick="() => EditType(type)"><i class="ti ti-edit me-1"></i> Modifier</a></li>
+                                                    <li><a class="dropdown-item text-danger" href="#" @onclick="() => DeleteType(type.Id)"><i class="ti ti-trash me-1"></i> Supprimer</a></li>
+                                                </ul>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="card-body">
+                                        <h6>@type.Name</h6>
+                                        <p class="text-muted small">@type.Description</p>
+                                        <div class="row text-center mt-3">
+                                            <div class="col-6 border-end">
+                                                <small class="text-muted d-block">Renouvelable</small>
+                                                @if (type.IsRenewable)
+                                                {
+                                                    <span class="badge bg-success">Oui</span>
+                                                }
+                                                else
+                                                {
+                                                    <span class="badge bg-secondary">Non</span>
+                                                }
+                                            </div>
+                                            <div class="col-6">
+                                                <small class="text-muted d-block">Alerte</small>
+                                                <strong>@type.RenewalAlertDays j</strong>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        }
+                    </div>
+                }
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Reject Modal -->
+@if (_showRejectModal && _selectedDocument != null)
+{
+    <div class="modal fade show" style="display: block;" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header bg-danger text-white">
+                    <h5 class="modal-title">Rejeter le Document</h5>
+                    <button type="button" class="btn-close btn-close-white" @onclick="CloseRejectModal"></button>
+                </div>
+                <div class="modal-body">
+                    <p>Document : <strong>@_selectedDocument.Name</strong></p>
+                    <div class="mb-3">
+                        <label class="form-label text-danger">Motif du rejet *</label>
+                        <textarea class="form-control" rows="3" @bind="_rejectReason" placeholder="Expliquez pourquoi ce document est rejeté..."></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" @onclick="CloseRejectModal">Annuler</button>
+                    <button type="button" class="btn btn-danger" @onclick="ConfirmReject" disabled="@string.IsNullOrEmpty(_rejectReason)">
+                        <i class="ti ti-x me-1"></i> Rejeter
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="modal-backdrop fade show"></div>
+}
+
+@code {
+    private HttpClient _client = default!;
+    private string _activeTab = "expiring";
+    private string _searchTerm = "";
+    private string _statusFilter = "";
+    private DocumentStats _stats = new();
+
+    private List<ExpiringDocumentViewModel> _expiringDocuments = new();
+    private List<PendingDocumentViewModel> _pendingDocuments = new();
+    private List<AllDocumentViewModel> _allDocuments = new();
+    private List<DocumentTypeViewModel> _documentTypes = new();
+
+    // Reject modal
+    private bool _showRejectModal = false;
+    private PendingDocumentViewModel? _selectedDocument;
+    private string _rejectReason = "";
+
+    protected override void OnInitialized()
+    {
+        _client = HttpClientFactory.CreateClient("GatewayClient");
+        LoadMockData();
+    }
+
+    private void LoadMockData()
+    {
+        _expiringDocuments = new List<ExpiringDocumentViewModel>
+        {
+            new ExpiringDocumentViewModel { Id = Guid.NewGuid(), Name = "Passeport_Koffi.pdf", UserName = "Koffi Mensah", DocumentType = "Passeport", ExpiryDate = DateTime.Now.AddDays(5), DaysRemaining = 5 },
+            new ExpiringDocumentViewModel { Id = Guid.NewGuid(), Name = "Visa_Etudiant.pdf", UserName = "Afi Kouassi", DocumentType = "Visa", ExpiryDate = DateTime.Now.AddDays(12), DaysRemaining = 12 },
+            new ExpiringDocumentViewModel { Id = Guid.NewGuid(), Name = "Attestation_Sejour.pdf", UserName = "Komi Agbé", DocumentType = "Attestation", ExpiryDate = DateTime.Now.AddDays(25), DaysRemaining = 25 },
+            new ExpiringDocumentViewModel { Id = Guid.NewGuid(), Name = "Carte_Consulaire.pdf", UserName = "Amavi Kodjo", DocumentType = "Carte Consulaire", ExpiryDate = DateTime.Now.AddDays(8), DaysRemaining = 8 }
+        };
+
+        _pendingDocuments = new List<PendingDocumentViewModel>
+        {
+            new PendingDocumentViewModel { Id = Guid.NewGuid(), Name = "Passeport_Amavi.pdf", UserName = "Amavi Kodjo", DocumentType = "Passeport", UploadedAt = DateTime.Now.AddDays(-2), FileSize = "2.4 MB", IsEncrypted = true },
+            new PendingDocumentViewModel { Id = Guid.NewGuid(), Name = "Visa_Travail.pdf", UserName = "Kokou Agbé", DocumentType = "Visa", UploadedAt = DateTime.Now.AddDays(-1), FileSize = "1.8 MB", IsEncrypted = true },
+            new PendingDocumentViewModel { Id = Guid.NewGuid(), Name = "Attestation_Inscription.pdf", UserName = "Koffi Mensah", DocumentType = "Attestation", UploadedAt = DateTime.Now.AddHours(-6), FileSize = "850 KB", IsEncrypted = true }
+        };
+
+        _allDocuments = new List<AllDocumentViewModel>
+        {
+            new AllDocumentViewModel { Id = Guid.NewGuid(), Name = "Passeport_Koffi.pdf", UserName = "Koffi Mensah", DocumentType = "Passeport", UploadedAt = DateTime.Now.AddMonths(-6), ExpiryDate = DateTime.Now.AddDays(5), Status = "Validated" },
+            new AllDocumentViewModel { Id = Guid.NewGuid(), Name = "Passeport_Amavi.pdf", UserName = "Amavi Kodjo", DocumentType = "Passeport", UploadedAt = DateTime.Now.AddDays(-2), Status = "Pending" },
+            new AllDocumentViewModel { Id = Guid.NewGuid(), Name = "Visa_Ancien.pdf", UserName = "Komi Agbé", DocumentType = "Visa", UploadedAt = DateTime.Now.AddMonths(-12), ExpiryDate = DateTime.Now.AddMonths(-2), Status = "Rejected" }
+        };
+
+        _documentTypes = new List<DocumentTypeViewModel>
+        {
+            new DocumentTypeViewModel { Id = Guid.NewGuid(), Code = "PASSPORT", Name = "Passeport Togolais", Description = "Passeport biométrique valable 5 ans", IsRenewable = true, RenewalAlertDays = 180 },
+            new DocumentTypeViewModel { Id = Guid.NewGuid(), Code = "VISA_STUDENT", Name = "Visa Étudiant", Description = "Visa étudiant pour la Russie", IsRenewable = true, RenewalAlertDays = 30 },
+            new DocumentTypeViewModel { Id = Guid.NewGuid(), Code = "VISA_WORK", Name = "Visa Travail", Description = "Visa de travail", IsRenewable = true, RenewalAlertDays = 30 },
+            new DocumentTypeViewModel { Id = Guid.NewGuid(), Code = "ATTESTATION", Name = "Attestation de Séjour", Description = "Attestation de séjour temporaire", IsRenewable = true, RenewalAlertDays = 30 },
+            new DocumentTypeViewModel { Id = Guid.NewGuid(), Code = "CARTE_CONSULAIRE", Name = "Carte Consulaire", Description = "Carte d'immatriculation consulaire", IsRenewable = true, RenewalAlertDays = 60 },
+            new DocumentTypeViewModel { Id = Guid.NewGuid(), Code = "CERTIFICAT", Name = "Certificat", Description = "Certificats divers (scolarité, etc.)", IsRenewable = false, RenewalAlertDays = 0 }
+        };
+
+        CalculateStats();
+    }
+
+    private void CalculateStats()
+    {
+        _stats.ExpiringSoon = _expiringDocuments.Count;
+        _stats.PendingValidation = _pendingDocuments.Count;
+        _stats.Validated = _allDocuments.Count(d => d.Status == "Validated");
+        _stats.TotalStorage = "45.2 GB";
+    }
+
+    private void SwitchTab(string tab) => _activeTab = tab;
+
+    private string GetDocumentStatusBadge(string status) => status switch
+    {
+        "Validated" => "bg-success",
+        "Pending" => "bg-warning",
+        "Rejected" => "bg-danger",
+        _ => "bg-secondary"
+    };
+
+    private void ViewDocument(object doc) { }
+    private void DownloadDocument(AllDocumentViewModel doc) { }
+    private void DeleteDocument(Guid id) { }
+    private void SearchDocuments() { }
+
+    private async Task NotifyUser(ExpiringDocumentViewModel doc)
+    {
+        await JSRuntime.InvokeVoidAsync("alert", $"Notification envoyée à {doc.UserName} pour le document {doc.Name}");
+    }
+
+    private async Task RequestRenewal(ExpiringDocumentViewModel doc)
+    {
+        await JSRuntime.InvokeVoidAsync("alert", $"Demande de renouvellement envoyée à {doc.UserName}");
+    }
+
+    private async Task ValidateDocument(Guid id)
+    {
+        if (!await JSRuntime.InvokeAsync<bool>("confirm", "Valider ce document ?"))
+            return;
+        await JSRuntime.InvokeVoidAsync("alert", "Document validé avec succès!");
+    }
+
+    private void ShowRejectModal(PendingDocumentViewModel doc)
+    {
+        _selectedDocument = doc;
+        _rejectReason = "";
+        _showRejectModal = true;
+    }
+
+    private void CloseRejectModal()
+    {
+        _showRejectModal = false;
+        _selectedDocument = null;
+    }
+
+    private async Task ConfirmReject()
+    {
+        if (_selectedDocument != null && !string.IsNullOrEmpty(_rejectReason))
+        {
+            await JSRuntime.InvokeVoidAsync("alert", $"Document rejeté avec le motif : {_rejectReason}");
+            CloseRejectModal();
+        }
+    }
+
+    private void ShowCreateTypeModal() { }
+    private void EditType(DocumentTypeViewModel type) { }
+    private void DeleteType(Guid id) { }
+
+    public class DocumentStats
+    {
+        public int ExpiringSoon { get; set; }
+        public int PendingValidation { get; set; }
+        public int Validated { get; set; }
+        public string TotalStorage { get; set; } = "";
+    }
+
+    public class ExpiringDocumentViewModel
+    {
+        public Guid Id { get; set; }
+        public string Name { get; set; } = string.Empty;
+        public string UserName { get; set; } = string.Empty;
+        public string DocumentType { get; set; } = string.Empty;
+        public DateTime ExpiryDate { get; set; }
+        public int DaysRemaining { get; set; }
+    }
+
+    public class PendingDocumentViewModel
+    {
+        public Guid Id { get; set; }
+        public string Name { get; set; } = string.Empty;
+        public string UserName { get; set; } = string.Empty;
+        public string DocumentType { get; set; } = string.Empty;
+        public DateTime UploadedAt { get; set; }
+        public string FileSize { get; set; } = string.Empty;
+        public bool IsEncrypted { get; set; }
+    }
+
+    public class AllDocumentViewModel
+    {
+        public Guid Id { get; set; }
+        public string Name { get; set; } = string.Empty;
+        public string UserName { get; set; } = string.Empty;
+        public string DocumentType { get; set; } = string.Empty;
+        public DateTime UploadedAt { get; set; }
+        public DateTime? ExpiryDate { get; set; }
+        public string Status { get; set; } = string.Empty;
+    }
+
+    public class DocumentTypeViewModel
+    {
+        public Guid Id { get; set; }
+        public string Code { get; set; } = string.Empty;
+        public string Name { get; set; } = string.Empty;
+        public string Description { get; set; } = string.Empty;
+        public bool IsRenewable { get; set; }
+        public int RenewalAlertDays { get; set; }
+    }
+}

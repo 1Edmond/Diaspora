@@ -39,16 +39,16 @@ public class UserConfiguration : BaseEntityConfiguration<User>
             email.HasIndex(e => e.Value).IsUnique();
         });
 
-        //builder.OwnsOne(x => x.PhoneNumber, phone =>
-        //{
-        //    phone.Property(e => e.Value)
-        //        .HasColumnName("phone_number")
-        //        .HasMaxLength(20);
+        builder.OwnsOne(x => x.PhoneNumber, phone =>
+        {
+            phone.Property(e => e.Value)
+                .HasColumnName("phone_number")
+                .HasMaxLength(20);
 
-        //    phone.Property(e => e.CountryCode)
-        //        .HasColumnName("phone_country_code")
-        //        .HasMaxLength(5);
-        //});
+            phone.Property(e => e.CountryCode)
+                .HasColumnName("phone_country_code")
+                .HasMaxLength(5);
+        });
 
         builder.OwnsOne(x => x.FirstName, firstname =>
         {

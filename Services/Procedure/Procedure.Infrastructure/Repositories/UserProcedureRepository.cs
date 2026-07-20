@@ -12,11 +12,11 @@ using System.Text;
 
 namespace Procedure.Infrastructure.Repositories;
 
-public sealed class UserProcedureRepository(ProcedureDbContext context,
+public sealed class UserProcedureRepository(DbContext context,
     IEncryptionService encryptionService,
     IKeyManagementService keyManagement,
     IEncryptionMetadataRepository metadataRepository,
-    ILogger<Repository<UserProcedure>> logger,
+    ILogger<UserProcedureRepository> logger,
     IDistributedCache cache)
     : Repository<UserProcedure>(context,
         encryptionService,
@@ -25,14 +25,14 @@ public sealed class UserProcedureRepository(ProcedureDbContext context,
         logger,
         cache), IUserProcedureRepository
 {
-    private readonly ProcedureDbContext _context = context;
+    private readonly ProcedureDbContext _context = (ProcedureDbContext)context;
 
     public async Task<IEnumerable<UserProcedure>> GetByProfileIdAsync(
         Guid profileId,
         CancellationToken cancellationToken = default)
         => await _context.UserProcedures
             .Include(x => x.Procedure)
-                .ThenInclude(p => p.Location)
+                .ThenInclude(p => p.Locations)
             .Where(x => x.ProfileId == profileId)
             .OrderBy(x => x.CreatedAt)
             .ToListAsync(cancellationToken);

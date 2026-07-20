@@ -14,6 +14,7 @@ public static class DependencyInjection
 
         services.AddValidatorsFromAssembly(executingAssembly);
 
+
         return services;
     }
 }

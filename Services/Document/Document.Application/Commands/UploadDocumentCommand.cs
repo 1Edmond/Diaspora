@@ -9,7 +9,7 @@ using System.Text;
 namespace Document.Application.Commands;
 
 public sealed record UploadDocumentCommand(
-    Guid ExternalProfileId,
+    Guid ProfileId,
     Guid DocumentTypeId,
     IFormFile File,
     DateTime? ExpiresAt,

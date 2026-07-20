@@ -1,0 +1,35 @@
+﻿using Shared.Domain.Interfaces;
+using Shared.Messaging.Events;
+using Shared.Messaging.Events.Wallet;
+using System;
+using System.Collections.Generic;
+using System.Text;
+using Wallet.Domain.Events;
+
+namespace Wallet.Application.Mappings;
+
+public sealed class WalletIntegrationEventMapper : IIntegrationEventMapper
+{
+    public IIntegrationEvent? Map(IDomainEvent domainEvent) =>
+        domainEvent switch
+        {
+            WalletCreatedDomainEvent e => new WalletCreatedIntegrationEvent(
+                e.WalletId, e.ExternalProfileId, e.UserId, e.Currency),
+
+            DepositCompletedDomainEvent e => new DepositCompletedIntegrationEvent(
+                e.WalletId, e.TransactionId, e.Amount, e.Currency, e.NewBalance),
+
+            TransferCompletedDomainEvent e => new TransferCompletedIntegrationEvent(
+                e.SenderWalletId, e.ReceiverWalletId, e.TransactionId,
+                e.Amount, e.Fee, e.Currency),
+
+            ProcedurePaymentCompletedDomainEvent e => new ProcedurePaymentCompletedIntegrationEvent(
+                e.WalletId, e.TransactionId, e.ProcedureId, e.Amount, e.Currency),
+
+            MarketplacePaymentCompletedDomainEvent e => new MarketplacePaymentCompletedIntegrationEvent(
+                e.BuyerWalletId, e.SellerWalletId, e.TransactionId,
+                e.ServiceId, e.Amount, e.Currency),
+
+            _ => null
+        };
+}

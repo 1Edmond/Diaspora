@@ -1,0 +1,43 @@
+@page "/sidebar-compact"
+@rendermode InteractiveServer
+@inject IJSRuntime JsRuntime;
+
+
+<PageBreadcrumb Title="Compact Sidebar"/>
+
+<div class="row">
+    <div class="col-12">
+        <div class="alert alert-info alert-bordered border-start border-info d-flex align-items-start gap-2">
+            <i class="ti ti-info-circle fs-xxl"></i>
+            <div>
+                To enable the medium-sized (compact) sidebar, add
+                <code>data-sidenav-size="compact"</code> to the
+                <code>&lt;html&gt;</code> tag.
+            </div>
+        </div>
+    </div>
+</div>
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-body text-center">
+                <h4 class="m-0">Your custom content here</h4>
+            </div> <!-- end card-body-->
+        </div> <!-- end card-->
+    </div> <!-- end col-->
+</div>
+<!-- end row-->
+
+@code {
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            await JsRuntime.InvokeVoidAsync("updateHtmlAttributes", "data-sidenav-size", "compact");
+            await JsRuntime.InvokeVoidAsync("loadConfig");
+            await JsRuntime.InvokeVoidAsync("loadApps");
+        }
+    }
+
+}

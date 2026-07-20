@@ -7,14 +7,14 @@ using Shared.Infrastructure.Persistence;
 namespace Notification.Infrastructure.Persistence.Seeders;
 
 public class NotificationRuleSeeder(
-    DbContext context,
+    NotificationDbContext context,
     ILogger<NotificationRuleSeeder> logger)
 {
     public async Task SeedAsync()
     {
         try
         {
-            if (await context.Set<NotificationRule>().AnyAsync())
+            if (await context.NotificationRules.AnyAsync())
             {
                 logger.LogInformation("NotificationRules already seeded");
                 return;
@@ -24,7 +24,7 @@ public class NotificationRuleSeeder(
 
             var rules = GetDefaultNotificationRules();
 
-            await context.Set<NotificationRule>().AddRangeAsync(rules);
+            await context.NotificationRules.AddRangeAsync(rules);
             await context.SaveChangesAsync();
 
             if (logger.IsEnabled(LogLevel.Information))
@@ -43,6 +43,8 @@ public class NotificationRuleSeeder(
     {
         return
         [
+
+            // Identity
             new (
                 "UserCreatedIntegrationEvent",
                 NotificationChannel.Email | NotificationChannel.Sms
@@ -69,6 +71,15 @@ public class NotificationRuleSeeder(
             ),
 
 
+            // Profile
+             new (
+                "InternalProfileCreatedIntegrationEvent",
+                NotificationChannel.Email |  NotificationChannel.InApp
+            ),
+           
+
+
+             // KYC
              new (
                 "KYCVerificationCreatedIntegrationEvent",
                 NotificationChannel.Email

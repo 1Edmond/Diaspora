@@ -12,7 +12,7 @@ using System.Text;
 
 namespace Procedure.Infrastructure.Repositories;
 
-public sealed class ServiceParameterRepository(ProcedureDbContext context,
+public sealed class ServiceParameterRepository(DbContext context,
     IEncryptionService encryptionService,
     IKeyManagementService keyManagement,
     IEncryptionMetadataRepository metadataRepository,
@@ -25,7 +25,7 @@ public sealed class ServiceParameterRepository(ProcedureDbContext context,
         logger,
         cache), IServiceParameterRepository
 {
-    private readonly ProcedureDbContext _context = context;
+    private readonly ProcedureDbContext _context = (ProcedureDbContext)context;
 
     public async Task<ServiceParameter?> GetByKeyAsync(
         string key,

@@ -25,6 +25,7 @@ using Shared.Messaging.Events.Identity;
 using Shared.Security;
 using Shared.Security.Abstractions;
 using Shared.Security.Services;
+using StackExchange.Redis;
 using System.Reflection;
 using Wolverine;
 using Wolverine.EntityFrameworkCore;
@@ -86,6 +87,15 @@ public static class DependencyInjection
 
         var options = services.AddCoreMessaging(serviceName, rabbitMqConnectionString, additionalConfiguration);
 
+
+        var redisConnectionString = configuration.GetConnectionString("redis");
+        services.AddStackExchangeRedisCache(options => { 
+            options.Configuration = redisConnectionString;
+            options.InstanceName = serviceName;
+        });
+        services.AddSingleton<IConnectionMultiplexer>(
+    _ => ConnectionMultiplexer.Connect(redisConnectionString!));
+
         return options;
     }
 
@@ -95,7 +105,7 @@ public static class DependencyInjection
       Assembly? migrationsAssembly = null)
       where TContext : DbContext
     {
-        services.AddDbContext<TContext>(options =>
+        services.AddDbContextWithWolverineIntegration<TContext>(options =>
         {
             options.UseNpgsql(connectionString, npgsqlOptions =>
             {
@@ -128,15 +138,7 @@ public static class DependencyInjection
         return services;
     }
 
-    public static void WarmUp(this WebApplication app)
-    {
-        app.Lifetime.ApplicationStarted.Register(async () =>
-        {
-            using var scope = app.Services.CreateScope();
-            var bus = scope.ServiceProvider.GetRequiredService<IMessageBus>();
-           // await bus.InvokeAsync(new WarmupCommand());
-        });
-    }
+   
     public static IServiceCollection AddSqlServerDatabase<TContext>(
         this IServiceCollection services,
         string connectionString,
@@ -164,7 +166,7 @@ public static class DependencyInjection
             options.EnableDetailedErrors(false);
         });
 
-        services.AddScoped<DbContext>(provider => provider.GetRequiredService<TContext>());
+        //services.AddScoped<DbContext>(provider => provider.GetRequiredService<TContext>());
         var context = services.BuildServiceProvider().GetRequiredService<TContext>();
 
         
@@ -209,7 +211,7 @@ public static class DependencyInjection
                 additionalConfiguration
                 );
         });
-
+        
         return options;
     }
 
@@ -232,7 +234,7 @@ public static class DependencyInjection
         options.Durability.RecoveryBatchSize = 100;
         options.Durability.DurabilityMetricsEnabled = false;
         options.PublishMessage<ResourcesDeclarationIntegrationEvent>()
-           .ToRabbitQueue("identity-service-queue")
+           .ToRabbitQueue(ExchangesConstants.IdentityEventsExchange)
            .UseDurableOutbox();
         options.OnException<Exception>()
             .RetryWithCooldown(

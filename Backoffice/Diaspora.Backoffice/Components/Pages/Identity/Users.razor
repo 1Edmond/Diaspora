@@ -1,0 +1,796 @@
+@page "/identity"
+@page "/identity/users"
+@attribute [Authorize]
+@inject IHttpClientFactory HttpClientFactory
+@inject NavigationManager NavigationManager
+@inject IJSRuntime JSRuntime
+
+<PageTitle>Utilisateurs | Diaspora Backoffice</PageTitle>
+
+<PageBreadcrumb Title="Gestion des Utilisateurs" SubTitle="Gestion des comptes utilisateurs et rôles" />
+
+<div class="row">
+    <div class="col-12">
+        <div class="page-title-box">
+            <div class="page-title-right">
+                <div class="d-flex gap-2">
+                    <div class="input-group">
+                        <input type="text" 
+                               class="form-control" 
+                               placeholder="Rechercher..."
+                               @bind="_searchTerm"
+                               @bind:event="oninput"
+                               @onkeyup="HandleSearch">
+                        <button class="btn btn-primary" @onclick="HandleSearch">
+                            <i class="ti ti-search"></i>
+                        </button>
+                    </div>
+                    <button class="btn btn-success" @onclick="ShowCreateModal">
+                        <i class="ti ti-plus me-1"></i> Nouvel Utilisateur
+                    </button>
+                </div>
+            </div>
+            <h4 class="page-title">
+                <i class="ti ti-users me-2"></i>Liste des Utilisateurs
+            </h4>
+        </div>
+    </div>
+</div>
+
+<!-- Stats Cards -->
+<div class="row mb-3">
+    <div class="col-xl-3 col-md-6">
+        <div class="card">
+            <div class="card-body">
+                <div class="d-flex align-items-center">
+                    <div class="flex-shrink-0">
+                        <div class="avatar-sm rounded-circle bg-primary-subtle text-primary">
+                            <i class="ti ti-users fs-24"></i>
+                        </div>
+                    </div>
+                    <div class="flex-grow-1 ms-3">
+                        <h5 class="mb-1">@_stats.Total</h5>
+                        <p class="text-muted mb-0">Total Utilisateurs</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-xl-3 col-md-6">
+        <div class="card">
+            <div class="card-body">
+                <div class="d-flex align-items-center">
+                    <div class="flex-shrink-0">
+                        <div class="avatar-sm rounded-circle bg-success-subtle text-success">
+                            <i class="ti ti-user-check fs-24"></i>
+                        </div>
+                    </div>
+                    <div class="flex-grow-1 ms-3">
+                        <h5 class="mb-1">@_stats.Active</h5>
+                        <p class="text-muted mb-0">Actifs</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-xl-3 col-md-6">
+        <div class="card">
+            <div class="card-body">
+                <div class="d-flex align-items-center">
+                    <div class="flex-shrink-0">
+                        <div class="avatar-sm rounded-circle bg-warning-subtle text-warning">
+                            <i class="ti ti-user-exclamation fs-24"></i>
+                        </div>
+                    </div>
+                    <div class="flex-grow-1 ms-3">
+                        <h5 class="mb-1">@_stats.Suspended</h5>
+                        <p class="text-muted mb-0">Suspendus</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-xl-3 col-md-6">
+        <div class="card">
+            <div class="card-body">
+                <div class="d-flex align-items-center">
+                    <div class="flex-shrink-0">
+                        <div class="avatar-sm rounded-circle bg-info-subtle text-info">
+                            <i class="ti ti-mail-check fs-24"></i>
+                        </div>
+                    </div>
+                    <div class="flex-grow-1 ms-3">
+                        <h5 class="mb-1">@_stats.Verified</h5>
+                        <p class="text-muted mb-0">Email Vérifié</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Filters -->
+<div class="row mb-3">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-body">
+                <div class="row g-3">
+                    <div class="col-md-3">
+                        <label class="form-label">Statut</label>
+                        <select class="form-select" @bind="_statusFilter" @bind:after="ApplyFilters">
+                            <option value="">Tous</option>
+                            <option value="Active">Actif</option>
+                            <option value="Suspended">Suspendu</option>
+                        </select>
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label">Vérification Email</label>
+                        <select class="form-select" @bind="_verifiedFilter" @bind:after="ApplyFilters">
+                            <option value="">Tous</option>
+                            <option value="true">Vérifié</option>
+                            <option value="false">Non vérifié</option>
+                        </select>
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label">Niveau KYC</label>
+                        <select class="form-select" @bind="_kycFilter" @bind:after="ApplyFilters">
+                            <option value="">Tous</option>
+                            <option value="None">Aucun</option>
+                            <option value="Basic">Basique</option>
+                            <option value="Verified">Vérifié</option>
+                        </select>
+                    </div>
+                    <div class="col-md-3 d-flex align-items-end">
+                        <button class="btn btn-outline-secondary w-100" @onclick="ResetFilters">
+                            <i class="ti ti-filter-off me-1"></i> Réinitialiser
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Users Table -->
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-body">
+                @if (_isLoading)
+                {
+                    <div class="text-center py-5">
+                        <div class="spinner-border text-primary" role="status">
+                            <span class="visually-hidden">Chargement...</span>
+                        </div>
+                        <p class="mt-2 text-muted">Chargement des utilisateurs...</p>
+                    </div>
+                }
+                else if (_users.Count == 0)
+                {
+                    <div class="text-center py-5">
+                        <i class="ti ti-users-off fs-48 text-muted"></i>
+                        <p class="mt-3 text-muted">Aucun utilisateur trouvé</p>
+                    </div>
+                }
+                else
+                {
+                    <div class="table-responsive">
+                        <table class="table table-centered table-striped table-hover w-100">
+                            <thead>
+                                <tr>
+                                    <th>Utilisateur</th>
+                                    <th>Email</th>
+                                    <th>Rôles</th>
+                                    <th>KYC</th>
+                                    <th>Statut</th>
+                                    <th>Créé le</th>
+                                    <th style="width: 150px;">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var user in _users)
+                                {
+                                    <tr>
+                                        <td>
+                                            <div class="d-flex align-items-center">
+                                                <div class="flex-shrink-0">
+                                                    <div class="avatar-sm rounded-circle bg-soft-primary text-primary d-flex align-items-center justify-content-center">
+                                                        @(user.FirstName?[0] ?? user.Email[0])
+                                                    </div>
+                                                </div>
+                                                <div class="flex-grow-1 ms-3">
+                                                    <h6 class="mb-0">
+                                                        @(string.IsNullOrEmpty(user.FirstName) && string.IsNullOrEmpty(user.LastName) 
+                                                            ? "Non renseigné" 
+                                                            : $"{user.FirstName} {user.LastName}")
+                                                    </h6>
+                                                    <small class="text-muted">@user.Id.ToString()[..8]...</small>
+                                                </div>
+                                            </div>
+                                        </td>
+                                        <td>
+                                            <div class="d-flex align-items-center">
+                                                @user.Email
+                                                @if (user.EmailVerified)
+                                                {
+                                                    <i class="ti ti-circle-check text-success ms-1" title="Email vérifié"></i>
+                                                }
+                                            </div>
+                                        </td>
+                                        <td>
+                                            @foreach (var role in user.Role.Take(2))
+                                            {
+                                                <span class="badge bg-primary me-1">@role</span>
+                                            }
+                                            @if (user.Role.Count > 2)
+                                            {
+                                                <span class="badge bg-secondary">+@(user.Role.Count - 2)</span>
+                                            }
+                                        </td>
+                                        <td>
+                                            <span class="badge @GetKycBadgeClass(user.KYCLevel)">
+                                                @user.KYCLevel
+                                            </span>
+                                        </td>
+                                        <td>
+                                            <span class="badge @GetStatusBadgeClass(user.Status)">
+                                                @user.Status
+                                            </span>
+                                        </td>
+                                        <td>
+                                            @user.CreatedAt.ToString("dd/MM/yyyy")
+                                        </td>
+                                        <td>
+                                            <div class="d-flex gap-1">
+                                                <button class="btn btn-sm btn-outline-primary" @onclick="() => ShowEditModal(user)" title="Modifier">
+                                                    <i class="ti ti-edit"></i>
+                                                </button>
+                                                @if (user.Status == "Active")
+                                                {
+                                                    <button class="btn btn-sm btn-outline-warning" @onclick="() => SuspendUser(user.Id)" title="Suspendre">
+                                                        <i class="ti ti-ban"></i>
+                                                    </button>
+                                                }
+                                                else
+                                                {
+                                                    <button class="btn btn-sm btn-outline-success" @onclick="() => ActivateUser(user.Id)" title="Activer">
+                                                        <i class="ti ti-check"></i>
+                                                    </button>
+                                                }
+                                                <button class="btn btn-sm btn-outline-danger" @onclick="() => ConfirmDelete(user)" title="Supprimer">
+                                                    <i class="ti ti-trash"></i>
+                                                </button>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <!-- Pagination -->
+                    <div class="row mt-3">
+                        <div class="col-sm-6">
+                            <p class="text-muted mb-0">
+                                Affichage @((_currentPage - 1) * _pageSize + 1) à @Math.Min(_currentPage * _pageSize, _totalCount) sur @_totalCount entrées
+                            </p>
+                        </div>
+                        <div class="col-sm-6">
+                            <nav aria-label="Page navigation" class="float-end">
+                                <ul class="pagination mb-0">
+                                    <li class="page-item @(_currentPage == 1 ? "disabled" : "")">
+                                        <button class="page-link" @onclick="() => GoToPage(_currentPage - 1)">Précédent</button>
+                                    </li>
+                                    @for (int i = 1; i <= _totalPages; i++)
+                                    {
+                                        var pageNum = i;
+                                        <li class="page-item @(pageNum == _currentPage ? "active" : "")">
+                                            <button class="page-link" @onclick="() => GoToPage(pageNum)">@pageNum</button>
+                                        </li>
+                                    }
+                                    <li class="page-item @(_currentPage == _totalPages ? "disabled" : "")">
+                                        <button class="page-link" @onclick="() => GoToPage(_currentPage + 1)">Suivant</button>
+                                    </li>
+                                </ul>
+                            </nav>
+                        </div>
+                    </div>
+                }
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Create User Modal -->
+@if (_showCreateModal)
+{
+    <div class="modal fade show" style="display: block;" tabindex="-1">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Créer un Utilisateur</h5>
+                    <button type="button" class="btn-close" @onclick="CloseModals"></button>
+                </div>
+                <EditForm Model="_createModel" OnValidSubmit="CreateUser">
+                    <div class="modal-body">
+                        <DataAnnotationsValidator />
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Prénom</label>
+                                <InputText @bind-Value="_createModel.FirstName" class="form-control" />
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Nom</label>
+                                <InputText @bind-Value="_createModel.LastName" class="form-control" />
+                            </div>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Email *</label>
+                            <InputText @bind-Value="_createModel.Email" class="form-control" type="email" />
+                            <ValidationMessage For="() => _createModel.Email" class="text-danger" />
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Mot de passe *</label>
+                            <InputText @bind-Value="_createModel.Password" class="form-control" type="password" />
+                            <ValidationMessage For="() => _createModel.Password" class="text-danger" />
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Confirmer le mot de passe *</label>
+                            <InputText @bind-Value="_createModel.ConfirmPassword" class="form-control" type="password" />
+                            <ValidationMessage For="() => _createModel.ConfirmPassword" class="text-danger" />
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" @onclick="CloseModals">Annuler</button>
+                        <button type="submit" class="btn btn-success" disabled="@_isProcessing">
+                            @if (_isProcessing)
+                            {
+                                <span class="spinner-border spinner-border-sm me-1"></span>
+                            }
+                            Créer
+                        </button>
+                    </div>
+                </EditForm>
+            </div>
+        </div>
+    </div>
+    <div class="modal-backdrop fade show"></div>
+}
+
+<!-- Edit User Modal -->
+@if (_showEditModal && _selectedUser != null)
+{
+    <div class="modal fade show" style="display: block;" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Modifier l'Utilisateur</h5>
+                    <button type="button" class="btn-close" @onclick="CloseModals"></button>
+                </div>
+                <EditForm Model="_editModel" OnValidSubmit="UpdateUser">
+                    <div class="modal-body">
+                        <DataAnnotationsValidator />
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Prénom</label>
+                                <InputText @bind-Value="_editModel.FirstName" class="form-control" />
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Nom</label>
+                                <InputText @bind-Value="_editModel.LastName" class="form-control" />
+                            </div>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Email</label>
+                            <input value="@_selectedUser.Email" class="form-control" disabled />
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" @onclick="CloseModals">Annuler</button>
+                        <button type="submit" class="btn btn-primary" disabled="@_isProcessing">
+                            @if (_isProcessing)
+                            {
+                                <span class="spinner-border spinner-border-sm me-1"></span>
+                            }
+                            Mettre à jour
+                        </button>
+                    </div>
+                </EditForm>
+            </div>
+        </div>
+    </div>
+    <div class="modal-backdrop fade show"></div>
+}
+
+<!-- Delete Confirmation Modal -->
+@if (_showDeleteModal && _selectedUser != null)
+{
+    <div class="modal fade show" style="display: block;" tabindex="-1">
+        <div class="modal-dialog modal-sm">
+            <div class="modal-content">
+                <div class="modal-header bg-danger text-white">
+                    <h5 class="modal-title">Confirmer la suppression</h5>
+                    <button type="button" class="btn-close btn-close-white" @onclick="CloseModals"></button>
+                </div>
+                <div class="modal-body">
+                    <p>Êtes-vous sûr de vouloir supprimer cet utilisateur ?</p>
+                    <p class="fw-bold">@_selectedUser.Email</p>
+                    <p class="text-muted small">Cette action est irréversible.</p>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" @onclick="CloseModals">Annuler</button>
+                    <button type="button" class="btn btn-danger" @onclick="DeleteUser" disabled="@_isProcessing">
+                        @if (_isProcessing)
+                        {
+                            <span class="spinner-border spinner-border-sm me-1"></span>
+                        }
+                        Supprimer
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="modal-backdrop fade show"></div>
+}
+
+@code {
+    private HttpClient _client = default!;
+    private List<UserDto> _users = new();
+    private bool _isLoading = true;
+    private bool _isProcessing = false;
+
+    // Pagination
+    private int _currentPage = 1;
+    private int _pageSize = 10;
+    private int _totalCount = 0;
+    private int _totalPages => (int)Math.Ceiling((double)_totalCount / _pageSize);
+
+    // Filters
+    private string _searchTerm = "";
+    private string _statusFilter = "";
+    private string _verifiedFilter = "";
+    private string _kycFilter = "";
+
+    // Stats
+    private UserStats _stats = new();
+
+    // Modals
+    private bool _showCreateModal = false;
+    private bool _showEditModal = false;
+    private bool _showDeleteModal = false;
+    private UserDto? _selectedUser;
+
+    // Models
+    private CreateUserModel _createModel = new();
+    private EditUserModel _editModel = new();
+
+    protected override void OnInitialized()
+    {
+        _client = HttpClientFactory.CreateClient("GatewayClient");
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadUsers();
+        await LoadStats();
+    }
+
+    private async Task LoadUsers()
+    {
+        _isLoading = true;
+        try
+        {
+            var queryParams = new List<string>
+            {
+                $"page={_currentPage}",
+                $"pageSize={_pageSize}"
+            };
+
+            if (!string.IsNullOrEmpty(_searchTerm))
+                queryParams.Add($"search={Uri.EscapeDataString(_searchTerm)}");
+            if (!string.IsNullOrEmpty(_statusFilter))
+                queryParams.Add($"status={_statusFilter}");
+            if (!string.IsNullOrEmpty(_verifiedFilter))
+                queryParams.Add($"emailVerified={_verifiedFilter}");
+            if (!string.IsNullOrEmpty(_kycFilter))
+                queryParams.Add($"kycLevel={_kycFilter}");
+
+            var url = $"/api/user?{string.Join("&", queryParams)}";
+            try 
+            {
+                var response = await _client.GetFromJsonAsync<Shared.Application.Models.PagedList<UserDto>>(url);
+                if (response != null)
+                {
+                    _users = response.Items;
+                    _totalCount = response.TotalCount;
+                }
+            }
+            catch
+            {
+                // Fallback to mock data
+                _users = new List<UserDto>();
+                _totalCount = 0;
+            }
+        }
+        catch (Exception ex)
+        {
+            await JSRuntime.InvokeVoidAsync("alert", $"Erreur de chargement: {ex.Message}");
+            _users = new List<UserDto>();
+        }
+        finally
+        {
+            _isLoading = false;
+        }
+    }
+
+    private async Task LoadStats()
+    {
+        try
+        {
+            // Note: Ces stats pourraient venir d'un endpoint dédié
+            _stats.Total = _totalCount;
+            _stats.Active = _users.Count(u => u.Status == "Active");
+            _stats.Suspended = _users.Count(u => u.Status == "Suspended");
+            _stats.Verified = _users.Count(u => u.EmailVerified);
+        }
+        catch { }
+    }
+
+    private async Task HandleSearch()
+    {
+        _currentPage = 1;
+        await LoadUsers();
+    }
+
+    private async Task ApplyFilters()
+    {
+        _currentPage = 1;
+        await LoadUsers();
+    }
+
+    private async Task ResetFilters()
+    {
+        _searchTerm = "";
+        _statusFilter = "";
+        _verifiedFilter = "";
+        _kycFilter = "";
+        _currentPage = 1;
+        await LoadUsers();
+    }
+
+    private async Task GoToPage(int page)
+    {
+        if (page < 1 || page > _totalPages) return;
+        _currentPage = page;
+        await LoadUsers();
+    }
+
+    private string GetStatusBadgeClass(string status)
+    {
+        return status switch
+        {
+            "Active" => "bg-success",
+            "Suspended" => "bg-warning",
+            "Deleted" => "bg-danger",
+            _ => "bg-secondary"
+        };
+    }
+
+    private string GetKycBadgeClass(string kycLevel)
+    {
+        return kycLevel switch
+        {
+            "Verified" => "bg-success",
+            "Basic" => "bg-info",
+            "None" => "bg-secondary",
+            _ => "bg-secondary"
+        };
+    }
+
+    // Modal Methods
+    private void ShowCreateModal()
+    {
+        _createModel = new CreateUserModel();
+        _showCreateModal = true;
+    }
+
+    private void ShowEditModal(UserDto user)
+    {
+        _selectedUser = user;
+        _editModel = new EditUserModel
+        {
+            FirstName = user.FirstName ?? "",
+            LastName = user.LastName ?? ""
+        };
+        _showEditModal = true;
+    }
+
+    private void ConfirmDelete(UserDto user)
+    {
+        _selectedUser = user;
+        _showDeleteModal = true;
+    }
+
+    private void CloseModals()
+    {
+        _showCreateModal = false;
+        _showEditModal = false;
+        _showDeleteModal = false;
+        _selectedUser = null;
+    }
+
+    // API Actions
+    private async Task CreateUser()
+    {
+        _isProcessing = true;
+        try
+        {
+            var command = new
+            {
+                Email = _createModel.Email,
+                Password = _createModel.Password,
+                FirstName = _createModel.FirstName,
+                LastName = _createModel.LastName,
+                PhoneNumber = ""
+            };
+
+            var response = await _client.PostAsJsonAsync("/api/auth/register", command);
+            if (response.IsSuccessStatusCode)
+            {
+                CloseModals();
+                await LoadUsers();
+                await JSRuntime.InvokeVoidAsync("alert", "Utilisateur créé avec succès!");
+            }
+            else
+            {
+                var error = await response.Content.ReadAsStringAsync();
+                await JSRuntime.InvokeVoidAsync("alert", $"Erreur: {error}");
+            }
+        }
+        catch (Exception ex)
+        {
+            await JSRuntime.InvokeVoidAsync("alert", $"Erreur: {ex.Message}");
+        }
+        finally
+        {
+            _isProcessing = false;
+        }
+    }
+
+    private async Task UpdateUser()
+    {
+        if (_selectedUser == null) return;
+        
+        _isProcessing = true;
+        try
+        {
+            var command = new
+            {
+                UserId = _selectedUser.Id,
+                FirstName = _editModel.FirstName,
+                LastName = _editModel.LastName
+            };
+
+            var response = await _client.PutAsJsonAsync($"/api/user/{_selectedUser.Id}", command);
+            if (response.IsSuccessStatusCode)
+            {
+                CloseModals();
+                await LoadUsers();
+                await JSRuntime.InvokeVoidAsync("alert", "Utilisateur mis à jour avec succès!");
+            }
+            else
+            {
+                var error = await response.Content.ReadAsStringAsync();
+                await JSRuntime.InvokeVoidAsync("alert", $"Erreur: {error}");
+            }
+        }
+        catch (Exception ex)
+        {
+            await JSRuntime.InvokeVoidAsync("alert", $"Erreur: {ex.Message}");
+        }
+        finally
+        {
+            _isProcessing = false;
+        }
+    }
+
+    private async Task SuspendUser(Guid userId)
+    {
+        if (!await JSRuntime.InvokeAsync<bool>("confirm", "Voulez-vous vraiment suspendre cet utilisateur ?"))
+            return;
+
+        try
+        {
+            var response = await _client.PostAsync($"/api/user/{userId}/suspend", null);
+            if (response.IsSuccessStatusCode)
+            {
+                await LoadUsers();
+                await JSRuntime.InvokeVoidAsync("alert", "Utilisateur suspendu avec succès!");
+            }
+        }
+        catch (Exception ex)
+        {
+            await JSRuntime.InvokeVoidAsync("alert", $"Erreur: {ex.Message}");
+        }
+    }
+
+    private async Task ActivateUser(Guid userId)
+    {
+        try
+        {
+            var response = await _client.PostAsync($"/api/user/{userId}/activate", null);
+            if (response.IsSuccessStatusCode)
+            {
+                await LoadUsers();
+                await JSRuntime.InvokeVoidAsync("alert", "Utilisateur activé avec succès!");
+            }
+        }
+        catch (Exception ex)
+        {
+            await JSRuntime.InvokeVoidAsync("alert", $"Erreur: {ex.Message}");
+        }
+    }
+
+    private async Task DeleteUser()
+    {
+        if (_selectedUser == null) return;
+        
+        _isProcessing = true;
+        try
+        {
+            var response = await _client.DeleteAsync($"/api/user/{_selectedUser.Id}");
+            if (response.IsSuccessStatusCode)
+            {
+                CloseModals();
+                await LoadUsers();
+                await JSRuntime.InvokeVoidAsync("alert", "Utilisateur supprimé avec succès!");
+            }
+            else
+            {
+                var error = await response.Content.ReadAsStringAsync();
+                await JSRuntime.InvokeVoidAsync("alert", $"Erreur: {error}");
+            }
+        }
+        catch (Exception ex)
+        {
+            await JSRuntime.InvokeVoidAsync("alert", $"Erreur: {ex.Message}");
+        }
+        finally
+        {
+            _isProcessing = false;
+        }
+    }
+
+    // Models
+    public class CreateUserModel
+    {
+        [Required(ErrorMessage = "L'email est requis")]
+        [EmailAddress(ErrorMessage = "Format d'email invalide")]
+        public string Email { get; set; } = string.Empty;
+
+        [Required(ErrorMessage = "Le mot de passe est requis")]
+        [MinLength(6, ErrorMessage = "Le mot de passe doit contenir au moins 6 caractères")]
+        public string Password { get; set; } = string.Empty;
+
+        [Required(ErrorMessage = "La confirmation du mot de passe est requise")]
+        [Compare("Password", ErrorMessage = "Les mots de passe ne correspondent pas")]
+        public string ConfirmPassword { get; set; } = string.Empty;
+
+        public string FirstName { get; set; } = string.Empty;
+        public string LastName { get; set; } = string.Empty;
+    }
+
+    public class EditUserModel
+    {
+        public string FirstName { get; set; } = string.Empty;
+        public string LastName { get; set; } = string.Empty;
+    }
+
+    public class UserStats
+    {
+        public int Total { get; set; }
+        public int Active { get; set; }
+        public int Suspended { get; set; }
+        public int Verified { get; set; }
+    }
+}

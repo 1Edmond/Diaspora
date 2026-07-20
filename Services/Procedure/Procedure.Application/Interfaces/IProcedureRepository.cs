@@ -13,7 +13,7 @@ public interface IProcedureRepository : IRepository<Domain.Entities.Procedure>
         Guid profileTypeId,
         CancellationToken cancellationToken = default);
 
-    Task<IEnumerable<Domain.Entities.Procedure>> GetWithDependenciesAsync(
+    Task<Domain.Entities.Procedure?> GetWithDependenciesAsync(
         Guid procedureId,
         CancellationToken cancellationToken = default);
 }

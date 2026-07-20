@@ -1,6 +1,7 @@
 ﻿using ServcicesGateway.Interfaces;
-using System.Security;
 using System.Security.Claims;
+using System.Security.Cryptography;
+using System.Text;
 
 namespace ServcicesGateway.Middlewares;
 
@@ -12,6 +13,8 @@ public class AuthorizationMiddleware
     private static readonly HashSet<string> PublicPrefixes = new(StringComparer.OrdinalIgnoreCase)
     {
         "/api/auth/login",
+        "/api/auth/biometric/challenge",
+        "/api/auth/biometric/login",
         "/api/auth/register",
         "/api/auth/refresh",
         "/api/auth/verify-email",
@@ -21,9 +24,7 @@ public class AuthorizationMiddleware
         "/alive"
     };
 
-    public AuthorizationMiddleware(
-        RequestDelegate next,
-        ILogger<AuthorizationMiddleware> logger)
+    public AuthorizationMiddleware(RequestDelegate next, ILogger<AuthorizationMiddleware> logger)
     {
         _next = next;
         _logger = logger;
@@ -35,17 +36,16 @@ public class AuthorizationMiddleware
         IAuthorizationService authorizationService)
     {
         var path = context.Request.Path.Value ?? "";
+
         if (IsPublicRoute(path))
         {
-            _logger.LogDebug("[Gateway] 🔓 Public route: {Path}", path);
-            await _next(context);
+            await HandlePublicRouteAsync(context, configuration);
             return;
         }
 
-        if (!context.User.Identity?.IsAuthenticated ?? true)
+        if (context.User.Identity is not { IsAuthenticated: true })
         {
-            context.Response.StatusCode = StatusCodes.Status401Unauthorized;
-            await context.Response.WriteAsJsonAsync(new { Error = "Unauthorized" });
+            await WriteError(context, StatusCodes.Status401Unauthorized, "Unauthorized");
             return;
         }
 
@@ -54,50 +54,58 @@ public class AuthorizationMiddleware
 
         if (string.IsNullOrEmpty(userIdClaim) || !Guid.TryParse(userIdClaim, out var userId))
         {
-            context.Response.StatusCode = StatusCodes.Status401Unauthorized;
-            await context.Response.WriteAsJsonAsync(new { Error = "Invalid token" });
+            await WriteError(context, StatusCodes.Status401Unauthorized, "Invalid token");
             return;
         }
 
-        if(_logger.IsEnabled(LogLevel.Debug))
-        _logger.LogDebug(
-            "[Gateway] 🔍 Checking: User={UserId}, Path={Path}",
-            userId, path
-        );
+        if (_logger.IsEnabled(LogLevel.Debug))
+            _logger.LogDebug("[Gateway] 🔍 Checking: User={UserId}, Path={Path}", userId, path);
 
-        var userPermissions = await authorizationService.GetPermissionAsync(
-            userId);
+        var userPermissions = await authorizationService.GetPermissionAsync(userId);
 
         if (userPermissions is null)
         {
-            _logger.LogWarning(
-                "[Gateway] ⛔ Forbidden: User={UserId}, Path={Path}",
-                userId, path
-            );
-
-            context.Response.StatusCode = StatusCodes.Status403Forbidden;
-            await context.Response.WriteAsJsonAsync(new
-            {
-                Error = "Forbidden",
-                Message = "You do not have permission to access this resource"
-            });
+            _logger.LogWarning("[Gateway] ⛔ Forbidden: User={UserId}, Path={Path}", userId, path);
+            await WriteError(context, StatusCodes.Status403Forbidden,
+                "You do not have permission to access this resource");
             return;
         }
 
-        if(_logger.IsEnabled(LogLevel.Information))
-        _logger.LogInformation(
-            "[Gateway] ✅ Granted: User={UserId}, Path={Path}",
-            userId, path
-        );
+        if (_logger.IsEnabled(LogLevel.Information))
+            _logger.LogInformation("[Gateway] ✅ Granted: User={UserId}, Path={Path}", userId, path);
 
-        AddUserHeaders(configuration ,context, userId, userPermissions.Permissions);
+        AddUserHeaders(configuration, context, userId, userPermissions.Permissions);
         await _next(context);
+    }
+
+    private async Task HandlePublicRouteAsync(HttpContext context, IConfiguration configuration)
+    {
+        var key = context.Request.Headers["x-client-key"].ToString();
+        var configuredKey = configuration["ClientKey"];
+
+        if (string.IsNullOrEmpty(key) || string.IsNullOrEmpty(configuredKey)
+            || !FixedTimeEquals(configuredKey, key))
+        {
+            await WriteError(context, StatusCodes.Status401Unauthorized, "Unauthorized");
+            return; // <-- correction : on stoppe bien ici, plus de double traitement
+        }
+
+        _logger.LogDebug("[Gateway] 🔓 Public route: {Path}", context.Request.Path);
+        context.Request.Headers["X-Gateway-Require-Auth"] = "false";
+        context.Request.Headers["X-Gateway-Secret"] = configuration["Gateway:Secret"];
+        await _next(context);
+    }
+
+    private static async Task WriteError(HttpContext context, int statusCode, string error)
+    {
+        context.Response.StatusCode = statusCode;
+        await context.Response.WriteAsJsonAsync(new { Error = error });
     }
 
     private static bool IsPublicRoute(string path)
         => PublicPrefixes.Any(p => path.StartsWith(p, StringComparison.OrdinalIgnoreCase));
 
-    private static void AddUserHeaders(IConfiguration configuration, HttpContext context, Guid userId, string[] permission)
+    private static void AddUserHeaders(IConfiguration configuration, HttpContext context, Guid userId, string[] permissions)
     {
         context.Request.Headers["X-Gateway-Secret"] = configuration["Gateway:Secret"];
         context.Request.Headers["X-User-Id"] = userId.ToString();
@@ -105,6 +113,14 @@ public class AuthorizationMiddleware
         var roles = context.User.FindAll(ClaimTypes.Role).Select(c => c.Value);
         context.Request.Headers["X-User-Roles"] = string.Join(",", roles);
 
-        context.Request.Headers["X-Granted-Permission"] = string.Join(",", permission);
+        context.Request.Headers["X-Granted-Permission"] = string.Join(",", permissions);
+    }
+
+    private static bool FixedTimeEquals(string a, string b)
+    {
+        var bytesA = Encoding.UTF8.GetBytes(a);
+        var bytesB = Encoding.UTF8.GetBytes(b);
+        if (bytesA.Length != bytesB.Length) return false;
+        return CryptographicOperations.FixedTimeEquals(bytesA, bytesB);
     }
 }

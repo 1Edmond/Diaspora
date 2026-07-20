@@ -34,7 +34,7 @@ public class DocumentController(
         CancellationToken cancellationToken)
     {
         var command = new UploadDocumentCommand(
-            request.ExternalProfileId,
+            request.ProfileId,
             request.DocumentTypeId,
             request.File,
             request.ExpiresAt,
@@ -76,15 +76,15 @@ public class DocumentController(
         description: "Get all documents of an external profile",
         recommendedRoles: new[] { "User", "Admin" }
     )]
-    [HttpGet("profile/{externalProfileId:guid}")]
+    [HttpGet("profile/{profileId:guid}")]
     public async Task<IActionResult> GetByProfile(
-        Guid externalProfileId,
+        Guid profileId,
         [FromQuery] int pageNumber = 1,
         [FromQuery] int pageSize = 20,
         CancellationToken cancellationToken = default)
     {
         var result = await _messageBus.InvokeAsync<Result<PagedList<DocumentDto>>>(
-            new GetDocumentsByProfileQuery(externalProfileId, pageNumber, pageSize),
+            new GetDocumentsByProfileQuery(profileId, pageNumber, pageSize),
             cancellationToken);
 
         if (result.IsFailure)
@@ -203,7 +203,7 @@ public class DocumentController(
         // 2. Déchiffrer et streamer le fichier
         var streamResult = await _fileStorageService.DownloadDecryptedFileAsync(
             doc.FilePath,
-            entityId: doc.ExternalProfileId.ToString(),
+            entityId: doc.ProfileId.ToString(),
             entityType: UploadDocumentCommandHandler.FileEntityType,
             cancellationToken);
 

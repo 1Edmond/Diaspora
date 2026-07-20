@@ -8,6 +8,8 @@
 
   <ItemGroup>
     <PackageReference Include="Aspire.Npgsql.EntityFrameworkCore.PostgreSQL" />
+    <PackageReference Include="MailKit" />
+    <PackageReference Include="MimeKit" />
     <PackageReference Include="WolverineFx.Postgresql" />
   </ItemGroup>
 

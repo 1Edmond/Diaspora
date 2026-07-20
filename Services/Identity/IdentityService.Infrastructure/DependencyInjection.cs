@@ -72,8 +72,10 @@ public static class DependencyInjection
 
             options.PersistMessagesWithPostgresql(optimizedConnectionString, "wolverine");
             
-            options.ListenToRabbitQueue(QueuesConstants.IdentityServiceQueue)
-              .PreFetchCount(15)
+            options.ListenToRabbitQueue(ExchangesConstants.IdentityEventsExchange)
+              .PreFetchCount(20)
+              .MaximumParallelMessages(5)
+              .ListenerCount(6)
               .UseDurableInbox();
             
             options.UseEntityFrameworkCoreTransactions();
@@ -82,9 +84,11 @@ public static class DependencyInjection
             options.Discovery.IncludeAssembly(typeof(KYCVerificationApprovedIntegrationEventHandler).Assembly);
             options.Discovery.IncludeAssembly(migrationsAssembly!);
         });
-        
+ 
         services.AddPostgresDatabase<IdentityDbContext>(connectionString, migrationsAssembly);
         services.AddScoped<IApplicationDbContext, IdentityDbContext>();
+        services.AddScoped<IEd25519SignatureVerifier, Ed25519SignatureVerifier>();
+        services.AddScoped<IBiometricChallengeStore, RedisBiometricChallengeStore>();
         
     }
 

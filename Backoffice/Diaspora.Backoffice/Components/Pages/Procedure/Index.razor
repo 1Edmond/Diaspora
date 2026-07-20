@@ -1,0 +1,167 @@
+@page "/procedure"
+@inject IHttpClientFactory HttpClientFactory
+
+<PageTitle>Procedure Service | Diaspora Backoffice</PageTitle>
+
+<div class="row">
+    <div class="col-12">
+        <div class="page-title-box">
+            <div class="page-title-right">
+                <a href="javascript: void(0);" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#createProcedureModal">
+                    <i class="ti ti-plus"></i> Add Procedure
+                </a>
+            </div>
+            <h4 class="page-title">Procedures Management</h4>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-centered table-striped dt-responsive nowrap w-100">
+                        <thead>
+                            <tr>
+                                <th>Title</th>
+                                <th>Target Profile</th>
+                                <th>Cost</th>
+                                <th>Duration (Days)</th>
+                                <th>Dependencies</th>
+                                <th style="width: 75px;">Action</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <!-- Dummy Data mapped to GetProceduresByProfileTypeQuery output -->
+                            <tr>
+                                <td>Renouvellement de Visa (Russie)</td>
+                                <td><span class="badge bg-secondary">External (Any)</span></td>
+                                <td>2500 RUB</td>
+                                <td>14</td>
+                                <td><span class="badge bg-warning text-dark">1 Required</span></td>
+                                <td>
+                                    <a href="javascript:void(0);" class="action-icon"> <i class="ti ti-edit"></i></a>
+                                    <a href="javascript:void(0);" class="action-icon"> <i class="ti ti-trash"></i></a>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td>Obtention Carte Consulaire</td>
+                                <td><span class="badge bg-info">External (Togo Ambassy)</span></td>
+                                <td>5000 XOF</td>
+                                <td>7</td>
+                                <td><span class="badge bg-success">None</span></td>
+                                <td>
+                                    <a href="javascript:void(0);" class="action-icon"> <i class="ti ti-edit"></i></a>
+                                    <a href="javascript:void(0);" class="action-icon"> <i class="ti ti-trash"></i></a>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div> <!-- end card-body-->
+        </div> <!-- end card-->
+    </div> <!-- end col -->
+</div>
+
+<!-- Add Procedure Modal (Mapped to CreateProcedureCommand) -->
+<div id="createProcedureModal" class="modal fade" tabindex="-1" role="dialog" aria-hidden="true" data-bs-backdrop="static">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h4 class="modal-title" id="createProcedureModalLabel">Create New Procedure</h4>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-hidden="true"></button>
+            </div>
+            <div class="modal-body">
+                <form class="ps-3 pe-3" action="#">
+                    <div class="row">
+                        <div class="col-md-8 mb-3">
+                            <label class="form-label">Procedure Title *</label>
+                            <input class="form-control" type="text" required placeholder="e.g. Visa Renewal">
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <label class="form-label">Estimated Duration (Days)</label>
+                            <input class="form-control" type="number" min="0" value="0">
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">Description</label>
+                        <textarea class="form-control" rows="3" placeholder="Describe the procedure requirements and steps..."></textarea>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Target Profile Type</label>
+                            <select class="form-select">
+                                <option value="Internal">Internal (Togo)</option>
+                                <option value="External">External (Russie/Host)</option>
+                            </select>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Profile Type ID</label>
+                            <input class="form-control" type="text" placeholder="Guid of the target profile type">
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Cost Amount</label>
+                            <input class="form-control" type="number" step="0.01" min="0" value="0">
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Currency</label>
+                            <select class="form-select">
+                                <option value="RUB">RUB</option>
+                                <option value="XOF">XOF</option>
+                                <option value="USD">USD</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Dependency Procedure IDs</label>
+                            <input class="form-control" type="text" placeholder="Comma separated Guids">
+                            <small class="text-muted">Procedures that must be completed first.</small>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Required Document Types</label>
+                            <input class="form-control" type="text" placeholder="Comma separated Guids">
+                            <small class="text-muted">Documents required from KYC/Document service.</small>
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">Associated Locations / Inline Locations</label>
+                        <input class="form-control" type="text" placeholder="JSON or comma separated Guids">
+                        <small class="text-muted">Where this procedure takes place physically.</small>
+                    </div>
+
+                    <div class="mb-3 text-end mt-4">
+                        <button class="btn btn-light me-2" type="button" data-bs-dismiss="modal">Cancel</button>
+                        <button class="btn btn-primary" type="submit">Create Procedure</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+@code {
+    // Example of how the GatewayClient will be used:
+    /*
+    private HttpClient _client = default!;
+    
+    protected override void OnInitialized()
+    {
+        _client = HttpClientFactory.CreateClient("GatewayClient");
+    }
+
+    private async Task LoadProcedures()
+    {
+        var response = await _client.GetFromJsonAsync<Result<List<ProcedureDto>>>("/api/procedure");
+        // Update UI state
+    }
+    */
+}

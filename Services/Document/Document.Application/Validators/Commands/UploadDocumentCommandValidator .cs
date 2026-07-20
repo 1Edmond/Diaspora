@@ -15,7 +15,7 @@ public sealed class UploadDocumentCommandValidator : AbstractValidator<UploadDoc
 
     public UploadDocumentCommandValidator()
     {
-        RuleFor(x => x.ExternalProfileId).NotEmpty();
+        RuleFor(x => x.ProfileId).NotEmpty();
         RuleFor(x => x.DocumentTypeId).NotEmpty();
 
         RuleFor(x => x.File)

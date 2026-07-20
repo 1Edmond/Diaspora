@@ -61,6 +61,10 @@ public static class DependencyInjection
         services.SetCoreInfrastructureServices(configuration, options =>
         {
             options.ConfigureDocumentDomainQueues();
+            options.ConfigureRabbitMq().BindExchange(ExchangesConstants.IdentityEventsExchange)
+                   .ToQueue("document-service.identity-events");
+
+
 
             var optimizedConnectionString = new NpgsqlConnectionStringBuilder(connectionString)
             {
@@ -76,9 +80,11 @@ public static class DependencyInjection
             options.PersistMessagesWithPostgresql(
                 optimizedConnectionString, "wolverine_document");
 
-            options.ListenToRabbitQueue(QueuesConstants.DocumentServiceQueue)
-                .PreFetchCount(10)
-                .UseDurableInbox();
+            options.ListenToRabbitQueue("document-service.identity-events")
+                 .PreFetchCount(20)
+                 .MaximumParallelMessages(3)
+                 .ListenerCount(2)
+                 .UseDurableInbox();
 
             options.UseEntityFrameworkCoreTransactions();
             options.Policies.AutoApplyTransactions();

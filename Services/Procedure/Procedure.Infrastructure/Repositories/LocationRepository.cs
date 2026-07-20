@@ -12,7 +12,7 @@ using System.Text;
 
 namespace Procedure.Infrastructure.Repositories;
 
-public sealed class LocationRepository(ProcedureDbContext context,
+public sealed class LocationRepository(DbContext context,
     IEncryptionService encryptionService,
     IKeyManagementService keyManagement,
     IEncryptionMetadataRepository metadataRepository,
@@ -25,7 +25,7 @@ public sealed class LocationRepository(ProcedureDbContext context,
         logger,
         cache), ILocationRepository
 {
-    private readonly ProcedureDbContext _context = context;
+    private readonly ProcedureDbContext _context = (ProcedureDbContext)context;
 
     public async Task<IEnumerable<Location>> GetAllActiveAsync(
         CancellationToken cancellationToken = default)

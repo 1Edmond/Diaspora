@@ -12,6 +12,7 @@ public record RegisterUserCommand(
     string Password,
     List<string> Role,
     string? FirstName,
-    string? LastName
-    //,string? PhoneNumber
+    DateOnly DateOfBirth,
+    string? LastName,
+    string? PhoneNumber
     ) : ICommand<Result<Guid>>;

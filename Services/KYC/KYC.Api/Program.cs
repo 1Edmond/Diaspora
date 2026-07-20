@@ -30,7 +30,7 @@ if (app.Environment.IsDevelopment())
 app.UseInfrastructure();
 
 //app.UseHttpsRedirection();
-app.WarmUp();
+//app.WarmUp();
 
 app.MapControllers();
 

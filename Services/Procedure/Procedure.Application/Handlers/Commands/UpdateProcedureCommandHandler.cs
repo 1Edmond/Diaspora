@@ -1,4 +1,5 @@
 ﻿using Procedure.Application.Commands;
+using Procedure.Application.Extensions;
 using Procedure.Application.Interfaces;
 using Shared.Domain.Commons;
 using Shared.Domain.Interfaces;
@@ -11,44 +12,63 @@ namespace Procedure.Application.Handlers.Commands;
 
 public sealed class UpdateProcedureCommandHandler(
     IProcedureRepository repository,
-    IUnitOfWork unitOfWork)
+    ILocationRepository locationRepository)
 {
     public async Task<Result> Handle(
         UpdateProcedureCommand command,
         CancellationToken cancellationToken)
     {
-        var procedure = await repository.GetByIdAsync(command.ProcedureId, cancellationToken);
+        var procedure = await repository.GetWithDependenciesAsync(
+           command.ProcedureId, cancellationToken);
+
         if (procedure is null)
             return Result.Failure("Procedure not found.");
 
         var moneyResult = Money.Create(command.CostAmount, command.CostCurrency);
         if (moneyResult.IsFailure)
-            return moneyResult;
+            return Result.Failure(moneyResult.Error);
 
-        procedure.Update(command.Title, command.Description, moneyResult.Value,
-            command.EstimatedDurationDays, command.LocationId);
+        procedure.Update(command.Title, command.Description,
+            moneyResult.Value, command.EstimatedDurationDays);
 
-        // Reconstruire les dépendances
-        foreach (var existing in procedure.Dependencies.ToList())
-            procedure.RemoveDependency(existing.DependsOnProcedureId);
+        // ── Rebuild locations ─────────────────────────────────────────────────
+        procedure.ClearLocations();
 
-        foreach (var depId in command.DependencyIds)
+        foreach (var locationId in command.LocationIds)
         {
-            var depResult = procedure.AddDependency(depId);
-            if (depResult.IsFailure)
-                return depResult;
+            var result = procedure.AddLocation(locationId);
+            if (result.IsFailure)
+                return Result.Failure(result.Error);
         }
 
-        // Reconstruire les documents requis
-        foreach (var existing in procedure.RequiredDocuments.ToList())
-            procedure.RemoveRequiredDocument(existing.DocumentTypeId);
+        foreach (var req in command.InlineLocations)
+        {
+            var location = req.BuildLocation();
+            if (location.IsFailure)
+                return Result.Failure(location.Error);
 
+            await locationRepository.AddAsync(location.Value, cancellationToken);
+
+            var result = procedure.AddLocation(location.Value.Id);
+            if (result.IsFailure)
+                return Result.Failure(result.Error);
+        }
+
+        // ── Rebuild dependencies ──────────────────────────────────────────────
+        procedure.ClearDependencies();
+        foreach (var dependencyId in command.DependencyIds)
+        {
+            var result = procedure.AddDependency(dependencyId);
+            if (result.IsFailure)
+                return Result.Failure(result.Error);
+        }
+
+        // ── Rebuild required documents ────────────────────────────────────────
+        procedure.ClearRequiredDocuments();
         foreach (var docTypeId in command.RequiredDocumentTypeIds)
             procedure.AddRequiredDocument(docTypeId);
 
         await repository.UpdateAsync(procedure, cancellationToken);
-        await unitOfWork.SaveChangesAsync(cancellationToken);
-
         return Result.Success();
     }
 }

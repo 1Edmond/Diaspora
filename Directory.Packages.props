@@ -2,35 +2,38 @@
   <PropertyGroup>
     <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
     <CentralPackageTransitivePinningEnabled>false</CentralPackageTransitivePinningEnabled>
+    <AllowMissingPrunePackageData>true</AllowMissingPrunePackageData>
   </PropertyGroup>
   <ItemGroup>
-    <PackageVersion Include="Aspire.Hosting.AppHost" Version="13.1.0" />
-    <PackageVersion Include="Aspire.Hosting.Elasticsearch" Version="13.1.0" />
-    <PackageVersion Include="Aspire.Hosting.PostgreSQL" Version="13.1.0" />
-    <PackageVersion Include="Aspire.Hosting.RabbitMQ" Version="13.1.0" />
-    <PackageVersion Include="Aspire.Hosting.Redis" Version="13.1.1" />
-    <PackageVersion Include="Aspire.Npgsql.EntityFrameworkCore.PostgreSQL" Version="13.1.1" />
-    <PackageVersion Include="Aspire.StackExchange.Redis" Version="13.1.1" />
+    <PackageVersion Include="Aspire.Hosting.Elasticsearch" Version="13.3.0" />
+    <PackageVersion Include="Aspire.Hosting.PostgreSQL" Version="13.4.3" />
+    <PackageVersion Include="Aspire.Hosting.RabbitMQ" Version="13.4.3" />
+    <PackageVersion Include="Aspire.Hosting.Redis" Version="13.4.3" />
+    <PackageVersion Include="Aspire.Npgsql.EntityFrameworkCore.PostgreSQL" Version="13.4.3" />
+    <PackageVersion Include="Aspire.StackExchange.Redis" Version="13.4.3" />
     <PackageVersion Include="BCrypt.Net-Next" Version="4.0.3" />
     <PackageVersion Include="FluentValidation" Version="12.1.1" />
     <PackageVersion Include="FluentValidation.DependencyInjectionExtensions" Version="12.1.1" />
+    <PackageVersion Include="MailKit" Version="4.17.0" />
     <PackageVersion Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="10.0.3" />
-    <PackageVersion Include="Microsoft.AspNetCore.Authorization" Version="10.0.1" />
+    <PackageVersion Include="Microsoft.AspNetCore.Authorization" Version="10.0.8" />
     <PackageVersion Include="Microsoft.AspNetCore.Mvc" Version="2.3.9" />
     <PackageVersion Include="Microsoft.AspNetCore.Mvc.Core" Version="2.3.9" />
-    <PackageVersion Include="Microsoft.AspNetCore.OpenApi" Version="10.0.1" />
-    <PackageVersion Include="Microsoft.EntityFrameworkCore" Version="10.0.1" />
-    <PackageVersion Include="Microsoft.EntityFrameworkCore.SqlServer" Version="10.0.1" />
-    <PackageVersion Include="Microsoft.Extensions.Caching.StackExchangeRedis" Version="10.0.1" />
-    <PackageVersion Include="Microsoft.Extensions.Configuration" Version="10.0.1" />
-    <PackageVersion Include="Microsoft.Extensions.Http.Polly" Version="10.0.1" />
+    <PackageVersion Include="Microsoft.AspNetCore.OpenApi" Version="10.0.8" />
+    <PackageVersion Include="Microsoft.EntityFrameworkCore" Version="10.0.8" />
+    <PackageVersion Include="Microsoft.EntityFrameworkCore.SqlServer" Version="10.0.8" />
+    <PackageVersion Include="Microsoft.Extensions.Caching.StackExchangeRedis" Version="10.0.8" />
+    <PackageVersion Include="Microsoft.Extensions.Configuration" Version="10.0.8" />
+    <PackageVersion Include="Microsoft.Extensions.Http.Polly" Version="10.0.8" />
     <PackageVersion Include="Microsoft.Extensions.Http.Resilience" Version="9.9.0" />
-    <PackageVersion Include="Microsoft.Extensions.Logging" Version="10.0.1" />
+    <PackageVersion Include="Microsoft.Extensions.Logging" Version="10.0.8" />
     <PackageVersion Include="Microsoft.Extensions.ServiceDiscovery" Version="9.5.0" />
     <PackageVersion Include="Microsoft.Extensions.ServiceDiscovery.Yarp" Version="10.0.0" />
     <PackageVersion Include="Microsoft.IdentityModel.Tokens" Version="8.15.0" />
     <PackageVersion Include="Microsoft.VisualStudio.Azure.Containers.Tools.Targets" Version="1.23.0" />
+    <PackageVersion Include="MimeKit" Version="4.17.0" />
     <PackageVersion Include="Npgsql.EntityFrameworkCore.PostgreSQL" Version="10.0.0" />
+    <PackageVersion Include="NSec.Cryptography" Version="26.4.0" />
     <PackageVersion Include="OpenTelemetry.Exporter.OpenTelemetryProtocol" Version="1.12.0" />
     <PackageVersion Include="OpenTelemetry.Extensions.Hosting" Version="1.12.0" />
     <PackageVersion Include="OpenTelemetry.Instrumentation.AspNetCore" Version="1.12.0" />
@@ -60,7 +63,7 @@
     <!-- Distributed Locking -->
     <PackageVersion Include="RedLock.net" Version="2.3.2" />
     <!-- Hosting -->
-    <PackageVersion Include="Microsoft.Extensions.Hosting.Abstractions" Version="10.0.1" />
+    <PackageVersion Include="Microsoft.Extensions.Hosting.Abstractions" Version="10.0.8" />
     <!-- Testing -->
     <PackageVersion Include="xunit" Version="2.9.3" />
     <PackageVersion Include="xunit.runner.visualstudio" Version="3.1.0" />

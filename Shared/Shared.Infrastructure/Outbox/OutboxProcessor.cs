@@ -64,7 +64,7 @@ public class OutboxProcessor : BackgroundService
             return;
         }
 
-        _logger.LogInformation("[IdentityService] Processing {Count} outbox messages", messages.Count);
+        _logger.LogInformation("Processing {Count} outbox messages", messages.Count);
 
         foreach (var message in messages)
         {
@@ -74,7 +74,7 @@ public class OutboxProcessor : BackgroundService
                 if (eventType == null)
                 {
                     _logger.LogError(
-                        "[IdentityService] Unknown event type {Type} for outbox message {MessageId}",
+                        "Unknown event type {Type} for outbox message {MessageId}",
                         message.Type,
                         message.Id
                     );
@@ -90,7 +90,7 @@ public class OutboxProcessor : BackgroundService
                 if (@event == null)
                 {
                     _logger.LogError(
-                        "[IdentityService] Failed to deserialize outbox message {MessageId}",
+                        "Failed to deserialize outbox message {MessageId}",
                         message.Id
                     );
                     await repository.MarkAsFailedAsync(
@@ -104,7 +104,7 @@ public class OutboxProcessor : BackgroundService
                 await unitOfWork.ExecuteInTransactionAsync(async () =>
                 {
                     _logger.LogInformation(
-                        "[IdentityService] Publishing {EventType} (ID: {MessageId}) to RabbitMQ",
+                        "Publishing {EventType} (ID: {MessageId}) to RabbitMQ",
                         eventType.Name,
                         message.Id
                     );
@@ -113,7 +113,7 @@ public class OutboxProcessor : BackgroundService
                     await messageBus.PublishAsync((dynamic)@event);
 
                     _logger.LogInformation(
-                        "[IdentityService] Successfully published {EventType} (ID: {MessageId})",
+                        "Successfully published {EventType} (ID: {MessageId})",
                         eventType.Name,
                         message.Id
                     );
@@ -122,7 +122,7 @@ public class OutboxProcessor : BackgroundService
                 }, cancellationToken);
 
                 _logger.LogInformation(
-                    "[IdentityService] Outbox message {MessageId} processed",
+                    "Outbox message {MessageId} processed",
                     message.Id
                 );
             }
@@ -130,7 +130,7 @@ public class OutboxProcessor : BackgroundService
             {
                 _logger.LogError(
                     ex,
-                    "[IdentityService] Failed to process outbox message {MessageId}",
+                    "Failed to process outbox message {MessageId}",
                     message.Id
                 );
                 await repository.MarkAsFailedAsync(message.Id, ex.Message, cancellationToken);

@@ -7,7 +7,7 @@ namespace Document.Application.DTOs;
 
 public sealed record DocumentDto(
     Guid Id,
-    Guid ExternalProfileId,
+    Guid ProfileId,
     Guid DocumentTypeId,
     string DocumentTypeName,
     string DocumentTypeCode,

@@ -6,7 +6,7 @@ using System.Text;
 namespace Document.Application.Requests;
 
 public sealed record UploadDocumentRequest(
-    Guid ExternalProfileId,
+    Guid ProfileId,
     Guid DocumentTypeId,
     IFormFile File,
     DateTime? ExpiresAt,

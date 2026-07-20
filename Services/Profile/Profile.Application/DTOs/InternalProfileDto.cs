@@ -12,7 +12,7 @@ public sealed record InternalProfileDto(
     string PhoneNumber,
     string FirstName,
     string LastName,
-    DateTime DateOfBirth,
+    DateOnly DateOfBirth,
     InternalProfileStatus Status,
     DateTime? VerifiedAt,
     string? VerifiedByAdminId,

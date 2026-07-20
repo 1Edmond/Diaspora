@@ -42,6 +42,7 @@ public class DocumentTypeController(
             return Conflict(new { error = $"Document type with code '{request.Code}' already exists." });
 
         var result = DocumentType.Create(
+            request.ProfileTypeId,
             request.Name,
             request.Code,
             request.Description,

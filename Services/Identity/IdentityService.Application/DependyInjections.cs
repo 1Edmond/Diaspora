@@ -23,6 +23,7 @@ public static class DependyInjections
         EventTypeRegistry.Register<EmailVerifiedIntegrationEvent>();
         EventTypeRegistry.Register<PasswordChangedIntegrationEvent>();
         EventTypeRegistry.Register<UserCreatedIntegrationEvent>();
+        EventTypeRegistry.Register<UserActivatedIntegrationEvent>();
         EventTypeRegistry.Register<UserDeletedIntegrationEvent>();
         EventTypeRegistry.Register<UserLockedOutIntegrationEvent>();
         EventTypeRegistry.Register<UserLoggedInIntegrationEvent>();
@@ -33,28 +34,31 @@ public static class DependyInjections
     public static void ConfigureIdentityDomainQueues(this WolverineOptions options)
     {
         options.PublishMessage<EmailVerifiedIntegrationEvent>()
-                .ToRabbitQueue(QueuesConstants.DefaultRabbitMqQueue)
+                .ToRabbitExchange(ExchangesConstants.IdentityEventsExchange, (s) => s.ExchangeType = ExchangeType.Fanout)
                 .UseDurableOutbox();
         options.PublishMessage<PasswordChangedIntegrationEvent>()
-                .ToRabbitQueue(QueuesConstants.DefaultRabbitMqQueue)
+                .ToRabbitExchange(ExchangesConstants.IdentityEventsExchange, (s) => s.ExchangeType = ExchangeType.Fanout)
                 .UseDurableOutbox();
         options.PublishMessage<UserCreatedIntegrationEvent>()
-                .ToRabbitQueue(QueuesConstants.DefaultRabbitMqQueue)
+                .ToRabbitExchange(ExchangesConstants.IdentityEventsExchange, (s) => s.ExchangeType = ExchangeType.Fanout)
                 .UseDurableOutbox();
         options.PublishMessage<UserDeletedIntegrationEvent>()
-                .ToRabbitQueue(QueuesConstants.DefaultRabbitMqQueue)
+                .ToRabbitExchange(ExchangesConstants.IdentityEventsExchange, (s) => s.ExchangeType = ExchangeType.Fanout)
                 .UseDurableOutbox();
         options.PublishMessage<UserLockedOutIntegrationEvent>()
-                .ToRabbitQueue(QueuesConstants.DefaultRabbitMqQueue)
+                .ToRabbitExchange(ExchangesConstants.IdentityEventsExchange, (s) => s.ExchangeType = ExchangeType.Fanout)
                 .UseDurableOutbox();
         options.PublishMessage<UserLoggedInIntegrationEvent>()
-                .ToRabbitQueue(QueuesConstants.DefaultRabbitMqQueue)
+                .ToRabbitExchange(ExchangesConstants.IdentityEventsExchange, (s) => s.ExchangeType = ExchangeType.Fanout)
                 .UseDurableOutbox();
         options.PublishMessage<UserRestoredIntegrationEvent>()
-                .ToRabbitQueue(QueuesConstants.DefaultRabbitMqQueue)
+                .ToRabbitExchange(ExchangesConstants.IdentityEventsExchange, (s) => s.ExchangeType = ExchangeType.Fanout)
                 .UseDurableOutbox();
         options.PublishMessage<UserSuspendedIntegrationEvent>()
-                .ToRabbitQueue(QueuesConstants.DefaultRabbitMqQueue)
+                .ToRabbitExchange(ExchangesConstants.IdentityEventsExchange, (s) => s.ExchangeType = ExchangeType.Fanout)
+                .UseDurableOutbox();
+        options.PublishMessage<UserActivatedIntegrationEvent>()
+                .ToRabbitExchange(ExchangesConstants.IdentityEventsExchange, (s) => s.ExchangeType = ExchangeType.Fanout)
                 .UseDurableOutbox();
     }
 }

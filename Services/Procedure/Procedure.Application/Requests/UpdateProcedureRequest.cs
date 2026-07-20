@@ -10,7 +10,8 @@ public sealed record UpdateProcedureRequest(
     decimal CostAmount,
     string CostCurrency,
     int EstimatedDurationDays,
-    Guid? LocationId,
+    List<Guid> LocationIds,
+    List<InlineLocationRequest> InlineLocations,
     List<Guid> DependencyIds,
     List<Guid> RequiredDocumentTypeIds
 );

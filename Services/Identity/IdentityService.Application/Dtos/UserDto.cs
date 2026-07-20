@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Shared.Domain.ValueObjects;
+using System;
 using System.Collections.Generic;
 using System.Text;
 
@@ -12,6 +13,7 @@ public class UserDto
     public string Status { get; set; } = string.Empty;
     public bool EmailVerified { get; set; }
     public string KYCLevel { get; set; } = string.Empty;
+    public PhoneNumber? PhoneNumber { get; set; }
     public DateTime? KYCSubmittedAt { get; set; }
     public DateTime? KYCApprovedAt { get; set; }
 

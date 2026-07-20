@@ -23,12 +23,15 @@ public class User : AggregateRoot, ISoftDeletable, IAuditable
     public DateTime? LastLoginAt { get; private set; }
     public int FailedLoginAttempts { get; private set; }
     public DateTime? LockedUntil { get; private set; }
+    public string? DeviceId {get; private set; }
+    public string? DevicePublicKeyId { get; private set; }
 
-    
+
     [SensitiveData]
     public EncryptedString? FirstName { get; private set; }
     public string? LastName { get; private set; }
-   // public PhoneNumber? PhoneNumber { get; private set; }
+    public DateOnly DateOfBirth { get; private set; }
+    public PhoneNumber? PhoneNumber { get; private set; }
 
     private readonly List<RefreshToken> _refreshTokens = new();
     public IReadOnlyCollection<RefreshToken> RefreshTokens => _refreshTokens.AsReadOnly();
@@ -47,23 +50,27 @@ public class User : AggregateRoot, ISoftDeletable, IAuditable
     public static Result<User> Create(
         string email,
         string passwordHash,
+        DateOnly dateOfBirth,
         string? firstName = null,
-        string? lastName = null
-        //string? phoneNumber = null
+        string? lastName = null,
+        string? phoneNumber = null
         )
     {
         var emailResult = Email.Create(email);
         if (emailResult.IsFailure)
             return Result.Failure<User>(emailResult.Error);
 
-        //PhoneNumber? phone = null;
-        //if (!string.IsNullOrEmpty(phoneNumber))
-        //{
-        //    var phoneResult = PhoneNumber.Create(phoneNumber);
-        //    if (phoneResult.IsFailure)
-        //        return Result.Failure<User>(phoneResult.Error);
-        //    phone = phoneResult.Value;
-        //}
+        PhoneNumber? phone = null;
+        if (!string.IsNullOrEmpty(phoneNumber))
+        {
+            var phoneResult = PhoneNumber.Create(phoneNumber);
+            if (phoneResult.IsFailure)
+                return Result.Failure<User>(phoneResult.Error);
+            phone = phoneResult.Value;
+        }
+
+        if (dateOfBirth >= DateOnly.FromDateTime(DateTime.UtcNow.AddYears(10)))
+            return Result.Failure<User>("Bad date of birth");
 
         var user = new User
         {
@@ -72,11 +79,12 @@ public class User : AggregateRoot, ISoftDeletable, IAuditable
             PasswordHash = passwordHash,
             Status = UserStatus.Inactive,
             EmailVerified = false,
+            DateOfBirth = dateOfBirth,
             EmailVerificationCode = GenerateVerificationCode(),
             EmailVerificationCodeExpiry = DateTime.UtcNow.AddHours(24),
             FirstName = EncryptedString.FromClear(firstName!),
             LastName = lastName,
-           // PhoneNumber = phone,
+            PhoneNumber = phone,
             FailedLoginAttempts = 0,
             CreatedAt = DateTime.UtcNow
         };
@@ -207,6 +215,17 @@ public class User : AggregateRoot, ISoftDeletable, IAuditable
         return LockedUntil.HasValue && LockedUntil.Value > DateTime.UtcNow;
     }
 
+    public Result SetBiometriqueData(string deviceId, string publicKey)
+    {
+        if (string.IsNullOrEmpty(deviceId) || string.IsNullOrEmpty(publicKey))
+            return Result.Failure("Information needed to set this feature");
+        
+        DeviceId = deviceId;
+        DevicePublicKeyId = publicKey;
+        
+        return Result.Success();
+    }
+
     public Result ChangePassword(string newPasswordHash)
     {
         PasswordHash = newPasswordHash;
@@ -240,12 +259,12 @@ public class User : AggregateRoot, ISoftDeletable, IAuditable
 
     public Result Activate()
     {
-        if (Status != UserStatus.Suspended)
+        if (Status == UserStatus.Active)
             return Result.Failure("User is not suspended");
 
         Status = UserStatus.Active;
 
-        AddDomainEvent(new UserActivatedEvent(Id, Email.Value));
+        AddDomainEvent(new UserActivatedEvent(Id, Email.Value, PhoneNumber!, FirstName!, LastName!, DateOfBirth));
 
         return Result.Success();
     }

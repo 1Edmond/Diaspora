@@ -33,6 +33,7 @@ public class KYCDbContext(DbContextOptions<KYCDbContext> options,
 
         modelBuilder.ApplyConfiguration(new KYCVerificationConfiguration());
         modelBuilder.ApplyConfiguration(new KYCDocumentConfiguration());
+        modelBuilder.HasDefaultSchema("kyc");
     }
 }
 

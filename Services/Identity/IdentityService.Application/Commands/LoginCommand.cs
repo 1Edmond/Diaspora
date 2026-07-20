@@ -10,4 +10,4 @@ namespace IdentityService.Application.Commands;
 public record LoginCommand(
     string Email,
     string Password,
-    string IpAddress) : ICommand<Result<LoginResponse>>;
+    string? IpAddress) : ICommand<Result<LoginResponse>>;

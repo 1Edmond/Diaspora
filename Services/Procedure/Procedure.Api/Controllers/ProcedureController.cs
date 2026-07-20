@@ -75,7 +75,7 @@ public class ProcedureController(
         [FromBody] CreateProcedureCommand command,
         CancellationToken cancellationToken)
     {
-        var result = await _messageBus.InvokeAsync<Result<CreateProcedureResponse>>(
+        var result = await _messageBus.InvokeAsync<Result<Guid>>(
             command, cancellationToken);
 
         if (result.IsFailure)
@@ -103,7 +103,8 @@ public class ProcedureController(
             request.CostAmount,
             request.CostCurrency,
             request.EstimatedDurationDays,
-            request.LocationId,
+            request.LocationIds,
+            request.InlineLocations,
             request.DependencyIds,
             request.RequiredDocumentTypeIds);
 

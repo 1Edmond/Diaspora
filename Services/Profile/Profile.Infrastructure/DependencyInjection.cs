@@ -7,10 +7,10 @@ using Microsoft.Extensions.Logging;
 using Npgsql;
 using Profile.Application;
 using Profile.Application.Handlers.Commands;
+using Profile.Application.Handlers.IntegrationEvents;
 using Profile.Application.Interfaces;
 using Profile.Application.Mappings;
 using Profile.Infrastructure.Consumers;
-using Profile.Infrastructure.Extensions;
 using Profile.Infrastructure.Persistence;
 using Profile.Infrastructure.Repositories;
 using Shared.Application.Abstractions;
@@ -46,6 +46,8 @@ public static class DependencyInjection
         // ── Repositories ──────────────────────────────────────────────────────
         services.AddScoped<IInternalProfileRepository, InternalProfileRepository>();
         services.AddScoped<IExternalProfileRepository, ExternalProfileRepository>();
+        services.AddScoped<IInternalProfileTypeRepository, InternalProfileTypeRepository>();
+        services.AddScoped<IExternalProfileTypeRepository, ExternalProfileTypeRepository>();
 
         // ── Integration Event Mapper (Outbox) ─────────────────────────────────
         services.AddScoped<IIntegrationEventMapper, ProfileIntegrationEventMapper>();
@@ -53,11 +55,16 @@ public static class DependencyInjection
         // ── Handler enregistré explicitement pour le consumer RabbitMQ ────────
         services.AddScoped<ActivateExternalProfileCommandHandler>();
         services.AddScoped<KycArrivalProofApprovedConsumer>();
-
+       
         // ── Core infrastructure (Wolverine, RabbitMQ, Outbox, Logging…) ───────
+
         services.SetCoreInfrastructureServices(configuration, options =>
         {
             options.ConfigureProfileDomainQueues();
+
+            options.ConfigureRabbitMq().BindExchange(ExchangesConstants.IdentityEventsExchange)
+                   .ToQueue("profile-service.identity-events")
+                   ;
 
             var optimizedConnectionString = new NpgsqlConnectionStringBuilder(connectionString)
             {
@@ -69,14 +76,16 @@ public static class DependencyInjection
                 ConnectionIdleLifetime = 300,
                 ConnectionPruningInterval = 10
             }.ToString();
-
+            
             // Persistance des messages Wolverine dans PostgreSQL
-            options.PersistMessagesWithPostgresql(optimizedConnectionString, "wolverine_profile");
+            options.PersistMessagesWithPostgresql(optimizedConnectionString, "wolverine");
 
-            // Queue entrante : événements KYC → Profile
-            options.ListenToRabbitQueue(QueuesConstants.ProfileServiceQueue)
-                .PreFetchCount(10)
-                .UseDurableInbox();
+            // Queue entrante : événements Identity
+            options.ListenToRabbitQueue("profile-service.identity-events")
+              .PreFetchCount(20)
+              .MaximumParallelMessages(3)
+              .ListenerCount(2)
+              .UseDurableInbox();
 
             // Transactions EF Core automatiques
             options.UseEntityFrameworkCoreTransactions();
@@ -87,11 +96,14 @@ public static class DependencyInjection
                 typeof(ActivateExternalProfileCommandHandler).Assembly);
             options.Discovery.IncludeAssembly(
                 typeof(KycArrivalProofApprovedConsumer).Assembly);
+
+            options.Discovery.IncludeAssembly(typeof(UserActivatedIntegrationEventHandler).Assembly);
+
             options.Discovery.IncludeAssembly(migrationsAssembly!);
         });
-
         // ── DbContext ─────────────────────────────────────────────────────────
-        services.AddPostgresDatabase<ProfileDbContext>(connectionString, migrationsAssembly);
+        services.AddPostgresDatabase<ProfileDbContext>(connectionString, migrationsAssembly); 
+
         //services.AddScoped<IApplicationDbContext, ProfileDbContext>();
     }
 
@@ -130,7 +142,7 @@ public static class DependencyInjection
         await messageBus.PublishAsync(declarationEvent);
 
         if (logger.IsEnabled(LogLevel.Information))
-            logger.LogInformation("🚀 Published {Count} permissions",
+            logger.LogInformation("Published {Count} permissions",
             declarationEvent.Resources.Sum(r => r.Permissions.Count));
     }
 }

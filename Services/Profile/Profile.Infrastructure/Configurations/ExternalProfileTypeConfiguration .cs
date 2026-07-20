@@ -1,6 +1,7 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 using Profile.Domain.Entities;
+using Shared.Messaging.Constants;
 using System;
 using System.Collections.Generic;
 using System.Text;
@@ -26,5 +27,19 @@ public sealed class ExternalProfileTypeConfiguration : IEntityTypeConfiguration<
         builder.Property(x => x.CreatedBy).HasMaxLength(255).IsRequired();
         builder.Property(x => x.UpdatedAt).HasColumnType("timestamptz");
         builder.Property(x => x.UpdatedBy).HasMaxLength(255);
+
+        builder.HasData(new
+        {
+            Id = ServiceDataConstants.RuExternalProfileTypeId,
+            CountryName = "Russie",
+            CountryCode = "RU",
+            PhoneIndicatif = "+7",
+            Currency = "RUB",
+            IsActive = true,
+            CreatedAt = new DateTime(2024, 1, 1, 0, 0, 0, DateTimeKind.Utc),
+            CreatedBy = "System",
+            UpdatedAt = (DateTime?)null,
+            UpdatedBy = (string?)null
+        });
     }
 }

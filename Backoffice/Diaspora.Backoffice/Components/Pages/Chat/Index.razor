@@ -1,0 +1,494 @@
+@page "/chat"
+@attribute [Authorize]
+@inject IHttpClientFactory HttpClientFactory
+@inject IJSRuntime JSRuntime
+
+<PageTitle>Chat | Diaspora Backoffice</PageTitle>
+
+<PageBreadcrumb Title="Gestion du Chat" SubTitle="Messagerie, appels et modération" />
+
+<!-- Stats -->
+<div class="row mb-3">
+    <div class="col-xl-3 col-md-6">
+        <div class="card">
+            <div class="card-body">
+                <div class="d-flex align-items-center">
+                    <div class="flex-shrink-0">
+                        <div class="avatar-sm rounded-circle bg-primary-subtle text-primary">
+                            <i class="ti ti-messages fs-24"></i>
+                        </div>
+                    </div>
+                    <div class="flex-grow-1 ms-3">
+                        <h5 class="mb-1">@_stats.TotalConversations</h5>
+                        <p class="text-muted mb-0">Conversations</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-xl-3 col-md-6">
+        <div class="card">
+            <div class="card-body">
+                <div class="d-flex align-items-center">
+                    <div class="flex-shrink-0">
+                        <div class="avatar-sm rounded-circle bg-success-subtle text-success">
+                            <i class="ti ti-phone fs-24"></i>
+                        </div>
+                    </div>
+                    <div class="flex-grow-1 ms-3">
+                        <h5 class="mb-1">@_stats.TotalCalls</h5>
+                        <p class="text-muted mb-0">Appels</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-xl-3 col-md-6">
+        <div class="card">
+            <div class="card-body">
+                <div class="d-flex align-items-center">
+                    <div class="flex-shrink-0">
+                        <div class="avatar-sm rounded-circle bg-info-subtle text-info">
+                            <i class="ti ti-users fs-24"></i>
+                        </div>
+                    </div>
+                    <div class="flex-grow-1 ms-3">
+                        <h5 class="mb-1">@_stats.TotalProfiles</h5>
+                        <p class="text-muted mb-0">Profils Chat</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-xl-3 col-md-6">
+        <div class="card">
+            <div class="card-body">
+                <div class="d-flex align-items-center">
+                    <div class="flex-shrink-0">
+                        <div class="avatar-sm rounded-circle bg-warning-subtle text-warning">
+                            <i class="ti ti-flag fs-24"></i>
+                        </div>
+                    </div>
+                    <div class="flex-grow-1 ms-3">
+                        <h5 class="mb-1">@_stats.PendingReports</h5>
+                        <p class="text-muted mb-0">Signalements</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Tabs -->
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <ul class="nav nav-tabs card-header-tabs">
+                    <li class="nav-item">
+                        <button class="nav-link @(_activeTab == "conversations" ? "active" : "")" @onclick='() => SwitchTab("conversations")'>
+                            <i class="ti ti-messages me-1"></i> Conversations
+                        </button>
+                    </li>
+                    <li class="nav-item">
+                        <button class="nav-link @(_activeTab == "calls" ? "active" : "")" @onclick='() => SwitchTab("calls")'>
+                            <i class="ti ti-phone me-1"></i> Appels
+                        </button>
+                    </li>
+                    <li class="nav-item">
+                        <button class="nav-link @(_activeTab == "profiles" ? "active" : "")" @onclick='() => SwitchTab("profiles")'>
+                            <i class="ti ti-user-circle me-1"></i> Profils
+                        </button>
+                    </li>
+                    <li class="nav-item">
+                        <button class="nav-link @(_activeTab == "reports" ? "active" : "")" @onclick='() => SwitchTab("reports")'>
+                            <i class="ti ti-flag me-1 text-danger"></i> Signalements
+                        </button>
+                    </li>
+                </ul>
+            </div>
+            <div class="card-body">
+                @if (_activeTab == "conversations")
+                {
+                    <div class="d-flex justify-content-between mb-3">
+                        <div class="btn-group">
+                            <button class="btn btn-outline-primary" @onclick="CreateDirectMessage">
+                                <i class="ti ti-message me-1"></i> DM
+                            </button>
+                            <button class="btn btn-outline-success" @onclick="CreateGroup">
+                                <i class="ti ti-users me-1"></i> Groupe
+                            </button>
+                            <button class="btn btn-outline-info" @onclick="CreateCommunity">
+                                <i class="ti ti-globe me-1"></i> Communauté
+                            </button>
+                            <button class="btn btn-outline-warning" @onclick="CreateBroadcast">
+                                <i class="ti ti-broadcast me-1"></i> Broadcast
+                            </button>
+                        </div>
+                        <select class="form-select" style="width: 150px;" @bind="_conversationFilter">
+                            <option value="">Tous types</option>
+                            <option value="Direct">Direct</option>
+                            <option value="Group">Groupe</option>
+                            <option value="Community">Communauté</option>
+                            <option value="Broadcast">Broadcast</option>
+                        </select>
+                    </div>
+                    <div class="table-responsive">
+                        <table class="table table-centered table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Type</th>
+                                    <th>Nom</th>
+                                    <th>Participants</th>
+                                    <th>Messages</th>
+                                    <th>Dernier Message</th>
+                                    <th>Créé le</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var conv in _conversations)
+                                {
+                                    <tr>
+                                        <td>
+                                            <span class="badge @GetConversationTypeBadge(conv.Type)">
+                                                <i class="ti @GetConversationIcon(conv.Type)"></i>
+                                                @conv.Type
+                                            </span>
+                                        </td>
+                                        <td>@conv.Name</td>
+                                        <td>@conv.ParticipantCount</td>
+                                        <td>@conv.MessageCount</td>
+                                        <td>@conv.LastMessageAt?.ToString("dd/MM/yyyy HH:mm")</td>
+                                        <td>@conv.CreatedAt.ToString("dd/MM/yyyy")</td>
+                                        <td>
+                                            <div class="d-flex gap-1">
+                                                <button class="btn btn-sm btn-outline-primary" @onclick="() => ViewConversation(conv)">
+                                                    <i class="ti ti-eye"></i>
+                                                </button>
+                                                <button class="btn btn-sm btn-outline-danger" @onclick="() => DeleteConversation(conv.Id)">
+                                                    <i class="ti ti-trash"></i>
+                                                </button>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                }
+                else if (_activeTab == "calls")
+                {
+                    <div class="table-responsive">
+                        <table class="table table-centered table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Type</th>
+                                    <th>Conversation</th>
+                                    <th>Début</th>
+                                    <th>Durée</th>
+                                    <th>Participants</th>
+                                    <th>Statut</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var call in _calls)
+                                {
+                                    <tr>
+                                        <td>
+                                            <span class="badge @GetCallTypeBadge(call.Type)">
+                                                <i class="ti @(call.Type == "Video" ? "ti-video" : "ti-phone")"></i>
+                                                @call.Type
+                                            </span>
+                                        </td>
+                                        <td>@call.ConversationName</td>
+                                        <td>@call.StartTime.ToString("dd/MM/yyyy HH:mm")</td>
+                                        <td>@call.Duration</td>
+                                        <td>@call.ParticipantCount</td>
+                                        <td>
+                                            <span class="badge @GetCallStatusBadge(call.Status)">@call.Status</span>
+                                        </td>
+                                        <td>
+                                            <button class="btn btn-sm btn-outline-primary" @onclick="() => ViewCallDetails(call)">
+                                                <i class="ti ti-eye"></i>
+                                            </button>
+                                        </td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                }
+                else if (_activeTab == "profiles")
+                {
+                    <div class="d-flex justify-content-between mb-3">
+                        <button class="btn btn-success" @onclick="CreateChatProfile">
+                            <i class="ti ti-plus me-1"></i> Nouveau Profil
+                        </button>
+                        <div class="form-check form-switch">
+                            <input class="form-check-input" type="checkbox" id="showBots" @bind="_showBots">
+                            <label class="form-check-label" for="showBots">Afficher les bots</label>
+                        </div>
+                    </div>
+                    <div class="table-responsive">
+                        <table class="table table-centered table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Utilisateur</th>
+                                    <th>Type</th>
+                                    <th>Statut</th>
+                                    <th>Dernière connexion</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var profile in _profiles.Where(p => _showBots || !p.IsBot))
+                                {
+                                    <tr>
+                                        <td>
+                                            <div class="d-flex align-items-center">
+                                                <div class="avatar-xs rounded-circle bg-soft-primary text-primary d-flex align-items-center justify-content-center me-2">
+                                                    @(profile.UserName[0])
+                                                </div>
+                                                @profile.UserName
+                                                @if (profile.IsBot)
+                                                {
+                                                    <span class="badge bg-info ms-2">Bot</span>
+                                                }
+                                            </div>
+                                        </td>
+                                        <td>@(profile.IsBot ? "Bot" : "Utilisateur")</td>
+                                        <td>
+                                            <span class="badge @GetStatusBadge(profile.Status)">
+                                                <i class="ti ti-circle-filled me-1" style="font-size: 8px;"></i>
+                                                @profile.Status
+                                            </span>
+                                        </td>
+                                        <td>@profile.LastSeen.ToString("dd/MM/yyyy HH:mm")</td>
+                                        <td>
+                                            <button class="btn btn-sm btn-outline-primary" @onclick="() => ViewProfile(profile)">
+                                                <i class="ti ti-eye"></i>
+                                            </button>
+                                        </td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                }
+                else if (_activeTab == "reports")
+                {
+                    <div class="table-responsive">
+                        <table class="table table-centered table-hover">
+                            <thead class="table-danger">
+                                <tr>
+                                    <th>Signalé par</th>
+                                    <th>Contenu signalé</th>
+                                    <th>Raison</th>
+                                    <th>Date</th>
+                                    <th>Statut</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var report in _reports)
+                                {
+                                    <tr>
+                                        <td>@report.ReporterName</td>
+                                        <td>
+                                            <small>@report.ContentType : @report.ContentPreview</small>
+                                        </td>
+                                        <td>@report.Reason</td>
+                                        <td>@report.ReportedAt.ToString("dd/MM/yyyy HH:mm")</td>
+                                        <td>
+                                            <span class="badge @GetReportStatusBadge(report.Status)">@report.Status</span>
+                                        </td>
+                                        <td>
+                                            <button class="btn btn-sm btn-primary" @onclick="() => ReviewReport(report)">
+                                                <i class="ti ti-eye me-1"></i> Examiner
+                                            </button>
+                                        </td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                }
+            </div>
+        </div>
+    </div>
+</div>
+
+@code {
+    private HttpClient _client = default!;
+    private string _activeTab = "conversations";
+    private string _conversationFilter = "";
+    private bool _showBots = false;
+    private ChatStats _stats = new();
+
+    private List<ConversationViewModel> _conversations = new();
+    private List<CallViewModel> _calls = new();
+    private List<ChatProfileViewModel> _profiles = new();
+    private List<ReportViewModel> _reports = new();
+
+    protected override void OnInitialized()
+    {
+        _client = HttpClientFactory.CreateClient("GatewayClient");
+        LoadMockData();
+    }
+
+    private void LoadMockData()
+    {
+        _conversations = new List<ConversationViewModel>
+        {
+            new ConversationViewModel { Id = Guid.NewGuid(), Name = "Koffi Mensah ↔ Afi Kouassi", Type = "Direct", ParticipantCount = 2, MessageCount = 145, LastMessageAt = DateTime.Now.AddMinutes(-5), CreatedAt = DateTime.Now.AddDays(-30) },
+            new ConversationViewModel { Id = Guid.NewGuid(), Name = "Groupe Boursiers 2024", Type = "Group", ParticipantCount = 45, MessageCount = 1234, LastMessageAt = DateTime.Now.AddHours(-2), CreatedAt = DateTime.Now.AddDays(-60) },
+            new ConversationViewModel { Id = Guid.NewGuid(), Name = "Communauté Togolaise", Type = "Community", ParticipantCount = 856, MessageCount = 45231, LastMessageAt = DateTime.Now.AddMinutes(-30), CreatedAt = DateTime.Now.AddDays(-90) },
+            new ConversationViewModel { Id = Guid.NewGuid(), Name = "Annonces Officielles", Type = "Broadcast", ParticipantCount = 1245, MessageCount = 89, LastMessageAt = DateTime.Now.AddHours(-1), CreatedAt = DateTime.Now.AddDays(-120) }
+        };
+
+        _calls = new List<CallViewModel>
+        {
+            new CallViewModel { Id = Guid.NewGuid(), ConversationName = "Koffi Mensah ↔ Afi Kouassi", Type = "Video", StartTime = DateTime.Now.AddHours(-2), Duration = "15:30", ParticipantCount = 2, Status = "Completed" },
+            new CallViewModel { Id = Guid.NewGuid(), ConversationName = "Groupe Boursiers 2024", Type = "Audio", StartTime = DateTime.Now.AddDays(-1), Duration = "45:00", ParticipantCount = 12, Status = "Completed" },
+            new CallViewModel { Id = Guid.NewGuid(), ConversationName = "Support Technique", Type = "Video", StartTime = DateTime.Now.AddMinutes(-10), Duration = "05:20", ParticipantCount = 2, Status = "Ongoing" }
+        };
+
+        _profiles = new List<ChatProfileViewModel>
+        {
+            new ChatProfileViewModel { Id = Guid.NewGuid(), UserName = "Koffi Mensah", Status = "Online", LastSeen = DateTime.Now, IsBot = false },
+            new ChatProfileViewModel { Id = Guid.NewGuid(), UserName = "Afi Kouassi", Status = "Offline", LastSeen = DateTime.Now.AddMinutes(-30), IsBot = false },
+            new ChatProfileViewModel { Id = Guid.NewGuid(), UserName = "Assistant Bot", Status = "Online", LastSeen = DateTime.Now, IsBot = true },
+            new ChatProfileViewModel { Id = Guid.NewGuid(), UserName = "Modération Bot", Status = "Online", LastSeen = DateTime.Now, IsBot = true }
+        };
+
+        _reports = new List<ReportViewModel>
+        {
+            new ReportViewModel { Id = Guid.NewGuid(), ReporterName = "Koffi Mensah", ContentType = "Message", ContentPreview = "Ce message est inapproprié...", Reason = "Contenu offensant", ReportedAt = DateTime.Now.AddHours(-2), Status = "Pending" },
+            new ReportViewModel { Id = Guid.NewGuid(), ReporterName = "Afi Kouassi", ContentType = "Message", ContentPreview = "Spam publicitaire", Reason = "Spam", ReportedAt = DateTime.Now.AddDays(-1), Status = "Reviewed" }
+        };
+
+        CalculateStats();
+    }
+
+    private void CalculateStats()
+    {
+        _stats.TotalConversations = _conversations.Count;
+        _stats.TotalCalls = _calls.Count;
+        _stats.TotalProfiles = _profiles.Count;
+        _stats.PendingReports = _reports.Count(r => r.Status == "Pending");
+    }
+
+    private void SwitchTab(string tab) => _activeTab = tab;
+
+    private string GetConversationTypeBadge(string type) => type switch
+    {
+        "Direct" => "bg-primary",
+        "Group" => "bg-success",
+        "Community" => "bg-info",
+        "Broadcast" => "bg-warning",
+        _ => "bg-secondary"
+    };
+
+    private string GetConversationIcon(string type) => type switch
+    {
+        "Direct" => "ti-message",
+        "Group" => "ti-users",
+        "Community" => "ti-globe",
+        "Broadcast" => "ti-broadcast",
+        _ => "ti-message"
+    };
+
+    private string GetCallTypeBadge(string type) => type switch
+    {
+        "Video" => "bg-danger",
+        "Audio" => "bg-success",
+        _ => "bg-secondary"
+    };
+
+    private string GetCallStatusBadge(string status) => status switch
+    {
+        "Completed" => "bg-success",
+        "Ongoing" => "bg-warning",
+        "Missed" => "bg-danger",
+        _ => "bg-secondary"
+    };
+
+    private string GetStatusBadge(string status) => status switch
+    {
+        "Online" => "bg-success",
+        "Offline" => "bg-secondary",
+        "Away" => "bg-warning",
+        _ => "bg-secondary"
+    };
+
+    private string GetReportStatusBadge(string status) => status switch
+    {
+        "Pending" => "bg-warning",
+        "Reviewed" => "bg-success",
+        "Dismissed" => "bg-secondary",
+        _ => "bg-secondary"
+    };
+
+    private void ViewConversation(ConversationViewModel conv) { }
+    private void DeleteConversation(Guid id) { }
+    private void ViewCallDetails(CallViewModel call) { }
+    private void ViewProfile(ChatProfileViewModel profile) { }
+    private void ReviewReport(ReportViewModel report) { }
+    private void CreateDirectMessage() { }
+    private void CreateGroup() { }
+    private void CreateCommunity() { }
+    private void CreateBroadcast() { }
+    private void CreateChatProfile() { }
+
+    public class ChatStats
+    {
+        public int TotalConversations { get; set; }
+        public int TotalCalls { get; set; }
+        public int TotalProfiles { get; set; }
+        public int PendingReports { get; set; }
+    }
+
+    public class ConversationViewModel
+    {
+        public Guid Id { get; set; }
+        public string Name { get; set; } = string.Empty;
+        public string Type { get; set; } = string.Empty;
+        public int ParticipantCount { get; set; }
+        public int MessageCount { get; set; }
+        public DateTime? LastMessageAt { get; set; }
+        public DateTime CreatedAt { get; set; }
+    }
+
+    public class CallViewModel
+    {
+        public Guid Id { get; set; }
+        public string ConversationName { get; set; } = string.Empty;
+        public string Type { get; set; } = string.Empty;
+        public DateTime StartTime { get; set; }
+        public string Duration { get; set; } = string.Empty;
+        public int ParticipantCount { get; set; }
+        public string Status { get; set; } = string.Empty;
+    }
+
+    public class ChatProfileViewModel
+    {
+        public Guid Id { get; set; }
+        public string UserName { get; set; } = string.Empty;
+        public string Status { get; set; } = string.Empty;
+        public DateTime LastSeen { get; set; }
+        public bool IsBot { get; set; }
+    }
+
+    public class ReportViewModel
+    {
+        public Guid Id { get; set; }
+        public string ReporterName { get; set; } = string.Empty;
+        public string ContentType { get; set; } = string.Empty;
+        public string ContentPreview { get; set; } = string.Empty;
+        public string Reason { get; set; } = string.Empty;
+        public DateTime ReportedAt { get; set; }
+        public string Status { get; set; } = string.Empty;
+    }
+}

@@ -23,6 +23,7 @@ public sealed class ExternalProfileType : Entity
         string phoneIndicatif,
         string currency) : base(id)
     {
+        Id = id;
         CountryName = countryName;
         CountryCode = countryCode;
         PhoneIndicatif = phoneIndicatif;
@@ -31,6 +32,7 @@ public sealed class ExternalProfileType : Entity
     }
 
     public static Result<ExternalProfileType> Create(
+        Guid id,
         string countryName,
         string countryCode,
         string phoneIndicatif,
@@ -49,7 +51,7 @@ public sealed class ExternalProfileType : Entity
             return Result.Failure<ExternalProfileType>("Currency is required.");
 
         return Result.Success(new ExternalProfileType(
-            Guid.NewGuid(),
+            id,
             countryName.Trim(),
             countryCode.ToUpperInvariant(),
             phoneIndicatif.Trim(),

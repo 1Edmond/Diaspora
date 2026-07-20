@@ -1,0 +1,32 @@
+﻿using Marketplace.Application.Abstractions;
+using Marketplace.Domain.Entities;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
+using Shared.Application.Interfaces;
+using Shared.Messaging.Events;
+using System;
+using System.Collections.Generic;
+using System.Text;
+
+namespace Marketplace.Infrastructure.Persistence;
+
+public class MarketplaceDbContext(
+    DbContextOptions<MarketplaceDbContext> options,
+    IIntegrationEventMapper integrationEventMapper,
+    IDateTimeProvider dateTimeProvider,
+    ILogger<MarketplaceDbContext> logger,
+    ICurrentUserService currentUserService)
+    : BaseDbContext(options, integrationEventMapper, dateTimeProvider, logger, currentUserService),
+      IApplicationDbContext
+{
+    public DbSet<Category> Categories => Set<Category>();
+    public DbSet<ServiceListing> ServiceListings => Set<ServiceListing>();
+    public DbSet<Review> Reviews => Set<Review>();
+    public DbSet<ServiceRequest> ServiceRequests => Set<ServiceRequest>();
+
+    protected override void OnModelCreating(ModelBuilder modelBuilder)
+    {
+        base.OnModelCreating(modelBuilder);
+        modelBuilder.HasDefaultSchema("marketplace");
+    }
+}

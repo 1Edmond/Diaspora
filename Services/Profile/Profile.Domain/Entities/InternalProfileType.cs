@@ -22,6 +22,7 @@ public sealed class InternalProfileType : Entity
         string phoneIndicatif,
         string currency) : base(id)
     {
+        Id = id;
         CountryName = countryName;
         CountryCode = countryCode;
         PhoneIndicatif = phoneIndicatif;
@@ -30,9 +31,19 @@ public sealed class InternalProfileType : Entity
     }
 
     public static InternalProfileType Create(
+        Guid id,
         string countryName,
         string countryCode,
         string phoneIndicatif,
         string currency)
-        => new(Guid.NewGuid(), countryName, countryCode, phoneIndicatif, currency);
+
+    {
+
+        return new(id,
+            countryName.Trim(),
+            countryCode.ToUpperInvariant(),
+            phoneIndicatif.Trim(),
+            currency.ToUpperInvariant());
+    }
+
 }

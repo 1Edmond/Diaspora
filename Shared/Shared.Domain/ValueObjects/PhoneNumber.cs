@@ -1,13 +1,16 @@
 ﻿using Shared.Domain.Commons;
+using Shared.Domain.Converters;
 using Shared.Domain.Primitives;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using System.Text.Json.Serialization;
 using System.Threading.Tasks;
 
 namespace Shared.Domain.ValueObjects;
 
+[JsonConverter(typeof(PhoneNumberJsonConverter))]
 public sealed class PhoneNumber : ValueObject
 {
     public string Value { get; private set; }

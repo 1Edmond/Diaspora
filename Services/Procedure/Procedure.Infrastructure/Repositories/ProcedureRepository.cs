@@ -13,7 +13,7 @@ using System.Text;
 namespace Procedure.Infrastructure.Repositories;
 
 public sealed class ProcedureRepository(
-    ProcedureDbContext context,
+    DbContext context,
     IEncryptionService encryptionService,
     IKeyManagementService keyManagement,
     IEncryptionMetadataRepository metadataRepository,
@@ -28,14 +28,16 @@ public sealed class ProcedureRepository(
         cache
         ), IProcedureRepository
 {
-    private readonly ProcedureDbContext _context = context;
+    private readonly ProcedureDbContext _context = (ProcedureDbContext)context;
 
     public async Task<IEnumerable<Domain.Entities.Procedure>> GetByProfileTypeAsync(
         ProcedureProfileType profileType,
         Guid profileTypeId,
         CancellationToken cancellationToken = default)
         => await _context.Procedures
-            .Include(x => x.Location)
+            .AsNoTracking()
+            .Include(x => x.Locations)
+            .ThenInclude(pl => pl.Location)
             .Include(x => x.Dependencies)
             .Include(x => x.RequiredDocuments)
             .Where(x => x.ProfileType == profileType
@@ -44,12 +46,11 @@ public sealed class ProcedureRepository(
             .OrderBy(x => x.Title)
             .ToListAsync(cancellationToken);
 
-    public async Task<IEnumerable<Domain.Entities.Procedure>> GetWithDependenciesAsync(
+    public async Task<Domain.Entities.Procedure?> GetWithDependenciesAsync(
         Guid procedureId,
         CancellationToken cancellationToken = default)
         => await _context.Procedures
             .Include(x => x.Dependencies)
                 .ThenInclude(d => d.DependsOnProcedure)
-            .Where(x => x.Id == procedureId)
-            .ToListAsync(cancellationToken);
+            .FirstOrDefaultAsync(x => x.Id == procedureId, cancellationToken);
 }

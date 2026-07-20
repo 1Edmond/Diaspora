@@ -19,8 +19,7 @@ public static class ProcedureMappingExtensions
             p.ProfileTypeId,
             p.EstimatedDurationDays,
             p.IsActive,
-            p.LocationId,
-            p.Location?.ToDto(),
+            p.Locations.Select(pl => pl.Location.ToDto()).ToList(),
             p.Dependencies.Select(d => d.DependsOnProcedureId).ToList(),
             p.RequiredDocuments.Select(d => d.DocumentTypeId).ToList(),
             p.CreatedAt);

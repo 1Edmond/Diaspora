@@ -21,7 +21,7 @@ public sealed class InternalProfile : AggregateRoot
 
     public string FirstName { get; private set; } = string.Empty;
     public string LastName { get; private set; } = string.Empty;
-    public DateTime DateOfBirth { get; private set; }
+    public DateOnly DateOfBirth { get; private set; }
 
     public InternalProfileStatus Status { get; private set; }
 
@@ -37,26 +37,28 @@ public sealed class InternalProfile : AggregateRoot
     private InternalProfile(
         Guid id,
         Guid userId,
+        Guid internalProfileTypeId,
         PhoneNumber phoneNumber,
         string firstName,
         string lastName,
-        DateTime dateOfBirth) : base(id)
+        DateOnly dateOfBirth) : base(id)
     {
         UserId = userId;
         PhoneNumber = phoneNumber;
         FirstName = firstName;
         LastName = lastName;
         DateOfBirth = dateOfBirth;
+        InternalProfileTypeId = internalProfileTypeId;
         Status = InternalProfileStatus.PendingVerification;
     }
 
     public static Result<InternalProfile> Create(
         Guid userId,
         Guid internalProfileTypeId,
-        string phoneNumber,
+        PhoneNumber phoneNumber,
         string firstName,
         string lastName,
-        DateTime dateOfBirth)
+        DateOnly dateOfBirth)
     {
         if (userId == Guid.Empty)
             return Result.Failure<InternalProfile>("UserId is required.");
@@ -67,17 +69,16 @@ public sealed class InternalProfile : AggregateRoot
         if (string.IsNullOrWhiteSpace(lastName))
             return Result.Failure<InternalProfile>("Last name is required.");
 
-        if (dateOfBirth >= DateTime.UtcNow.AddYears(-15))
+        if (dateOfBirth >= DateOnly.FromDateTime(DateTime.UtcNow.AddYears(-15)))
             return Result.Failure<InternalProfile>("User must be at least 15 years old.");
 
-        var phoneResult = PhoneNumber.Create(phoneNumber);
-        if (phoneResult.IsFailure)
-            return Result.Failure<InternalProfile>(phoneResult.Error);
+
 
         var profile = new InternalProfile(
             Guid.NewGuid(),
             userId,
-            phoneResult.Value,
+            internalProfileTypeId,
+            phoneNumber,
             firstName.Trim(),
             lastName.Trim(),
             dateOfBirth);
@@ -85,7 +86,7 @@ public sealed class InternalProfile : AggregateRoot
         profile.AddDomainEvent(new InternalProfileCreatedDomainEvent(
             profile.Id,
             userId,
-            phoneNumber));
+            phoneNumber.GetFullNumber()));
 
         return Result.Success(profile);
     }

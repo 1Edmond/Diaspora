@@ -24,6 +24,8 @@ public sealed class ProcedureDbContext(
     public DbSet<ProcedureRequiredDocument> ProcedureRequiredDocuments => Set<ProcedureRequiredDocument>();
     public DbSet<ServiceParameter> ServiceParameters => Set<ServiceParameter>();
 
+    public DbSet<ProcedureLocation> ProcedureLocations => Set<ProcedureLocation>();
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);

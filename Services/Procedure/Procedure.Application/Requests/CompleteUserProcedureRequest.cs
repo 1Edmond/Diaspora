@@ -4,4 +4,4 @@ using System.Text;
 
 namespace Procedure.Application.Requests;
 
-public sealed record CompleteUserProcedureRequest(string? Notes);
+public sealed record CompleteUserProcedureRequest(Guid ProfileId ,string? Notes);

@@ -21,7 +21,7 @@ public static class UserMapper
             KYCApprovedAt = user.KYCApprovedAt,
             FirstName = user.FirstName?.ClearValue,
             LastName = user.LastName,
-            //PhoneNumber = user.PhoneNumber?.Value,
+            PhoneNumber = user.PhoneNumber,
             LastLoginAt = user.LastLoginAt,
             CreatedAt = user.CreatedAt
         };

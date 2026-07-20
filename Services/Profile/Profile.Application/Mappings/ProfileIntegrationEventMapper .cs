@@ -25,7 +25,7 @@ public sealed class ProfileIntegrationEventMapper : IIntegrationEventMapper
             e.ProfileId, e.InternalProfileId, e.UserId, e.ExternalProfileTypeId, e.Kind.ToString()),
 
         ExternalProfileActivatedDomainEvent e => new ExternalProfileActivatedIntegrationEvent(
-            e.ProfileId, e.UserId, e.CountryCode, e.ActivatedAt),
+            e.ProfileId, e.UserId, e.ProfileTypeId, e.CountryCode, e.Currency , e.ActivatedAt),
 
         ExternalProfileKindChangedDomainEvent e => new ExternalProfileKindChangedIntegrationEvent(
             e.ProfileId, e.UserId, e.OldKind.ToString(), e.NewKind.ToString()),

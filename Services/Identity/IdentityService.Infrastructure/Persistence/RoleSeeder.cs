@@ -6,16 +6,10 @@ using Shared.Domain.Constants;
 
 namespace IdentityService.Infrastructure.Seed;
 
-public class RoleSeeder
+public class RoleSeeder(IdentityDbContext context, ILogger<RoleSeeder> logger)
 {
-    private readonly IdentityDbContext _context;
-    private readonly ILogger<RoleSeeder> _logger;
-
-    public RoleSeeder(IdentityDbContext context, ILogger<RoleSeeder> logger)
-    {
-        _context = context;
-        _logger = logger;
-    }
+    private readonly IdentityDbContext _context = context;
+    private readonly ILogger<RoleSeeder> _logger = logger;
 
     public async Task SeedAsync()
     {

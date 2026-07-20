@@ -14,11 +14,11 @@ using System.Text;
 namespace Profile.Infrastructure.Repositories;
 
 public sealed class InternalProfileRepository(
-    ProfileDbContext context,
+    DbContext context,
     IEncryptionService encryptionService,
     IKeyManagementService keyManagement,
     IEncryptionMetadataRepository metadataRepository,
-    ILogger<Repository<InternalProfile>> logger,
+    ILogger<InternalProfileRepository> logger,
     IDistributedCache cache
     )
     : Repository<InternalProfile>(
@@ -30,7 +30,7 @@ public sealed class InternalProfileRepository(
         cache
         ), IInternalProfileRepository
 {
-    private readonly ProfileDbContext _context = context;
+    private readonly ProfileDbContext _context = (ProfileDbContext)context;
 
     public async Task<InternalProfile?> GetByUserIdAsync(
         Guid userId,

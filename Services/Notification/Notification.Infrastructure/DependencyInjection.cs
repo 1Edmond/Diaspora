@@ -9,10 +9,13 @@ using Notification.Application;
 using Notification.Application.Abstractions;
 using Notification.Application.Dispatcher;
 using Notification.Application.Handlers;
+using Notification.Application.Services;
 using Notification.Infrastructure.Handlers.Identity;
+using Notification.Infrastructure.Mappers;
 using Notification.Infrastructure.NotificationSenders;
 using Notification.Infrastructure.Persistence;
 using Notification.Infrastructure.Processors;
+using Notification.Infrastructure.Realtime;
 using Notification.Infrastructure.Services;
 using Npgsql;
 using Shared.Application.Abstractions;
@@ -22,6 +25,7 @@ using Shared.Infrastructure;
 using Shared.Infrastructure.Inbox;
 using Shared.Messaging.Constants;
 using Shared.Security;
+using StackExchange.Redis;
 using System.Reflection;
 using System.Threading.Tasks;
 using Wolverine;
@@ -43,13 +47,23 @@ public static class DependencyInjection
 
         var elasticSearchSettings = configuration.GetConnectionString("elasticsearch");
 
-        
+        services.AddScoped<INotificationApplicationDbContext, NotificationDbContext>();
+        services.AddSingleton<IConnectionManager, ConnectionManager>();
+        services.AddSingleton<INotificationRealtimePublisher, RedisNotificationPublisher>();
+        services.AddHostedService<RedisNotificationSubscriberService>();
+        services.AddScoped<IInAppNotificationPayloadMapper, ProfileCreatedPayloadMapper>();
+        services.AddScoped<IRealtimeNotificationOutbox, RealtimeNotificationOutbox>();
+        services.AddScoped<INotificationQueryService, NotificationQueryService>();
+        services.AddScoped<INotificationCommandService, NotificationCommandService>();
+        services.AddScoped<INotificationHistoryService>(sp =>
+            (INotificationHistoryService)sp.GetRequiredService<INotificationQueryService>());
         services.AddSingleton<NotificationDispatcher>();
         services.AddScoped<INotificationSender, SmsNotificationSender>();
         services.AddScoped<INotificationSender, EmailNotificationSender>();
-        services.AddScoped<INotificationService, NotificationService>();
+        services.AddScoped<INotificationSender, InAppNotificationSender>();
         services.AddScoped<IInboxProcessor, InboxProcessor>();
         services.AddScoped<INotificationService, NotificationService>();
+        
         services.AddHostedService<InboxProcessorBackgroundService>();
 
        
@@ -69,10 +83,23 @@ public static class DependencyInjection
 
             options.PersistMessagesWithPostgresql(optimizedConnectionString, "wolverine");
 
+            options.ConfigureRabbitMq().BindExchange(ExchangesConstants.IdentityEventsExchange)
+                   .ToQueue("notification-service.identity-events")
+                   .BindExchange(ExchangesConstants.ProfileEventsExchange)
+                   .ToQueue("notification-service.profile-events");
+
+
             options.Discovery.IncludeAssembly(typeof(IdentityNotificationsEventHandler).Assembly);
+            options.Discovery.IncludeAssembly(typeof(ProfileNotificationEventHandler).Assembly);
             options.Policies.UseDurableInboxOnAllListeners();
             options.Policies.UseDurableOutboxOnAllSendingEndpoints();
-            options.ListenToRabbitQueue(QueuesConstants.DefaultRabbitMqQueue)
+            options.ListenToRabbitQueue("notification-service.identity-events")
+              .PreFetchCount(15)
+              .MaximumParallelMessages(5)
+              .ListenerCount(2)
+              .UseDurableInbox();
+            
+            options.ListenToRabbitQueue("notification-service.profile-events")
               .PreFetchCount(15)
               .MaximumParallelMessages(5)
               .ListenerCount(2)
@@ -81,6 +108,13 @@ public static class DependencyInjection
         
         services.AddPostgresDatabase<NotificationDbContext>(connectionString, migrationsAssembly);
 
+        services.AddSingleton<IConnectionMultiplexer>(sp =>
+        {
+            var config = sp.GetRequiredService<IConfiguration>();
+            var cs = config.GetConnectionString("redis")
+                ?? throw new InvalidOperationException("Redis connection string 'redis' not found in configuration.");
+            return ConnectionMultiplexer.Connect(cs);
+        });
 
     }
 

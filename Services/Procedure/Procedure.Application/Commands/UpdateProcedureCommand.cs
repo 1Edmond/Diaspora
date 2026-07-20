@@ -1,4 +1,5 @@
-﻿using Shared.Application.Abstractions;
+﻿using Procedure.Application.Requests;
+using Shared.Application.Abstractions;
 using Shared.Domain.Commons;
 using System;
 using System.Collections.Generic;
@@ -13,7 +14,8 @@ public sealed record UpdateProcedureCommand(
     decimal CostAmount,
     string CostCurrency,
     int EstimatedDurationDays,
-    Guid? LocationId,
+    List<Guid> LocationIds,
+    List<InlineLocationRequest> InlineLocations,
     List<Guid> DependencyIds,
     List<Guid> RequiredDocumentTypeIds
 ) : ICommand<Result>;

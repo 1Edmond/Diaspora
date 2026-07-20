@@ -7,8 +7,10 @@ namespace Profile.Domain.Events;
 
 public sealed record ExternalProfileActivatedDomainEvent(
     Guid ProfileId,
+    Guid ProfileTypeId,
     Guid UserId,
     string CountryCode,
+    string Currency,
     DateTime ActivatedAt
 ) : IDomainEvent
 {

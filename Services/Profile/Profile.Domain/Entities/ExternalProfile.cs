@@ -82,7 +82,7 @@ public sealed class ExternalProfile : AggregateRoot
         ArrivalValidatedAt = DateTime.UtcNow;
 
         AddDomainEvent(new ExternalProfileActivatedDomainEvent(
-            Id, UserId, countryCode, ArrivalValidatedAt.Value));
+            Id, UserId, ExternalProfileType.Id, countryCode, ExternalProfileType.Currency, ArrivalValidatedAt.Value));
 
         return Result.Success();
     }

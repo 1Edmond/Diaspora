@@ -1,6 +1,4 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
-
-  <Sdk Name="Aspire.AppHost.Sdk" Version="9.5.0" />
+<Project Sdk="Aspire.AppHost.Sdk/13.4.3">
 
   <PropertyGroup>
     <OutputType>Exe</OutputType>
@@ -11,7 +9,6 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Aspire.Hosting.AppHost" />
     <PackageReference Include="Aspire.Hosting.Elasticsearch" />
     <PackageReference Include="Aspire.Hosting.PostgreSQL" />
     <PackageReference Include="Aspire.Hosting.RabbitMQ" />
@@ -21,12 +18,16 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\Gateway\ServcicesGateway\ServcicesGateway.csproj" />
+    <ProjectReference Include="..\..\Services\Chat\Chat.Api\Chat.Api.csproj" />
     <ProjectReference Include="..\..\Services\Document\Document.API\Document.API.csproj" />
     <ProjectReference Include="..\..\Services\Identity\IdentityService.API\IdentityService.API.csproj" />
     <ProjectReference Include="..\..\Services\KYC\KYC.Api\KYC.Api.csproj" />
+    <ProjectReference Include="..\..\Services\Marketplace\Marketplace.Api\Marketplace.Api.csproj" />
     <ProjectReference Include="..\..\Services\Notification\Notification.Api\Notification.Api.csproj" />
     <ProjectReference Include="..\..\Services\Procedure\Procedure.Api\Procedure.Api.csproj" />
     <ProjectReference Include="..\..\Services\Profile\Profile.Api\Profile.Api.csproj" />
+    <ProjectReference Include="..\..\Services\Wallet\Wallet.Api\Wallet.Api.csproj" />
+    <ProjectReference Include="..\..\Backoffice\Diaspora.Backoffice\Diaspora.Backoffice.csproj" />
   </ItemGroup>
 
 

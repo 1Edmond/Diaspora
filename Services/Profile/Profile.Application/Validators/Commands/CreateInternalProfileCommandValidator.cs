@@ -14,7 +14,7 @@ public sealed class CreateInternalProfileCommandValidator
         RuleFor(x => x.UserId)
             .NotEmpty().WithMessage("UserId is required.");
 
-        RuleFor(x => x.PhoneNumber)
+        RuleFor(x => x.PhoneNumber.Value)
             .NotEmpty().WithMessage("Phone number is required.")
             .Matches(@"^\+?[1-9]\d{7,14}$").WithMessage("Invalid phone number format.");
 
@@ -32,7 +32,7 @@ public sealed class CreateInternalProfileCommandValidator
 
         RuleFor(x => x.DateOfBirth)
             .NotEmpty()
-            .LessThan(DateTime.UtcNow.AddYears(-15))
+            .LessThan(DateOnly.FromDateTime(DateTime.UtcNow.AddYears(-15)))
             .WithMessage("User must be at least 15 years old.");
     }
 }

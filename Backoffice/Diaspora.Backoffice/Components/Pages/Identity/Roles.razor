@@ -1,0 +1,396 @@
+@page "/identity/roles"
+@attribute [Authorize]
+@inject IHttpClientFactory HttpClientFactory
+@inject IJSRuntime JSRuntime
+
+<PageTitle>Rôles | Diaspora Backoffice</PageTitle>
+
+<PageBreadcrumb Title="Gestion des Rôles" SubTitle="Gestion des rôles et permissions" />
+
+<div class="row">
+    <div class="col-12">
+        <div class="page-title-box">
+            <div class="page-title-right">
+                <button class="btn btn-success" @onclick="ShowCreateModal">
+                    <i class="ti ti-plus me-1"></i> Nouveau Rôle
+                </button>
+            </div>
+            <h4 class="page-title">
+                <i class="ti ti-shield-lock me-2"></i>Liste des Rôles
+            </h4>
+        </div>
+    </div>
+</div>
+
+<!-- Roles Table -->
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-body">
+                @if (_isLoading)
+                {
+                    <div class="text-center py-5">
+                        <div class="spinner-border text-primary" role="status">
+                            <span class="visually-hidden">Chargement...</span>
+                        </div>
+                        <p class="mt-2 text-muted">Chargement des rôles...</p>
+                    </div>
+                }
+                else if (_roles.Count == 0)
+                {
+                    <div class="text-center py-5">
+                        <i class="ti ti-shield-off fs-48 text-muted"></i>
+                        <p class="mt-3 text-muted">Aucun rôle trouvé</p>
+                    </div>
+                }
+                else
+                {
+                    <div class="table-responsive">
+                        <table class="table table-centered table-striped table-hover w-100">
+                            <thead>
+                                <tr>
+                                    <th>Nom du Rôle</th>
+                                    <th>Description</th>
+                                    <th>Permissions</th>
+                                    <th>Utilisateurs</th>
+                                    <th style="width: 150px;">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var role in _roles)
+                                {
+                                    <tr>
+                                        <td>
+                                            <span class="badge bg-primary fs-14">@role.Name</span>
+                                        </td>
+                                        <td>@role.Description</td>
+                                        <td>
+                                            <span class="badge bg-info">@role.Permissions.Count permissions</span>
+                                        </td>
+                                        <td>
+                                            <span class="badge bg-secondary">@role.UserCount utilisateurs</span>
+                                        </td>
+                                        <td>
+                                            <div class="d-flex gap-1">
+                                                <button class="btn btn-sm btn-outline-primary" @onclick="() => ShowEditModal(role)" title="Modifier">
+                                                    <i class="ti ti-edit"></i>
+                                                </button>
+                                                <button class="btn btn-sm btn-outline-danger" @onclick="() => ConfirmDelete(role)" title="Supprimer">
+                                                    <i class="ti ti-trash"></i>
+                                                </button>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                }
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Create/Edit Role Modal -->
+@if (_showModal)
+{
+    <div class="modal fade show" style="display: block;" tabindex="-1">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">@(_isEditing ? "Modifier" : "Créer") un Rôle</h5>
+                    <button type="button" class="btn-close" @onclick="CloseModal"></button>
+                </div>
+                <EditForm Model="_roleModel" OnValidSubmit="SaveRole">
+                    <div class="modal-body">
+                        <DataAnnotationsValidator />
+                        
+                        <div class="mb-3">
+                            <label class="form-label">Nom du Rôle *</label>
+                            <InputText @bind-Value="_roleModel.Name" class="form-control" disabled="@_isEditing" />
+                            <ValidationMessage For="() => _roleModel.Name" class="text-danger" />
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label class="form-label">Description</label>
+                            <InputTextArea @bind-Value="_roleModel.Description" class="form-control" rows="3" />
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label class="form-label">Permissions</label>
+                            <div class="row">
+                                @foreach (var permission in _availablePermissions)
+                                {
+                                    <div class="col-md-6 mb-2">
+                                        <div class="form-check">
+                                            <input type="checkbox" 
+                                                   class="form-check-input" 
+                                                   id="perm_@permission"
+                                                   checked="@_roleModel.Permissions.Contains(permission)"
+                                                   @onchange="(e) => TogglePermission(permission, (bool)e.Value!)" />
+                                            <label class="form-check-label" for="perm_@permission">@permission</label>
+                                        </div>
+                                    </div>
+                                }
+                            </div>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" @onclick="CloseModal">Annuler</button>
+                        <button type="submit" class="btn btn-primary" disabled="@_isProcessing">
+                            @if (_isProcessing)
+                            {
+                                <span class="spinner-border spinner-border-sm me-1"></span>
+                            }
+                            @(_isEditing ? "Mettre à jour" : "Créer")
+                        </button>
+                    </div>
+                </EditForm>
+            </div>
+        </div>
+    </div>
+    <div class="modal-backdrop fade show"></div>
+}
+
+<!-- Delete Confirmation Modal -->
+@if (_showDeleteModal && _selectedRole != null)
+{
+    <div class="modal fade show" style="display: block;" tabindex="-1">
+        <div class="modal-dialog modal-sm">
+            <div class="modal-content">
+                <div class="modal-header bg-danger text-white">
+                    <h5 class="modal-title">Confirmer la suppression</h5>
+                    <button type="button" class="btn-close btn-close-white" @onclick="CloseModal"></button>
+                </div>
+                <div class="modal-body">
+                    <p>Êtes-vous sûr de vouloir supprimer ce rôle ?</p>
+                    <p class="fw-bold">@_selectedRole.Name</p>
+                    <p class="text-muted small">Cette action est irréversible.</p>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" @onclick="CloseModal">Annuler</button>
+                    <button type="button" class="btn btn-danger" @onclick="DeleteRole" disabled="@_isProcessing">
+                        @if (_isProcessing)
+                        {
+                            <span class="spinner-border spinner-border-sm me-1"></span>
+                        }
+                        Supprimer
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="modal-backdrop fade show"></div>
+}
+
+@code {
+    private HttpClient _client = default!;
+    private List<RoleViewModel> _roles = new();
+    private List<string> _availablePermissions = new()
+    {
+        "Users.View", "Users.Create", "Users.Update", "Users.Delete",
+        "Roles.View", "Roles.Create", "Roles.Update", "Roles.Delete",
+        "Profiles.View", "Profiles.Update", "Profiles.Verify",
+        "KYC.View", "KYC.Approve", "KYC.Reject",
+        "Procedures.View", "Procedures.Manage",
+        "Marketplace.View", "Marketplace.Moderate",
+        "Wallet.View", "Wallet.Deposit", "Wallet.Configure",
+        "Documents.View", "Documents.Validate",
+        "Chat.View", "Chat.Moderate",
+        "Notifications.Send", "Notifications.Manage"
+    };
+
+    private bool _isLoading = true;
+    private bool _isProcessing = false;
+    private bool _showModal = false;
+    private bool _showDeleteModal = false;
+    private bool _isEditing = false;
+    private RoleViewModel? _selectedRole;
+    private RoleModel _roleModel = new();
+
+    protected override void OnInitialized()
+    {
+        _client = HttpClientFactory.CreateClient("GatewayClient");
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadRoles();
+    }
+
+    private async Task LoadRoles()
+    {
+        _isLoading = true;
+        try
+        {
+            // Simuler des données pour l'instant
+            _roles = new List<RoleViewModel>
+            {
+                new RoleViewModel 
+                { 
+                    Id = Guid.NewGuid(), 
+                    Name = "Admin", 
+                    Description = "Administrateur avec accès complet",
+                    Permissions = _availablePermissions.ToList(),
+                    UserCount = 5
+                },
+                new RoleViewModel 
+                { 
+                    Id = Guid.NewGuid(), 
+                    Name = "Boursier", 
+                    Description = "Étudiant togolais en Russie",
+                    Permissions = new List<string> { "Profiles.View", "Wallet.View", "Documents.View" },
+                    UserCount = 856
+                },
+                new RoleViewModel 
+                { 
+                    Id = Guid.NewGuid(), 
+                    Name = "Contractuel", 
+                    Description = "Travailleur togolais en Russie",
+                    Permissions = new List<string> { "Profiles.View", "Wallet.View", "Documents.View", "Marketplace.View" },
+                    UserCount = 234
+                },
+                new RoleViewModel 
+                { 
+                    Id = Guid.NewGuid(), 
+                    Name = "Moderator", 
+                    Description = "Modérateur des services",
+                    Permissions = new List<string> { "Marketplace.View", "Marketplace.Moderate", "Chat.View", "Chat.Moderate" },
+                    UserCount = 12
+                }
+            };
+        }
+        catch (Exception ex)
+        {
+            await JSRuntime.InvokeVoidAsync("alert", $"Erreur: {ex.Message}");
+        }
+        finally
+        {
+            _isLoading = false;
+        }
+    }
+
+    private void ShowCreateModal()
+    {
+        _isEditing = false;
+        _roleModel = new RoleModel();
+        _showModal = true;
+    }
+
+    private void ShowEditModal(RoleViewModel role)
+    {
+        _isEditing = true;
+        _selectedRole = role;
+        _roleModel = new RoleModel
+        {
+            Name = role.Name,
+            Description = role.Description,
+            Permissions = new List<string>(role.Permissions)
+        };
+        _showModal = true;
+    }
+
+    private void ConfirmDelete(RoleViewModel role)
+    {
+        _selectedRole = role;
+        _showDeleteModal = true;
+    }
+
+    private void CloseModal()
+    {
+        _showModal = false;
+        _showDeleteModal = false;
+        _selectedRole = null;
+    }
+
+    private void TogglePermission(string permission, bool isChecked)
+    {
+        if (isChecked && !_roleModel.Permissions.Contains(permission))
+        {
+            _roleModel.Permissions.Add(permission);
+        }
+        else if (!isChecked && _roleModel.Permissions.Contains(permission))
+        {
+            _roleModel.Permissions.Remove(permission);
+        }
+    }
+
+    private async Task SaveRole()
+    {
+        _isProcessing = true;
+        try
+        {
+            // TODO: Implement actual API call
+            await Task.Delay(500); // Simulate API call
+            
+            if (_isEditing && _selectedRole != null)
+            {
+                _selectedRole.Description = _roleModel.Description;
+                _selectedRole.Permissions = new List<string>(_roleModel.Permissions);
+            }
+            else
+            {
+                _roles.Add(new RoleViewModel
+                {
+                    Id = Guid.NewGuid(),
+                    Name = _roleModel.Name,
+                    Description = _roleModel.Description,
+                    Permissions = new List<string>(_roleModel.Permissions),
+                    UserCount = 0
+                });
+            }
+            
+            CloseModal();
+            await JSRuntime.InvokeVoidAsync("alert", _isEditing ? "Rôle mis à jour!" : "Rôle créé!");
+        }
+        catch (Exception ex)
+        {
+            await JSRuntime.InvokeVoidAsync("alert", $"Erreur: {ex.Message}");
+        }
+        finally
+        {
+            _isProcessing = false;
+        }
+    }
+
+    private async Task DeleteRole()
+    {
+        if (_selectedRole == null) return;
+        
+        _isProcessing = true;
+        try
+        {
+            // TODO: Implement actual API call
+            await Task.Delay(500); // Simulate API call
+            _roles.Remove(_selectedRole);
+            CloseModal();
+            await JSRuntime.InvokeVoidAsync("alert", "Rôle supprimé!");
+        }
+        catch (Exception ex)
+        {
+            await JSRuntime.InvokeVoidAsync("alert", $"Erreur: {ex.Message}");
+        }
+        finally
+        {
+            _isProcessing = false;
+        }
+    }
+
+    // View Models
+    public class RoleViewModel
+    {
+        public Guid Id { get; set; }
+        public string Name { get; set; } = string.Empty;
+        public string Description { get; set; } = string.Empty;
+        public List<string> Permissions { get; set; } = new();
+        public int UserCount { get; set; }
+    }
+
+    public class RoleModel
+    {
+        [Required(ErrorMessage = "Le nom du rôle est requis")]
+        public string Name { get; set; } = string.Empty;
+        public string Description { get; set; } = string.Empty;
+        public List<string> Permissions { get; set; } = new();
+    }
+}

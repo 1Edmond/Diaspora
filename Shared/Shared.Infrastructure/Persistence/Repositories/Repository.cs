@@ -143,6 +143,30 @@ public class Repository<T>(
 
         return entity;
     }
+    public virtual async Task AddRangeAsync(List<T> entities, CancellationToken cancellationToken = default)
+    {
+        if (_hasSensitiveData)
+        {
+            entities.ForEach(async entity =>
+            {
+
+                await EncryptedValueObjectHelper.EncryptEntityAsync(
+                    entity,
+                    EncryptionService,
+                    KeyManagement,
+                    MetadataRepository,
+                    cancellationToken);
+            });
+        }
+
+        await DbSet.AddRangeAsync(entities, cancellationToken);
+
+        Logger.LogInformation(
+            "Entity {EntityType} with id added (has sensitive data)",
+            typeof(T).Name);
+
+      
+    }
 
     public virtual async Task UpdateAsync(T entity, CancellationToken cancellationToken = default)
     {

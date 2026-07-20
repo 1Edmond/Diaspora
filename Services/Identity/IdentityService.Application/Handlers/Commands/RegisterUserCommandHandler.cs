@@ -30,9 +30,10 @@ public class RegisterUserCommandHandler(
         var userResult = User.Create(
             command.Email,
             passwordHash,
+            command.DateOfBirth,
             command.FirstName,
-            command.LastName
-           // command.PhoneNumber
+            command.LastName,
+            command.PhoneNumber
             );
 
         if (userResult.IsFailure)

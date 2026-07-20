@@ -37,7 +37,7 @@ public sealed class UploadDocumentCommandHandler(
              stream,
              command.File.FileName,
              command.File.ContentType,
-             entityId: command.ExternalProfileId.ToString(),
+             entityId: command.ProfileId.ToString(),
              entityType: FileEntityType,
              cancellationToken);
 
@@ -45,7 +45,7 @@ public sealed class UploadDocumentCommandHandler(
             return Result.Failure<UploadDocumentResponse>(uploadResult.Error);
 
         var documentResult = Domain.Entities.Document.Create(
-                    command.ExternalProfileId,
+                    command.ProfileId,
                     documentType,
                     filePath: uploadResult.Value,
                     fileName: command.File.FileName,

@@ -14,24 +14,19 @@ public sealed class Procedure : AggregateRoot
     public string Description { get; private set; } = string.Empty;
     public Money Cost { get; private set; } = null!;
     public ProcedureProfileType ProfileType { get; private set; }
-
-    /// <summary>
-    /// InternalProfileType.Id si ProfileType = Internal
-    /// ExternalProfileType.Id si ProfileType = External
-    /// </summary>
     public Guid ProfileTypeId { get; private set; }
-
     public int EstimatedDurationDays { get; private set; }
     public bool IsActive { get; private set; }
-    public Guid? LocationId { get; private set; }
 
-    // Navigation EF Core
-    public Location? Location { get; private set; }
-    private readonly List<ProcedureDependency> _dependencies = [];
-    public IReadOnlyList<ProcedureDependency> Dependencies => _dependencies.AsReadOnly();
+    // N-à-N vers Location
+    private readonly List<ProcedureLocation> _locations = new();
+    public IReadOnlyCollection<ProcedureLocation> Locations => _locations.AsReadOnly();
 
-    private readonly List<ProcedureRequiredDocument> _requiredDocuments = [];
-    public IReadOnlyList<ProcedureRequiredDocument> RequiredDocuments => _requiredDocuments.AsReadOnly();
+    private readonly List<ProcedureDependency> _dependencies = new();
+    public IReadOnlyCollection<ProcedureDependency> Dependencies => _dependencies.AsReadOnly();
+
+    private readonly List<ProcedureRequiredDocument> _requiredDocuments = new();
+    public IReadOnlyCollection<ProcedureRequiredDocument> RequiredDocuments => _requiredDocuments.AsReadOnly();
 
     private Procedure() { }
 
@@ -42,8 +37,7 @@ public sealed class Procedure : AggregateRoot
         Money cost,
         ProcedureProfileType profileType,
         Guid profileTypeId,
-        int estimatedDurationDays,
-        Guid? locationId) : base(id)
+        int estimatedDurationDays) : base(id)
     {
         Title = title;
         Description = description;
@@ -51,7 +45,6 @@ public sealed class Procedure : AggregateRoot
         ProfileType = profileType;
         ProfileTypeId = profileTypeId;
         EstimatedDurationDays = estimatedDurationDays;
-        LocationId = locationId;
         IsActive = true;
     }
 
@@ -61,36 +54,49 @@ public sealed class Procedure : AggregateRoot
         Money cost,
         ProcedureProfileType profileType,
         Guid profileTypeId,
-        int estimatedDurationDays,
-        Guid? locationId)
+        int estimatedDurationDays)
     {
         if (string.IsNullOrWhiteSpace(title))
-            return Result.Failure<Procedure>("Procedure title is required.");
-
-        if (profileTypeId == Guid.Empty)
-            return Result.Failure<Procedure>("ProfileTypeId is required.");
+            return Result.Failure<Procedure>("Title is required.");
 
         if (estimatedDurationDays < 0)
             return Result.Failure<Procedure>("Estimated duration cannot be negative.");
 
         return Result.Success(new Procedure(
             Guid.NewGuid(), title, description, cost,
-            profileType, profileTypeId, estimatedDurationDays, locationId));
+            profileType, profileTypeId, estimatedDurationDays));
     }
 
     public void Update(
         string title,
         string description,
         Money cost,
-        int estimatedDurationDays,
-        Guid? locationId)
+        int estimatedDurationDays)
     {
         Title = title;
         Description = description;
         Cost = cost;
         EstimatedDurationDays = estimatedDurationDays;
-        LocationId = locationId;
     }
+
+    // ── Locations ──────────────────────────────────────────────────────────────
+
+    public Result AddLocation(Guid locationId)
+    {
+        if (_locations.Any(l => l.LocationId == locationId))
+            return Result.Failure("This location is already associated with the procedure.");
+
+        _locations.Add(new ProcedureLocation(Id, locationId));
+        return Result.Success();
+    }
+
+    public void RemoveLocation(Guid locationId)
+        => _locations.RemoveAll(l => l.LocationId == locationId);
+
+    public void ClearLocations()
+        => _locations.Clear();
+
+    // ── Dependencies ───────────────────────────────────────────────────────────
 
     public Result AddDependency(Guid dependsOnProcedureId)
     {
@@ -107,17 +113,18 @@ public sealed class Procedure : AggregateRoot
     public void RemoveDependency(Guid dependsOnProcedureId)
         => _dependencies.RemoveAll(d => d.DependsOnProcedureId == dependsOnProcedureId);
 
-    public Result AddRequiredDocument(Guid documentTypeId)
-    {
-        if (_requiredDocuments.Any(d => d.DocumentTypeId == documentTypeId))
-            return Result.Failure("This document type is already required.");
+    public void ClearDependencies()
+        => _dependencies.Clear();
 
-        _requiredDocuments.Add(new ProcedureRequiredDocument(Id, documentTypeId));
-        return Result.Success();
+   
+    public void AddRequiredDocument(Guid documentTypeId)
+    {
+        if (!_requiredDocuments.Any(d => d.DocumentTypeId == documentTypeId))
+            _requiredDocuments.Add(new ProcedureRequiredDocument(Id, documentTypeId));
     }
 
-    public void RemoveRequiredDocument(Guid documentTypeId)
-        => _requiredDocuments.RemoveAll(d => d.DocumentTypeId == documentTypeId);
+    public void ClearRequiredDocuments()
+        => _requiredDocuments.Clear();
 
     public void Activate() => IsActive = true;
     public void Deactivate() => IsActive = false;

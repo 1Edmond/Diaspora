@@ -1,6 +1,7 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 using Profile.Domain.Entities;
+using Shared.Messaging.Constants;
 using System;
 using System.Collections.Generic;
 using System.Text;
@@ -26,10 +27,9 @@ public sealed class InternalProfileTypeConfiguration : IEntityTypeConfiguration<
         builder.Property(x => x.UpdatedAt).HasColumnType("timestamptz");
         builder.Property(x => x.UpdatedBy).HasMaxLength(255);
 
-        // Seed — Togo comme unique pays d'origine
         builder.HasData(new
         {
-            Id = Guid.Parse("20000000-0000-0000-0000-000000000001"),
+            Id = ServiceDataConstants.TgInternalProfileTypeId,
             CountryName = "Togo",
             CountryCode = "TG",
             PhoneIndicatif = "+228",

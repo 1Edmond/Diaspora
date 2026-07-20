@@ -10,7 +10,7 @@ public class VerifyEmailCommandValidator : AbstractValidator<VerifyEmailCommand>
 {
     public VerifyEmailCommandValidator()
     {
-        RuleFor(x => x.UserId)
+        RuleFor(x => x.Email)
             .NotEmpty();
 
         RuleFor(x => x.Code)
