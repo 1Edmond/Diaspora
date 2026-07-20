@@ -10,7 +10,7 @@ using System.Text;
 namespace Profile.Infrastructure.Consumers;
 
 public sealed class KycArrivalProofApprovedConsumer(
-    ActivateExternalProfileCommandHandler handler,
+    ActivateProfileCommandHandler handler,
     IIdempotencyService idempotency,
     ILogger<KycArrivalProofApprovedConsumer> logger)
 {
@@ -18,24 +18,25 @@ public sealed class KycArrivalProofApprovedConsumer(
     {
         logger.LogInformation(
             "Received KycArrivalProofApproved for ExternalProfile {ExternalProfileId}",
-            @event.ExternalProfileId);
+            @event.ProfileId);
 
         await idempotency.ProcessOnceAsync(
             @event.EventId,
             nameof(KycArrivalProofApprovedIntegrationEvent),
             async () =>
             {
-                var command = new ActivateExternalProfileCommand(
-                    @event.ExternalProfileId,
-                    @event.KycVerificationId,
-                    @event.CountryCode);
+                var command = new ActivateProfileCommand(
+                    @event.ProfileId
+                   // @event.KycVerificationId,
+                    //@event.CountryCode
+                    );
 
                 var result = await handler.Handle(command, CancellationToken.None);
 
                 if (result.IsFailure)
                     logger.LogWarning(
                         "Failed to activate ExternalProfile {ExternalProfileId}: {Error}",
-                        @event.ExternalProfileId,
+                        @event.ProfileId,
                         result.Error);
 
                 return result;

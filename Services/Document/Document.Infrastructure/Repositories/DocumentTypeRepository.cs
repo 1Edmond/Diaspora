@@ -13,7 +13,7 @@ using System.Text;
 namespace Document.Infrastructure.Repositories;
 
 public sealed class DocumentTypeRepository(
-    DocumentDbContext context,
+    DbContext context,
     IEncryptionService encryptionService,
     IKeyManagementService keyManagement,
     IEncryptionMetadataRepository metadataRepository,
@@ -27,7 +27,7 @@ public sealed class DocumentTypeRepository(
         logger,
         cache), IDocumentTypeRepository
 {
-    private readonly DocumentDbContext _context = context;
+    private readonly DocumentDbContext _context = (DocumentDbContext)context;
 
     public async Task<DocumentType?> GetByCodeAsync(
         string code, CancellationToken cancellationToken = default)

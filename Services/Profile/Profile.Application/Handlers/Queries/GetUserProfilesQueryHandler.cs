@@ -10,20 +10,16 @@ using System.Text;
 namespace Profile.Application.Handlers.Queries;
 
 public sealed class GetUserProfilesQueryHandler(
-    IInternalProfileRepository internalRepo,
-    IExternalProfileRepository externalRepo)
+    IProfileRepository internalRepo)
 {
     public async Task<Result<UserProfilesDto>> Handle(
         GetUserProfilesQuery query,
         CancellationToken cancellationToken)
     {
-        var internalProfile = await internalRepo.GetByUserIdAsync(query.UserId, cancellationToken);
+        var profiles = await internalRepo.GetByUserIdAsync(query.UserId, cancellationToken);
 
-        var internalDto = internalProfile?.ToDto();
+        var profilesDto = profiles?.Select(p => p.ToDto()).ToList();
 
-        var externalProfiles = await externalRepo.GetByUserIdAsync(query.UserId, cancellationToken);
-        var externalDtos = externalProfiles.Select(p => p.ToDto()).ToList();
-
-        return Result.Success(new UserProfilesDto(internalDto, externalDtos));
+        return Result.Success(new UserProfilesDto(profilesDto));
     }
 }

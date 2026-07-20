@@ -105,7 +105,7 @@ public static class DependencyInjection
       Assembly? migrationsAssembly = null)
       where TContext : DbContext
     {
-        services.AddDbContextWithWolverineIntegration<TContext>(options =>
+        services.AddDbContext<TContext>(options =>
         {
             options.UseNpgsql(connectionString, npgsqlOptions =>
             {
@@ -115,12 +115,6 @@ public static class DependencyInjection
                     npgsqlOptions.MigrationsAssembly(
                         migrationsAssembly.GetName().Name);
                 }
-
-                //npgsqlOptions.EnableRetryOnFailure(
-                //    maxRetryCount: 3,
-                //    maxRetryDelay: TimeSpan.FromSeconds(5),
-                //    errorCodesToAdd: null);
-
                 npgsqlOptions.CommandTimeout(30);
             });
 
@@ -138,43 +132,6 @@ public static class DependencyInjection
         return services;
     }
 
-   
-    public static IServiceCollection AddSqlServerDatabase<TContext>(
-        this IServiceCollection services,
-        string connectionString,
-        Assembly? migrationsAssembly = null)
-        where TContext : DbContext
-    {
-        services.AddDbContext<TContext>(options =>
-        {
-            options.UseSqlServer(connectionString, sqlOptions =>
-            {
-                if (migrationsAssembly != null)
-                {
-                    sqlOptions.MigrationsAssembly(migrationsAssembly.GetName().Name);
-                }
-
-                sqlOptions.EnableRetryOnFailure(
-                    maxRetryCount: 3,
-                    maxRetryDelay: TimeSpan.FromSeconds(5),
-                    errorNumbersToAdd: null);
-
-                sqlOptions.CommandTimeout(30);
-            });
-
-            options.EnableSensitiveDataLogging(false);
-            options.EnableDetailedErrors(false);
-        });
-
-        //services.AddScoped<DbContext>(provider => provider.GetRequiredService<TContext>());
-        var context = services.BuildServiceProvider().GetRequiredService<TContext>();
-
-        
-        context.Database.EnsureCreated();
-
-
-        return services;
-    }
 
     public static WolverineOptions AddCoreMessaging(
       this IServiceCollection services,

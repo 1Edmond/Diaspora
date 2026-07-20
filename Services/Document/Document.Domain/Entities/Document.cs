@@ -11,7 +11,7 @@ namespace Document.Domain.Entities;
 
 public sealed class Document : AggregateRoot
 {
-    public Guid ExternalProfileId { get; private set; }
+    public Guid ProfileId { get; private set; }
     public Guid DocumentTypeId { get; private set; }
     public DocumentStatus Status { get; private set; }
 
@@ -51,7 +51,7 @@ public sealed class Document : AggregateRoot
         DateTime? issuedAt,
         string? issuedBy) : base(id)
     {
-        ExternalProfileId = externalProfileId;
+        ProfileId = externalProfileId;
         DocumentTypeId = documentTypeId;
         Status = DocumentStatus.Pending;
         FilePath = filePath;
@@ -126,7 +126,7 @@ public sealed class Document : AggregateRoot
 
         AddDomainEvent(new DocumentValidatedDomainEvent(
             Id,
-            ExternalProfileId,
+            ProfileId,
             DocumentType?.Name ?? string.Empty,
             ExpiresAt));
 
@@ -148,7 +148,7 @@ public sealed class Document : AggregateRoot
 
         AddDomainEvent(new DocumentRejectedDomainEvent(
             Id,
-            ExternalProfileId,
+            ProfileId,
             DocumentType?.Name ?? string.Empty,
             reason));
 
@@ -167,7 +167,7 @@ public sealed class Document : AggregateRoot
 
         AddDomainEvent(new DocumentExpiredDomainEvent(
             Id,
-            ExternalProfileId,
+            ProfileId,
             DocumentType?.Name ?? string.Empty,
             DateTime.UtcNow));
 
@@ -190,7 +190,7 @@ public sealed class Document : AggregateRoot
 
         AddDomainEvent(new DocumentRenewalAlertDomainEvent(
             Id,
-            ExternalProfileId,
+            ProfileId,
             DocumentType?.Name ?? string.Empty,
             ExpiresAt.Value,
             daysRemaining));
@@ -203,7 +203,7 @@ public sealed class Document : AggregateRoot
         if (Status == DocumentStatus.Active)
             return Result.Failure("Active documents cannot be deleted. Reject it first.");
 
-        AddDomainEvent(new DocumentDeletedDomainEvent(Id, ExternalProfileId));
+        AddDomainEvent(new DocumentDeletedDomainEvent(Id, ProfileId));
 
         return Result.Success();
     }

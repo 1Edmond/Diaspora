@@ -44,16 +44,14 @@ public static class DependencyInjection
                 "Profile database connection string is not configured.");
 
         // ── Repositories ──────────────────────────────────────────────────────
-        services.AddScoped<IInternalProfileRepository, InternalProfileRepository>();
-        services.AddScoped<IExternalProfileRepository, ExternalProfileRepository>();
-        services.AddScoped<IInternalProfileTypeRepository, InternalProfileTypeRepository>();
-        services.AddScoped<IExternalProfileTypeRepository, ExternalProfileTypeRepository>();
+        services.AddScoped<IProfileRepository, ProfileRepository>();
+        services.AddScoped<IProfileTypeRepository, ProfileTypeRepository>();
 
         // ── Integration Event Mapper (Outbox) ─────────────────────────────────
         services.AddScoped<IIntegrationEventMapper, ProfileIntegrationEventMapper>();
 
         // ── Handler enregistré explicitement pour le consumer RabbitMQ ────────
-        services.AddScoped<ActivateExternalProfileCommandHandler>();
+        services.AddScoped<ActivateProfileCommandHandler>();
         services.AddScoped<KycArrivalProofApprovedConsumer>();
        
         // ── Core infrastructure (Wolverine, RabbitMQ, Outbox, Logging…) ───────
@@ -93,7 +91,7 @@ public static class DependencyInjection
 
             // Scan des handlers Application + Infrastructure + migrations
             options.Discovery.IncludeAssembly(
-                typeof(ActivateExternalProfileCommandHandler).Assembly);
+                typeof(ActivateProfileCommandHandler).Assembly);
             options.Discovery.IncludeAssembly(
                 typeof(KycArrivalProofApprovedConsumer).Assembly);
 

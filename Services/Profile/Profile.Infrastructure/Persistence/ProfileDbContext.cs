@@ -17,10 +17,8 @@ public sealed class ProfileDbContext(
     ICurrentUserService currentUserService)
     : BaseDbContext(options, integrationEventMapper, dateTimeProvider, logger, currentUserService)
 {
-    public DbSet<InternalProfileType> InternalProfileTypes => Set<InternalProfileType>();
-    public DbSet<InternalProfile> InternalProfiles => Set<InternalProfile>();
-    public DbSet<ExternalProfile> ExternalProfiles => Set<ExternalProfile>();
-    public DbSet<ExternalProfileType> ExternalProfileTypes => Set<ExternalProfileType>();
+    public DbSet<ProfileType> ProfileTypes => Set<ProfileType>();
+    public DbSet<Domain.Entities.Profile> InternalProfiles => Set<Domain.Entities.Profile>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {

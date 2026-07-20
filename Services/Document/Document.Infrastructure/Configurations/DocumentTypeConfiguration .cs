@@ -95,5 +95,7 @@ public sealed class DocumentTypeConfiguration : IEntityTypeConfiguration<Documen
                 UpdatedBy = (string?)null
             }
         );
+    
+    
     }
 }

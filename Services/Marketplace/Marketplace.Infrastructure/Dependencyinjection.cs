@@ -64,7 +64,7 @@ public static class DependencyInjection
                 ConnectionPruningInterval = 10
             }.ToString();
 
-            options.PersistMessagesWithPostgresql(optimizedConnectionString, "wolverine");
+            options.PersistMessagesWithPostgresql(optimizedConnectionString, "wolverine_marketplace");
 
             options.ListenToRabbitQueue(ExchangesConstants.MarketplaceEventsExchange)
                 .PreFetchCount(15)

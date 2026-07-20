@@ -11,7 +11,7 @@ public static class DocumentMappingExtensions
     public static DocumentDto ToDto(this Domain.Entities.Document doc) =>
          new(
              doc.Id,
-             doc.ExternalProfileId,
+             doc.ProfileId,
              doc.DocumentTypeId,
              doc.DocumentType?.Name ?? string.Empty,
              doc.DocumentType?.Code ?? string.Empty,

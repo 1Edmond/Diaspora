@@ -9,23 +9,24 @@ using System.Text;
 
 namespace Profile.Application.Handlers.IntegrationEvents;
 
-public class UserActivatedIntegrationEventHandler(IInternalProfileTypeRepository internalProfileTypeRepository)
+public class UserActivatedIntegrationEventHandler(IProfileTypeRepository internalProfileTypeRepository)
 {
 
-    public async Task<CreateInternalProfileCommand?> HandleAsync(UserActivatedIntegrationEvent message, CancellationToken cancellationToken)
+    public async Task<CreateProfileCommand?> HandleAsync(UserActivatedIntegrationEvent message, CancellationToken cancellationToken)
     {
-        var internalProfileType = await internalProfileTypeRepository.GetByPhoneIndicatifAsync(message.PhoneNumber.CountryCode, cancellationToken);
+        var profileType = await internalProfileTypeRepository.GetByPhoneIndicatifAsync(message.PhoneNumber.CountryCode, cancellationToken);
 
-        if (internalProfileType == null)
+        if (profileType == null)
             return null;
 
-        return new CreateInternalProfileCommand(
+        return new CreateProfileCommand(
             message.UserId,
-            internalProfileType.Id,
+            profileType.Id,
             message.PhoneNumber,
             message.FirstName,
             message.LastName,
-            message.DateOfBirth
+            message.DateOfBirth,
+            Domain.Enums.ProfileKind.Boursier
             );
     }
 

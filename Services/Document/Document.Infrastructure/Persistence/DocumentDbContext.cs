@@ -22,7 +22,7 @@ public sealed class DocumentDbContext(
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);
-        modelBuilder.ApplyConfigurationsFromAssembly(typeof(DocumentDbContext).Assembly);
+        //modelBuilder.ApplyConfigurationsFromAssembly(typeof(DocumentDbContext).Assembly);
         modelBuilder.HasDefaultSchema("document");
     }
 }

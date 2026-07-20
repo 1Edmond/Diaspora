@@ -13,7 +13,7 @@ using System.Text;
 namespace Document.Infrastructure.Repositories;
 
 public sealed class DocumentRepository(
-    DocumentDbContext context,
+    DbContext context,
     IEncryptionService encryptionService,
     IKeyManagementService keyManagement,
     IEncryptionMetadataRepository metadataRepository,
@@ -27,13 +27,13 @@ public sealed class DocumentRepository(
         logger,
         cache), IDocumentRepository
 {
-    private readonly DocumentDbContext _context = context;
+    private readonly DocumentDbContext _context = (DocumentDbContext)context;
 
     public async Task<IEnumerable<Domain.Entities.Document>> GetByExternalProfileIdAsync(
         Guid externalProfileId, CancellationToken cancellationToken = default)
         => await _context.Documents
             .Include(x => x.DocumentType)
-            .Where(x => x.ExternalProfileId == externalProfileId)
+            .Where(x => x.ProfileId == externalProfileId)
             .OrderByDescending(x => x.CreatedAt)
             .ToListAsync(cancellationToken);
 
@@ -41,7 +41,7 @@ public sealed class DocumentRepository(
         Guid externalProfileId, Guid documentTypeId, CancellationToken cancellationToken = default)
         => await _context.Documents
             .Include(x => x.DocumentType)
-            .Where(x => x.ExternalProfileId == externalProfileId
+            .Where(x => x.ProfileId == externalProfileId
                      && x.DocumentTypeId == documentTypeId)
             .ToListAsync(cancellationToken);
 

@@ -12,26 +12,20 @@ public sealed class ProfileIntegrationEventMapper : IIntegrationEventMapper
 {
     public IIntegrationEvent? Map(IDomainEvent domainEvent) => domainEvent switch
     {
-        InternalProfileCreatedDomainEvent e => new InternalProfileCreatedIntegrationEvent(
+        ProfileCreatedDomainEvent e => new InternalProfileCreatedIntegrationEvent(
             e.ProfileId, e.UserId, e.PhoneNumber),
 
-        InternalProfileVerifiedDomainEvent e => new InternalProfileVerifiedIntegrationEvent(
+        ProfileVerifiedDomainEvent e => new InternalProfileVerifiedIntegrationEvent(
             e.ProfileId, e.UserId, e.VerifiedByAdminId, e.VerifiedAt),
 
-        InternalProfileSuspendedDomainEvent e => new InternalProfileSuspendedIntegrationEvent(
+        ProfileSuspendedDomainEvent e => new InternalProfileSuspendedIntegrationEvent(
             e.ProfileId, e.UserId),
 
-        ExternalProfileCreatedDomainEvent e => new ExternalProfileCreatedIntegrationEvent(
-            e.ProfileId, e.InternalProfileId, e.UserId, e.ExternalProfileTypeId, e.Kind.ToString()),
-
-        ExternalProfileActivatedDomainEvent e => new ExternalProfileActivatedIntegrationEvent(
+        ProfileActivatedDomainEvent e => new ExternalProfileActivatedIntegrationEvent(
             e.ProfileId, e.UserId, e.ProfileTypeId, e.CountryCode, e.Currency , e.ActivatedAt),
 
-        ExternalProfileKindChangedDomainEvent e => new ExternalProfileKindChangedIntegrationEvent(
+        ProfileKindChangedDomainEvent e => new ProfileKindChangedIntegrationEvent(
             e.ProfileId, e.UserId, e.OldKind.ToString(), e.NewKind.ToString()),
-
-        ExternalProfileSuspendedDomainEvent e => new ExternalProfileSuspendedIntegrationEvent(
-            e.ProfileId, e.UserId),
 
         _ => null
     };

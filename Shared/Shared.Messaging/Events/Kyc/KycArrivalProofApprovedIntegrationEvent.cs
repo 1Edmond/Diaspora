@@ -7,7 +7,7 @@ namespace Shared.Messaging.Events.Kyc;
 public sealed record KycArrivalProofApprovedIntegrationEvent(
     Guid KycVerificationId,
     Guid UserId,
-    Guid ExternalProfileId,
+    Guid ProfileId,
     string CountryCode,
     DateTime ApprovedAt
 ) : IntegrationEvent;

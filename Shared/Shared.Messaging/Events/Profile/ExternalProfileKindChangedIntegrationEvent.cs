@@ -4,7 +4,7 @@ using System.Text;
 
 namespace Shared.Messaging.Events.Profile;
 
-public sealed record ExternalProfileKindChangedIntegrationEvent(
+public sealed record ProfileKindChangedIntegrationEvent(
     Guid ProfileId,
     Guid UserId,
     string OldKind,

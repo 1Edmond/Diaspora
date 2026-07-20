@@ -70,7 +70,7 @@ public static class DependencyInjection
                 ConnectionPruningInterval = 10
             }.ToString();
 
-            options.PersistMessagesWithPostgresql(optimizedConnectionString, "wolverine");
+            options.PersistMessagesWithPostgresql(optimizedConnectionString, "wolverine_identity");
             
             options.ListenToRabbitQueue(ExchangesConstants.IdentityEventsExchange)
               .PreFetchCount(20)

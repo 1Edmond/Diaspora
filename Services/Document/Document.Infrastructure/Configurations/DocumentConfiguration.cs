@@ -17,12 +17,12 @@ public sealed class DocumentConfiguration
 
         builder.ToTable ("documents");
 
-        builder.HasIndex(x => x.ExternalProfileId);
+        builder.HasIndex(x => x.ProfileId);
         builder.HasIndex(x => x.DocumentTypeId);
         builder.HasIndex(x => x.Status);
         builder.HasIndex(x => x.ExpiresAt);
 
-        builder.Property(x => x.ExternalProfileId).IsRequired();
+        builder.Property(x => x.ProfileId).IsRequired();
         builder.Property(x => x.DocumentTypeId).IsRequired();
 
         builder.Property(x => x.Status)

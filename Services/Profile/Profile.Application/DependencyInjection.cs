@@ -45,7 +45,7 @@ public static class DependencyInjection
         options.PublishMessage<ExternalProfileActivatedIntegrationEvent>()
             .ToRabbitExchange(ExchangesConstants.ProfileEventsExchange).UseDurableOutbox();
 
-        options.PublishMessage<ExternalProfileKindChangedIntegrationEvent>()
+        options.PublishMessage<ProfileKindChangedIntegrationEvent>()
             .ToRabbitExchange(ExchangesConstants.ProfileEventsExchange).UseDurableOutbox();
 
         options.PublishMessage<ExternalProfileSuspendedIntegrationEvent>()

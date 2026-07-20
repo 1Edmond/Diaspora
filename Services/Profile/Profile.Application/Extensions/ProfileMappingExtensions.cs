@@ -8,11 +8,11 @@ namespace Profile.Application.Extensions;
 
 public static class ProfileMappingExtensions
 {
-    public static InternalProfileDto ToDto(this InternalProfile profile) =>
+    public static ProfileDto ToDto(this Domain.Entities.Profile profile) =>
         new(
             profile.Id,
             profile.UserId,
-            profile.InternalProfileTypeId,
+            profile.ProfileTypeId,
             profile.PhoneNumber.Value,
             profile.FirstName,
             profile.LastName,
@@ -20,21 +20,5 @@ public static class ProfileMappingExtensions
             profile.Status,
             profile.VerifiedAt,
             profile.VerifiedByAdminId,
-            profile.CreatedAt);
-
-    public static ExternalProfileDto ToDto(this ExternalProfile profile) =>
-        new(
-            profile.Id,
-            profile.InternalProfileId,
-            profile.UserId,
-            profile.ExternalProfileTypeId,
-            profile.ExternalProfileType?.CountryName ?? string.Empty,
-            profile.ExternalProfileType?.CountryCode ?? string.Empty,
-            profile.ExternalProfileType?.PhoneIndicatif ?? string.Empty,
-            profile.ExternalProfileType?.Currency ?? string.Empty,
-            profile.Kind,
-            profile.Status,
-            profile.CanOfferServices,
-            profile.ArrivalValidatedAt,
             profile.CreatedAt);
 }
