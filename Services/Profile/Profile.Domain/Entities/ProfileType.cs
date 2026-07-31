@@ -46,4 +46,20 @@ public sealed class ProfileType : Entity
             currency.ToUpperInvariant());
     }
 
+    public void Update(
+        string countryName,
+        string countryCode,
+        string phoneIndicatif,
+        string currency)
+    {
+        CountryName = countryName.Trim();
+        CountryCode = countryCode.ToUpperInvariant();
+        PhoneIndicatif = phoneIndicatif.Trim();
+        Currency = currency.ToUpperInvariant();
+    }
+
+    public void Activate() => IsActive = true;
+
+    public void Deactivate() => IsActive = false;
+
 }

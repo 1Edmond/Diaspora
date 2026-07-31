@@ -51,7 +51,9 @@ public static class RefreshTokenCommandHandler
         var accessToken = jwtService.GenerateAccessToken(
             user.Id.ToString(),
             user.Email.Value,
-            user.UserRoles.Select(r => r.Role.Name));
+            user.UserRoles.Select(r => r.Role.Name),
+            user.DataLanguage,
+            user.InterfaceLanguage);
 
         logger.LogInformation("Token refreshed for user: {UserId}", user.Id);
 

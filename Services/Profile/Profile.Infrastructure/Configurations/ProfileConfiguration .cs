@@ -15,7 +15,7 @@ public sealed class InternalProfileConfiguration : BaseEntityConfiguration<Domai
     {
         base.Configure(builder);
 
-        builder.ToTable("internal_profiles");
+        builder.ToTable("profiles");
 
         builder.HasIndex(x => x.UserId).IsUnique();
 

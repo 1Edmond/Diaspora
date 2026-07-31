@@ -41,7 +41,6 @@ public class VaultTransitService(HttpClient client, ILogger<VaultTransitService>
     {
         // Le token est automatiquement ajouté par le VaultAuthenticationHandler
 
-        // Convertir les bytes en string (format: "vault:v1:base64data")
         var ciphertext = Encoding.UTF8.GetString(cipher);
 
         var response = await _client.PostAsJsonAsync(

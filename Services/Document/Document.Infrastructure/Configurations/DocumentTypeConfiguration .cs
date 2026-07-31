@@ -93,7 +93,60 @@ public sealed class DocumentTypeConfiguration : IEntityTypeConfiguration<Documen
                 CreatedBy = "System",
                 UpdatedAt = (DateTime?)null,
                 UpdatedBy = (string?)null
+            },
+
+            new
+            {
+                Id = ServiceDataConstants.CniDocumentTypeId,
+                ProfileTypeId = ServiceDataConstants.TgInternalProfileTypeId,
+                Name = "CNI",
+                Code = "CNI",
+                Description = "Carte d'itentité nationnale ",
+                IsRenewable = true,
+                RenewalAlertDays = 1_825,
+                IsRequired = false,
+                IsActive = true,
+                CreatedAt = new DateTime(2_024, 1, 1, 0, 0, 0, DateTimeKind.Utc),
+                CreatedBy = "System",
+                UpdatedAt = (DateTime?)null,
+                UpdatedBy = (string?)null
+            },
+
+            new
+            {
+                Id = ServiceDataConstants.PassportDocumentTypeId,
+                ProfileTypeId = ServiceDataConstants.TgInternalProfileTypeId,
+                Name = "Passport",
+                Code = "PASSPORT",
+                Description = "Passport",
+                IsRenewable = true,
+                RenewalAlertDays = 1_825,
+                IsRequired = false,
+                IsActive = true,
+                CreatedAt = new DateTime(2024, 1, 1, 0, 0, 0, DateTimeKind.Utc),
+                CreatedBy = "System",
+                UpdatedAt = (DateTime?)null,
+                UpdatedBy = (string?)null
+            },
+
+            new
+            {
+                Id = ServiceDataConstants.ExtraitNaissanceDocumentTypeId,
+                ProfileTypeId = ServiceDataConstants.TgInternalProfileTypeId,
+                Name = "Naissance",
+                Code = "NAISSANCE",
+                Description = "Certificat de naissance ou Jugement",
+                IsRenewable = false,
+                RenewalAlertDays = 0,
+                IsRequired = false,
+                IsActive = true,
+                CreatedAt = new DateTime(2024, 1, 1, 0, 0, 0, DateTimeKind.Utc),
+                CreatedBy = "System",
+                UpdatedAt = (DateTime?)null,
+                UpdatedBy = (string?)null
             }
+
+
         );
     
     

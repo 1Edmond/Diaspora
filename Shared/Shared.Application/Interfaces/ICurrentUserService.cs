@@ -11,6 +11,8 @@ public interface ICurrentUserService
     string? UserId { get; }
     string? UserName { get; }
     string? Email { get; }
+    string DataLanguage { get; }
+    string InterfaceLanguage { get; }
     IEnumerable<string> Roles { get; }
     bool IsAuthenticated { get; }
     bool IsInRole(string role);

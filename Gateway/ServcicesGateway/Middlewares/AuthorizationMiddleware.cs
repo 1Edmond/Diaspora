@@ -87,7 +87,7 @@ public class AuthorizationMiddleware
             || !FixedTimeEquals(configuredKey, key))
         {
             await WriteError(context, StatusCodes.Status401Unauthorized, "Unauthorized");
-            return; // <-- correction : on stoppe bien ici, plus de double traitement
+            return;
         }
 
         _logger.LogDebug("[Gateway] 🔓 Public route: {Path}", context.Request.Path);

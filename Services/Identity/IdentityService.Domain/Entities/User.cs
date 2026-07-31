@@ -43,6 +43,8 @@ public class User : AggregateRoot, ISoftDeletable, IAuditable
     public KYCLevel KYCLevel { get; private set; }
     public DateTime? KYCSubmittedAt { get; private set; }
     public DateTime? KYCApprovedAt { get; private set; }
+    public string DataLanguage { get; private set; } = "fr";
+    public string InterfaceLanguage { get; private set; } = "fr";
     public ICollection<UserRole> UserRoles { get; set; } = new List<UserRole>();
 
     private User() { }
@@ -85,6 +87,8 @@ public class User : AggregateRoot, ISoftDeletable, IAuditable
             FirstName = EncryptedString.FromClear(firstName!),
             LastName = lastName,
             PhoneNumber = phone,
+            DataLanguage = "fr",
+            InterfaceLanguage = "fr",
             FailedLoginAttempts = 0,
             CreatedAt = DateTime.UtcNow
         };
@@ -265,6 +269,20 @@ public class User : AggregateRoot, ISoftDeletable, IAuditable
         Status = UserStatus.Active;
 
         AddDomainEvent(new UserActivatedEvent(Id, Email.Value, PhoneNumber!, FirstName!, LastName!, DateOfBirth));
+
+        return Result.Success();
+    }
+
+    public Result SetLanguagePreferences(string dataLanguage, string interfaceLanguage)
+    {
+        if (string.IsNullOrWhiteSpace(dataLanguage) || dataLanguage.Length > 10)
+            return Result.Failure("Invalid data language code.");
+
+        if (string.IsNullOrWhiteSpace(interfaceLanguage) || interfaceLanguage.Length > 10)
+            return Result.Failure("Invalid interface language code.");
+
+        DataLanguage = dataLanguage.Trim().ToLowerInvariant();
+        InterfaceLanguage = interfaceLanguage.Trim().ToLowerInvariant();
 
         return Result.Success();
     }

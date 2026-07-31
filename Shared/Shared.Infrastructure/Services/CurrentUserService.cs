@@ -1,5 +1,6 @@
 ﻿using Microsoft.AspNetCore.Http;
 using Shared.Application.Interfaces;
+using Shared.Security.Constants;
 using System;
 using System.Collections.Generic;
 using System.Security.Claims;
@@ -23,6 +24,10 @@ public class CurrentUserService : ICurrentUserService
     public string? UserName => User?.Identity?.Name;
 
     public string? Email => User?.FindFirstValue(ClaimTypes.Email);
+
+    public string DataLanguage => User?.FindFirstValue(JwtClaimTypes.DataLanguage) ?? "fr";
+
+    public string InterfaceLanguage => User?.FindFirstValue(JwtClaimTypes.InterfaceLanguage) ?? "fr";
 
     public IEnumerable<string> Roles =>
         User?.FindAll(ClaimTypes.Role).Select(r => r.Value) ?? Enumerable.Empty<string>();

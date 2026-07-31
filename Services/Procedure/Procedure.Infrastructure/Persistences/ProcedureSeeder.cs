@@ -24,8 +24,6 @@ public class ProcedureSeeder(ProcedureDbContext dbContext, ILogger<ProcedureSeed
             return;
         }
 
-        // ── Locations ────────────────────────────────────────────────────
-
         var ambassadeRuTg = Location.Create(
             "Ambassade de la Russie à Lomé",
             Address.Create(
@@ -78,8 +76,6 @@ public class ProcedureSeeder(ProcedureDbContext dbContext, ILogger<ProcedureSeed
                 )
             ).Value;
 
-        // ── Procédures internes (Togo) ──────────────────────────────────
-
         var demandeVisaRussie = Domain.Entities.Procedure.Create(
             "Demande de Visa",
             "Vous devez demander votre visa auprès de l'ambassade concernée.",
@@ -89,8 +85,8 @@ public class ProcedureSeeder(ProcedureDbContext dbContext, ILogger<ProcedureSeed
             20
             ).Value;
         demandeVisaRussie.AddLocation(ambassadeRuTg.Id);
-        //demandeVisaRussie.AddRequiredDocument(ServiceDataConstants.PassportDocumentTypeId);
-        //demandeVisaRussie.AddRequiredDocument(ServiceDataConstants.PhotoIdentiteDocumentTypeId);
+        demandeVisaRussie.AddRequiredDocument(ServiceDataConstants.PassportDocumentTypeId);
+        demandeVisaRussie.AddIssuedDocument(ServiceDataConstants.VisaDocumentTypeId);
 
         var demandePasseport = Domain.Entities.Procedure.Create(
             "Établissement de Passeport",
@@ -100,8 +96,9 @@ public class ProcedureSeeder(ProcedureDbContext dbContext, ILogger<ProcedureSeed
             ServiceDataConstants.TgInternalProfileTypeId,
             15
             ).Value;
-        //demandePasseport.AddRequiredDocument(ServiceDataConstants.CniDocumentTypeId);
-        //demandePasseport.AddRequiredDocument(ServiceDataConstants.ExtraitNaissanceDocumentTypeId);
+        demandePasseport.AddRequiredDocument(ServiceDataConstants.CniDocumentTypeId);
+        demandePasseport.AddRequiredDocument(ServiceDataConstants.ExtraitNaissanceDocumentTypeId);
+        demandePasseport.AddIssuedDocument(ServiceDataConstants.PassportDocumentTypeId);
 
         var demandeCni = Domain.Entities.Procedure.Create(
             "Carte d'Identité Nationale",
@@ -111,12 +108,13 @@ public class ProcedureSeeder(ProcedureDbContext dbContext, ILogger<ProcedureSeed
             ServiceDataConstants.TgInternalProfileTypeId,
             10
             ).Value;
-        //demandeCni.AddRequiredDocument(ServiceDataConstants.ExtraitNaissanceDocumentTypeId);
+        demandeCni.AddRequiredDocument(ServiceDataConstants.ExtraitNaissanceDocumentTypeId);
+        demandeCni.AddIssuedDocument(ServiceDataConstants.CniDocumentTypeId);
 
-        // Dépendance métier : le passeport nécessite la CNI au préalable
+        
         demandePasseport.AddDependency(demandeCni.Id);
 
-        // Le visa dépend du passeport
+      
         demandeVisaRussie.AddDependency(demandePasseport.Id);
 
         var internalsProcedures = new List<Domain.Entities.Procedure>()
@@ -126,17 +124,16 @@ public class ProcedureSeeder(ProcedureDbContext dbContext, ILogger<ProcedureSeed
             demandeVisaRussie,
         };
 
-        // ── Procédures externes ──────────────────────────────────────────
-
+      
         var achatNumeroRusse = Domain.Entities.Procedure.Create(
             "Achat de numéro Russe",
             "Vous devez acheter votre numéro russe. Sans cela impossible de vivre sereinement en Russie (banque, livraisons, etc.).",
             Money.Create(15000, "CFA").Value,
             ProcedureProfileType.External,
-            ServiceDataConstants.RuExternalProfileTypeId, // TODO: adapte le nom exact de la constante
+            ServiceDataConstants.RuExternalProfileTypeId,
             2
             ).Value;
-        //achatNumeroRusse.AddRequiredDocument(ServiceDataConstants.PassportDocumentTypeId);
+        achatNumeroRusse.AddRequiredDocument(ServiceDataConstants.PassportDocumentTypeId);
 
         var ouvertureCompteBancaire = Domain.Entities.Procedure.Create(
             "Ouverture de Compte Bancaire",

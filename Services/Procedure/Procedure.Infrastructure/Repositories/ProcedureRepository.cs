@@ -19,27 +19,21 @@ public sealed class ProcedureRepository(
     IEncryptionMetadataRepository metadataRepository,
     ILogger<Repository<Domain.Entities.Procedure>> logger,
     IDistributedCache cache
-    )
-    : Repository<Domain.Entities.Procedure>(context,
-        encryptionService,
-        keyManagement,
-        metadataRepository,
-        logger,
-        cache
-        ), IProcedureRepository
+) : Repository<Domain.Entities.Procedure>(context, encryptionService, keyManagement, metadataRepository, logger, cache),
+    IProcedureRepository
 {
     private readonly ProcedureDbContext _context = (ProcedureDbContext)context;
 
     public async Task<IEnumerable<Domain.Entities.Procedure>> GetByProfileTypeAsync(
         ProcedureProfileType profileType,
         Guid profileTypeId,
-        CancellationToken cancellationToken = default)
-        => await _context.Procedures
+        CancellationToken cancellationToken = default) =>
+        await _context.Procedures
             .AsNoTracking()
             .Include(x => x.Locations)
-            .ThenInclude(pl => pl.Location)
+                .ThenInclude(pl => pl.Location)
             .Include(x => x.Dependencies)
-            .Include(x => x.RequiredDocuments)
+            .Include(x => x.Documents)
             .Where(x => x.ProfileType == profileType
                      && x.ProfileTypeId == profileTypeId
                      && x.IsActive)
@@ -48,8 +42,8 @@ public sealed class ProcedureRepository(
 
     public async Task<Domain.Entities.Procedure?> GetWithDependenciesAsync(
         Guid procedureId,
-        CancellationToken cancellationToken = default)
-        => await _context.Procedures
+        CancellationToken cancellationToken = default) =>
+        await _context.Procedures
             .Include(x => x.Dependencies)
                 .ThenInclude(d => d.DependsOnProcedure)
             .FirstOrDefaultAsync(x => x.Id == procedureId, cancellationToken);

@@ -22,6 +22,7 @@ public static class ProcedureMappingExtensions
             p.Locations.Select(pl => pl.Location.ToDto()).ToList(),
             p.Dependencies.Select(d => d.DependsOnProcedureId).ToList(),
             p.RequiredDocuments.Select(d => d.DocumentTypeId).ToList(),
+            p.IssuedDocuments.Select(d => d.DocumentTypeId).ToList(),
             p.CreatedAt);
 
     public static LocationDto ToDto(this Location l) =>

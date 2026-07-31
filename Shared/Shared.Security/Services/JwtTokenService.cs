@@ -1,6 +1,7 @@
 ﻿using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using Shared.Security.Abstractions;
+using Shared.Security.Constants;
 using Shared.Security.Models;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
@@ -22,12 +23,19 @@ public class JwtTokenService : IJwtTokenService
         _logger = logger;
     }
 
-    public string GenerateAccessToken(string userId, string email, IEnumerable<string> roles)
+    public string GenerateAccessToken(
+        string userId,
+        string email,
+        IEnumerable<string> roles,
+        string dataLanguage,
+        string interfaceLanguage)
     {
         var claims = new List<Claim>
         {
             new(ClaimTypes.NameIdentifier, userId),
             new(ClaimTypes.Email, email),
+            new(JwtClaimTypes.DataLanguage, dataLanguage),
+            new(JwtClaimTypes.InterfaceLanguage, interfaceLanguage),
             new(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString()),
             new(JwtRegisteredClaimNames.Iat, DateTimeOffset.UtcNow.ToUnixTimeSeconds().ToString())
         };

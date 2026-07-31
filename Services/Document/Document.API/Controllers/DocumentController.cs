@@ -8,26 +8,28 @@ using Microsoft.AspNetCore.Mvc;
 using Shared.Application.Interfaces;
 using Shared.Application.Models;
 using Shared.Domain.Commons;
+using Shared.Messaging.Constants;
 using Shared.Security.Attributes;
 using Wolverine;
 
 namespace Document.API.Controllers;
 
 [ApiController]
-[Route("api/[controller]")]
+[Route("api/documents")]
 public class DocumentController(
     IMessageBus _messageBus,
     IFileStorageService _fileStorageService,
     ICurrentUserService _currentUserService,
+    ICacheService cacheService,
     ILogger<DocumentController> _logger) : ControllerBase
 {
     [Permission(
         resourceKey: "document",
         action: "upload",
-        description: "Upload a document for an external profile",
+        description: "Upload a document for a profile",
         recommendedRoles: new[] { "User", "Admin" }
     )]
-    [HttpPost]
+    [HttpPost("upload")]
     [Consumes("multipart/form-data")]
     public async Task<IActionResult> Upload(
         [FromForm] UploadDocumentRequest request,
@@ -46,6 +48,48 @@ public class DocumentController(
 
         if (result.IsFailure)
             return BadRequest(new { error = result.Error });
+
+        return Ok(result.Value);
+    }
+
+
+    [Permission(
+        resourceKey: "document",
+        action: "upload-for-proc",
+        description: "Upload a document for completion of a proc",
+        recommendedRoles: new[] { "User", "Admin" }
+    )]
+    [HttpPost("upload-for-proc")]
+    [Consumes("multipart/form-data")]
+    public async Task<IActionResult> UploadForProc(
+        [FromForm] UploadDocumentRequest request,
+        CancellationToken cancellationToken)
+    {
+        var command = new UploadDocumentCommand(
+            request.ProfileId,
+            request.DocumentTypeId,
+            request.File,
+            request.ExpiresAt,
+            request.IssuedAt,
+            request.IssuedBy);
+
+        var result = await _messageBus.InvokeAsync<Result<UploadDocumentResponse>>(
+            command, cancellationToken);
+
+        if (result.IsFailure)
+            return BadRequest(new { error = result.Error });
+
+        var key = request.ProfileId;
+        var values = await cacheService.GetOrCreateAsync(
+            CachedKeyConstants.UpdloadDocumentIdForAwaitingTaskCompletedForKey,
+            () => Task.FromResult(new Dictionary<Guid, List<Guid>>() {
+                [key] = []
+            }),
+            CachedKeyConstants.UpdloadDocumentIdForAwaitingTaskCompletedForKeyDuration,
+            cancellationToken: cancellationToken);
+
+        values[key].Add(result.Value.DocumentId);
+        await cacheService.SetAsync(CachedKeyConstants.UpdloadDocumentIdForAwaitingTaskCompletedForKey, values);
 
         return Ok(result.Value);
     }

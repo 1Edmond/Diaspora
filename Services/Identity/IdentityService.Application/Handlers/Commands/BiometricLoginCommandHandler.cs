@@ -56,7 +56,9 @@ public class BiometricLoginCommandHandler(
         var accessToken = _jwtService.GenerateAccessToken(
             user.Id.ToString(),
             user.Email.Value,
-           user.UserRoles.Select(r => r.Role.Name));
+           user.UserRoles.Select(r => r.Role.Name),
+           user.DataLanguage,
+           user.InterfaceLanguage);
 
         var refreshToken = _jwtService.GenerateRefreshToken();
         var refreshTokenExpiry = DateTime.UtcNow.AddDays(7);

@@ -18,5 +18,6 @@ public sealed record ProcedureDto(
     IReadOnlyList<LocationDto> Locations,
     IReadOnlyList<Guid> DependencyIds,
     IReadOnlyList<Guid> RequiredDocumentTypeIds,
+    IReadOnlyList<Guid> OutputDocumentType,
     DateTime CreatedAt
 );

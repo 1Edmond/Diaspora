@@ -21,4 +21,13 @@ public static class ProfileMappingExtensions
             profile.VerifiedAt,
             profile.VerifiedByAdminId,
             profile.CreatedAt);
+
+    public static ProfileTypeDto ToDto(this ProfileType profileType) =>
+        new(
+            profileType.Id,
+            profileType.CountryName,
+            profileType.CountryCode,
+            profileType.PhoneIndicatif,
+            profileType.Currency,
+            profileType.IsActive);
 }

@@ -12,7 +12,7 @@ using Wolverine;
 namespace Profile.Api.Controllers;
 
 [ApiController]
-[Route("api/[controller]")]
+[Route("api/profiles")]
 public class ProfileController(
     IMessageBus _messageBus,
     ICurrentUserService _currentUserService,
@@ -51,8 +51,8 @@ public class ProfileController(
     {
         var userId = GetCurrentUserId();
 
-        var result = await _messageBus.InvokeAsync<Result<ProfileDto>>(
-            new GetProfileByUserIdQuery(userId), cancellationToken);
+        var result = await _messageBus.InvokeAsync<Result<UserProfilesDto>>(
+            new GetUserProfilesQuery(userId), cancellationToken);
 
         if (result.IsFailure)
             return NotFound(new { error = result.Error });
@@ -128,6 +128,66 @@ public class ProfileController(
             return BadRequest(new { error = result.Error });
 
         return Ok(new { message = "Profile verified successfully" });
+    }
+
+    [Permission(
+        resourceKey: "profile.internal",
+        action: "read",
+        description: "Get a profile by id (admin only)",
+        recommendedRoles: new[] { "Admin" }
+    )]
+    [HttpGet("{profileId:guid}")]
+    public async Task<IActionResult> GetById(
+        Guid profileId,
+        CancellationToken cancellationToken)
+    {
+        var result = await _messageBus.InvokeAsync<Result<ProfileDto>>(
+            new GetProfileByIdQuery(profileId), cancellationToken);
+
+        if (result.IsFailure)
+            return NotFound(new { error = result.Error });
+
+        return Ok(result.Value);
+    }
+
+    [Permission(
+        resourceKey: "profile.internal",
+        action: "activate",
+        description: "Activate a user profile (admin only)",
+        recommendedRoles: new[] { "Admin" }
+    )]
+    [HttpPost("{profileId:guid}/activate")]
+    public async Task<IActionResult> Activate(
+        Guid profileId,
+        CancellationToken cancellationToken)
+    {
+        var result = await _messageBus.InvokeAsync<Result>(
+            new ActivateProfileCommand(profileId), cancellationToken);
+
+        if (result.IsFailure)
+            return BadRequest(new { error = result.Error });
+
+        return Ok(new { message = "Profile activated successfully" });
+    }
+
+    [Permission(
+        resourceKey: "profile.internal",
+        action: "suspend",
+        description: "Suspend a user profile (admin only)",
+        recommendedRoles: new[] { "Admin" }
+    )]
+    [HttpPost("{profileId:guid}/suspend")]
+    public async Task<IActionResult> Suspend(
+        Guid profileId,
+        CancellationToken cancellationToken)
+    {
+        var result = await _messageBus.InvokeAsync<Result>(
+            new SuspendProfileCommand(profileId), cancellationToken);
+
+        if (result.IsFailure)
+            return BadRequest(new { error = result.Error });
+
+        return Ok(new { message = "Profile suspended successfully" });
     }
 
     private Guid GetCurrentUserId() => Guid.Parse(_currentUserService.UserId!);

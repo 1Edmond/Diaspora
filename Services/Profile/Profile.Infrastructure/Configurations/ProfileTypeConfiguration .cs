@@ -12,7 +12,7 @@ public sealed class InternalProfileTypeConfiguration : IEntityTypeConfiguration<
 {
     public void Configure(EntityTypeBuilder<ProfileType> builder)
     {
-        builder.ToTable("internal_profile_types");
+        builder.ToTable("profile_types");
 
         builder.HasKey(x => x.Id);
         builder.HasIndex(x => x.CountryCode).IsUnique();

@@ -17,6 +17,7 @@ using Shared.Infrastructure.Inbox;
 using Shared.Infrastructure.Outbox;
 using Shared.Infrastructure.Persistence;
 using Shared.Infrastructure.Persistence.Repositories;
+using Shared.Infrastructure.Persistence.Translations;
 using Shared.Infrastructure.Services;
 using Shared.Logging.Configurations;
 using Shared.Messaging.Constants;
@@ -76,6 +77,7 @@ public static class DependencyInjection
         services.AddScoped<IOutboxMessageRepository, OutboxMessageRepository>();
         services.AddScoped<IIdempotencyService, IdempotencyService>();
         services.AddScoped(typeof(IRepository<>), typeof(Repository<>));
+        services.AddScoped(typeof(ITranslationRepository<>), typeof(TranslationRepository<>));
         services.AddHostedService<OutboxProcessor>();
         services.AddSingleton<IResourceDeclarationService, ResourceDeclarationService>();
 
@@ -93,6 +95,7 @@ public static class DependencyInjection
             options.Configuration = redisConnectionString;
             options.InstanceName = serviceName;
         });
+        services.AddScoped<ICacheService, RedisCacheService>();
         services.AddSingleton<IConnectionMultiplexer>(
     _ => ConnectionMultiplexer.Connect(redisConnectionString!));
 

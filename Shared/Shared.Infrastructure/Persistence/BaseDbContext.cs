@@ -1,11 +1,13 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.ChangeTracking;
+using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Microsoft.Extensions.Logging;
 using Shared.Application.Interfaces;
 using Shared.Domain.Interfaces;
 using Shared.Domain.Primitives;
 using Shared.Infrastructure.Inbox;
 using Shared.Infrastructure.Outbox;
+using Shared.Infrastructure.Persistence.Translations;
 using Shared.Messaging.Events;
 using Shared.Security.Persistence;
 using System.Linq.Expressions;
@@ -35,8 +37,17 @@ public abstract class BaseDbContext(
         modelBuilder.ApplyConfiguration(new DataEncryptionKeyConfiguration());
         modelBuilder.ApplyConfiguration(new EncryptionMetadataConfiguration());
 
+        var utcConverter = new ValueConverter<DateTime, DateTime>(
+    v => v.Kind == DateTimeKind.Utc ? v : v.ToUniversalTime(),
+    v => DateTime.SpecifyKind(v, DateTimeKind.Utc));
+
+        var nullableUtcConverter = new ValueConverter<DateTime?, DateTime?>(
+            v => v.HasValue ? (v.Value.Kind == DateTimeKind.Utc ? v.Value : v.Value.ToUniversalTime()) : v,
+            v => v.HasValue ? DateTime.SpecifyKind(v.Value, DateTimeKind.Utc) : v);
+
         foreach (var entityType in modelBuilder.Model.GetEntityTypes())
         {
+
             if (typeof(ISoftDeletable).IsAssignableFrom(entityType.ClrType))
             {
                 var parameter = Expression.Parameter(entityType.ClrType, "e");
@@ -47,7 +58,18 @@ public abstract class BaseDbContext(
 
                 modelBuilder.Entity(entityType.ClrType).HasQueryFilter(filter);
             }
+        
+            foreach (var property in entityType.GetProperties())
+            {
+                if (property.ClrType == typeof(DateTime))
+                    property.SetValueConverter(utcConverter);
+                else if (property.ClrType == typeof(DateTime?))
+                    property.SetValueConverter(nullableUtcConverter);
+            }
+        
         }
+
+        modelBuilder.ApplyTranslatableEntities();
     }
 
     public override async Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)
@@ -58,7 +80,7 @@ public abstract class BaseDbContext(
 
         await SaveDomainEventsToOutboxAsync(domainEvents);
 
-        var result = await base.SaveChangesAsync(cancellationToken);
+         var result = await base.SaveChangesAsync(cancellationToken);
 
         ClearDomainEvents();
 

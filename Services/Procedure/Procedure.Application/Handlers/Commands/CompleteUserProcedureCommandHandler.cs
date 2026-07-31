@@ -1,9 +1,11 @@
 ﻿using Procedure.Application.Commands;
 using Procedure.Application.Interfaces;
 using Procedure.Domain.Entities;
+using Shared.Application.Interfaces;
 using Shared.Domain.Commons;
 using Shared.Domain.Enums;
 using Shared.Domain.Interfaces;
+using Shared.Messaging.Constants;
 using System;
 using System.Collections.Generic;
 using System.Text;
@@ -13,6 +15,7 @@ namespace Procedure.Application.Handlers.Commands;
 public sealed class CompleteUserProcedureCommandHandler(
     IUserProcedureRepository userProcedureRepository,
     IProcedureRepository procedureRepository,
+    ICacheService cacheService,
     IServiceParameterRepository parameterRepository,
     IUnitOfWork unitOfWork)
 {
@@ -31,10 +34,10 @@ public sealed class CompleteUserProcedureCommandHandler(
             defaultValue: true,
             cancellationToken);
 
-        // Récupérer les statuts des procédures dépendantes
         var procedure = await procedureRepository.GetByIdAsync(
             userProcedure.ProcedureId, cancellationToken);
 
+        if (procedure is null) return Result.Failure("Procedure not found.");
         IEnumerable<UserProcedureStatus> dependencyStatuses = [];
 
         if (procedure is not null && procedure.Dependencies.Any())
@@ -47,6 +50,25 @@ public sealed class CompleteUserProcedureCommandHandler(
 
             dependencyStatuses = depUserProcedures.Select(up => up.Status);
         }
+
+        if (procedure!.IssuedDocuments.Any())
+        {
+            var key = Guid.Parse(command.CompletedByUserId); 
+            var values = await cacheService.GetAsync<Dictionary<Guid, List<Guid>>>(
+                CachedKeyConstants.UpdloadDocumentIdForAwaitingTaskCompletedForKey,
+                cancellationToken: cancellationToken);
+
+            if(values is null)
+                return Result.Failure("Output document not found.");
+            var userDocs = values[key];
+
+            foreach (var proc in procedure!.IssuedDocuments)
+            {
+                if(userDocs.Any(d => d == proc.Id))
+                    return Result.Failure("Output document not found.");
+            }
+        }
+
 
         var result = userProcedure.Complete(
             command.CompletedByUserId,

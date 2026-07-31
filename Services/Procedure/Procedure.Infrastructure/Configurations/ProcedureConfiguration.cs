@@ -31,28 +31,32 @@ public sealed class ProcedureConfiguration : BaseEntityConfiguration<Domain.Enti
                 .HasColumnName("cost_amount")
                 .HasColumnType("decimal(18,2)")
                 .IsRequired();
+
             cost.Property(c => c.Currency)
                 .HasColumnName("cost_currency")
                 .HasMaxLength(10)
                 .IsRequired();
         });
 
-        // N-à-N Locations
+        
         builder.HasMany(x => x.Locations)
             .WithOne()
             .HasForeignKey(x => x.ProcedureId)
             .OnDelete(DeleteBehavior.Cascade);
 
-        // Dependencies
         builder.HasMany(x => x.Dependencies)
             .WithOne()
             .HasForeignKey(x => x.ProcedureId)
             .OnDelete(DeleteBehavior.Cascade);
 
-        // Required Documents
-        builder.HasMany(x => x.RequiredDocuments)
+      
+        builder.HasMany(x => x.Documents)
             .WithOne()
             .HasForeignKey(x => x.ProcedureId)
             .OnDelete(DeleteBehavior.Cascade);
+
+       
+        builder.Ignore(x => x.RequiredDocuments);
+        builder.Ignore(x => x.IssuedDocuments);
     }
 }

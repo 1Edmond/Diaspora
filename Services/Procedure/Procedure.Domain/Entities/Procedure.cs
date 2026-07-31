@@ -1,5 +1,8 @@
-﻿using Shared.Domain.Commons;
+﻿using Procedure.Domain.Enums;
+using Shared.Domain.Commons;
+using Shared.Domain.Attributes;
 using Shared.Domain.Enums;
+using Shared.Domain.Interfaces;
 using Shared.Domain.Primitives;
 using Shared.Domain.ValueObjects;
 using System;
@@ -8,9 +11,12 @@ using System.Text;
 
 namespace Procedure.Domain.Entities;
 
-public sealed class Procedure : AggregateRoot
+public sealed class Procedure : AggregateRoot, ITranslatable
 {
+    [Translatable]
     public string Title { get; private set; } = string.Empty;
+
+    [Translatable]
     public string Description { get; private set; } = string.Empty;
     public Money Cost { get; private set; } = null!;
     public ProcedureProfileType ProfileType { get; private set; }
@@ -18,15 +24,15 @@ public sealed class Procedure : AggregateRoot
     public int EstimatedDurationDays { get; private set; }
     public bool IsActive { get; private set; }
 
-    // N-à-N vers Location
+
+
     private readonly List<ProcedureLocation> _locations = new();
     public IReadOnlyCollection<ProcedureLocation> Locations => _locations.AsReadOnly();
 
     private readonly List<ProcedureDependency> _dependencies = new();
     public IReadOnlyCollection<ProcedureDependency> Dependencies => _dependencies.AsReadOnly();
 
-    private readonly List<ProcedureRequiredDocument> _requiredDocuments = new();
-    public IReadOnlyCollection<ProcedureRequiredDocument> RequiredDocuments => _requiredDocuments.AsReadOnly();
+
 
     private Procedure() { }
 
@@ -79,8 +85,6 @@ public sealed class Procedure : AggregateRoot
         EstimatedDurationDays = estimatedDurationDays;
     }
 
-    // ── Locations ──────────────────────────────────────────────────────────────
-
     public Result AddLocation(Guid locationId)
     {
         if (_locations.Any(l => l.LocationId == locationId))
@@ -96,8 +100,7 @@ public sealed class Procedure : AggregateRoot
     public void ClearLocations()
         => _locations.Clear();
 
-    // ── Dependencies ───────────────────────────────────────────────────────────
-
+   
     public Result AddDependency(Guid dependsOnProcedureId)
     {
         if (dependsOnProcedureId == Id)
@@ -116,15 +119,27 @@ public sealed class Procedure : AggregateRoot
     public void ClearDependencies()
         => _dependencies.Clear();
 
-   
+
+    private readonly List<ProcedureDocument> _documents = new();
+    public IReadOnlyCollection<ProcedureDocument> Documents => _documents.AsReadOnly();
+
+    public IEnumerable<ProcedureDocument> RequiredDocuments => _documents.Where(d => d.Role == DocumentRole.Required);
+    public IEnumerable<ProcedureDocument> IssuedDocuments => _documents.Where(d => d.Role == DocumentRole.Issued);
+
     public void AddRequiredDocument(Guid documentTypeId)
     {
-        if (!_requiredDocuments.Any(d => d.DocumentTypeId == documentTypeId))
-            _requiredDocuments.Add(new ProcedureRequiredDocument(Id, documentTypeId));
+        if (!_documents.Any(d => d.DocumentTypeId == documentTypeId && d.Role == DocumentRole.Required))
+            _documents.Add(new ProcedureDocument(Id, documentTypeId, DocumentRole.Required));
+    }
+
+    public void AddIssuedDocument(Guid documentTypeId)
+    {
+        if (!_documents.Any(d => d.DocumentTypeId == documentTypeId && d.Role == DocumentRole.Issued))
+            _documents.Add(new ProcedureDocument(Id, documentTypeId, DocumentRole.Issued));
     }
 
     public void ClearRequiredDocuments()
-        => _requiredDocuments.Clear();
+        => _documents.Clear();
 
     public void Activate() => IsActive = true;
     public void Deactivate() => IsActive = false;

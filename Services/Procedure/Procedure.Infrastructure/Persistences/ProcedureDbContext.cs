@@ -21,7 +21,7 @@ public sealed class ProcedureDbContext(
     public DbSet<UserProcedure> UserProcedures => Set<UserProcedure>();
     public DbSet<Location> Locations => Set<Location>();
     public DbSet<ProcedureDependency> ProcedureDependencies => Set<ProcedureDependency>();
-    public DbSet<ProcedureRequiredDocument> ProcedureRequiredDocuments => Set<ProcedureRequiredDocument>();
+    public DbSet<ProcedureDocument> ProcedureRequiredDocuments => Set<ProcedureDocument>();
     public DbSet<ServiceParameter> ServiceParameters => Set<ServiceParameter>();
 
     public DbSet<ProcedureLocation> ProcedureLocations => Set<ProcedureLocation>();

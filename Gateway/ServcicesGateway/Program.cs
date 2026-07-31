@@ -76,18 +76,29 @@ builder.Services.AddReverseProxy()
     .LoadFromConfig(builder.Configuration.GetSection("ReverseProxy"))
     .AddServiceDiscoveryDestinationResolver();
 
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("DiasporaBackOffice", policy =>
+    {
+        policy.WithOrigins(
+                "http://localhost:4200" // pour le dev local
+              )
+              .AllowAnyMethod()
+              .AllowAnyHeader()
+              .AllowCredentials();
+    });
+});
+
 
 var app = builder.Build();
 
+app.UseCors("DiasporaBackOffice");
 
 app.UseAuthentication();
 app.UseMiddleware<AuthorizationMiddleware>();
 
-
-
 app.MapReverseProxy();
 
 app.Logger.LogInformation("[Gateway] API Gateway started successfully");
-
 
 app.Run();

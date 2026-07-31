@@ -63,7 +63,9 @@ public static class LoginCommandHandler
         var accessToken = jwtService.GenerateAccessToken(
             user.Id.ToString(),
             user.Email.Value,
-           user.UserRoles.Select(r => r.Role.Name));
+           user.UserRoles.Select(r => r.Role.Name),
+           user.DataLanguage,
+           user.InterfaceLanguage);
 
         var refreshToken = jwtService.GenerateRefreshToken();
         var refreshTokenExpiry = DateTime.UtcNow.AddDays(7);
