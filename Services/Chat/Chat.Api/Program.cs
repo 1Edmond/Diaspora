@@ -1,4 +1,5 @@
 using Chat.Infrastructure;
+using Chat.Infrastructure.Hubs;
 using System.Reflection;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -30,6 +31,7 @@ await app.UseInfrastructure();
 _ = app.PublishChatResources<Program>();
 
 app.MapControllers();
+app.MapHub<ChatHub>("/hubs/chat");
 
 
 app.Run();

@@ -68,6 +68,25 @@ public sealed class WalletController(
 
         return Ok(result.Value);
     }
+
+    [Permission("wallet", "withdraw", "Request a withdrawal from a wallet",
+        recommendedRoles: new[] { "User", "Admin" })]
+    [HttpPost("profile/{externalProfileId:guid}/withdraw")]
+    public async Task<IActionResult> Withdraw(
+        Guid externalProfileId,
+        [FromBody] WithdrawRequest request,
+        CancellationToken cancellationToken)
+    {
+        var command = new WithdrawCommand(
+            externalProfileId, request.Amount, request.Description);
+
+        var result = await _messageBus.InvokeAsync<Result<WithdrawResponse>>(command, cancellationToken);
+
+        if (result.IsFailure)
+            return BadRequest(new { error = result.Error });
+
+        return Ok(result.Value);
+    }
 }
 
 

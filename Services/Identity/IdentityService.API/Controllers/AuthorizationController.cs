@@ -14,6 +14,7 @@ public class AuthorizationController(
     ICurrentUserService _currentUserService) : ControllerBase
 {
    
+    [AllowAnonymous]
     [HttpGet("check")]
     public async Task<IActionResult> CheckPermission(
       [FromQuery] Guid userId,
@@ -28,6 +29,7 @@ public class AuthorizationController(
     }
 
 
+    [AllowAnonymous]
     [HttpGet("user-permissions")]
     public async Task<IActionResult> GetUserPermissions(
       [FromQuery] Guid userId)

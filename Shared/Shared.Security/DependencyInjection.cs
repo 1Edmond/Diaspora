@@ -84,6 +84,9 @@ public static class DependencyInjection
         services.AddAuthorizationBuilder()
             .SetDefaultPolicy(new AuthorizationPolicyBuilder("Gateway")
                 .RequireAuthenticatedUser()
+                .Build())
+            .SetFallbackPolicy(new AuthorizationPolicyBuilder("Gateway")
+                .RequireAuthenticatedUser()
                 .Build());
 
     }

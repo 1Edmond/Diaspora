@@ -16,6 +16,7 @@ public partial class AuthController(IMessageBus _messageBus, ILogger<AuthControl
 {
    
 
+    [AllowAnonymous]
     [HttpGet("ping")]
     public IActionResult HealthCheck()
     {
@@ -24,6 +25,7 @@ public partial class AuthController(IMessageBus _messageBus, ILogger<AuthControl
     }
 
  
+    [AllowAnonymous]
     [HttpPost("register")]
     public async Task<IActionResult> Register([FromBody] RegisterUserCommand command, CancellationToken cancellationToken)
     {
@@ -36,6 +38,7 @@ public partial class AuthController(IMessageBus _messageBus, ILogger<AuthControl
     }
 
 
+    [AllowAnonymous]
     [HttpPost("login")]
     public async Task<IActionResult> Login(LoginCommand command)
     {
@@ -49,6 +52,7 @@ public partial class AuthController(IMessageBus _messageBus, ILogger<AuthControl
         return Ok(result.Value);
     }
 
+    [AllowAnonymous]
     [Permission(
         resourceKey: "identity.auth",
         action: "refresh-token",
@@ -72,6 +76,7 @@ public partial class AuthController(IMessageBus _messageBus, ILogger<AuthControl
         return Ok(result.Value);
     }
 
+    [AllowAnonymous]
     [HttpPost("verify-email")]
     public async Task<IActionResult> VerifyEmail(VerifyEmailCommand command)
     {

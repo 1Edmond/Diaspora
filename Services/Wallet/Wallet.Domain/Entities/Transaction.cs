@@ -32,7 +32,8 @@ public sealed class Transaction : AggregateRoot
         string currency,
         string description,
         Guid? referenceId = null,
-        string? referenceType = null) : base(Guid.NewGuid())
+        string? referenceType = null,
+        TransactionStatus status = TransactionStatus.Completed) : base(Guid.NewGuid())
     {
         WalletId = walletId;
         Type = type;
@@ -44,7 +45,11 @@ public sealed class Transaction : AggregateRoot
         Description = description;
         ReferenceId = referenceId;
         ReferenceType = referenceType;
-        Status = TransactionStatus.Completed;
+        Status = status;
     }
+
+    public void MarkCompleted() => Status = TransactionStatus.Completed;
+
+    public void MarkFailed() => Status = TransactionStatus.Failed;
 }
 

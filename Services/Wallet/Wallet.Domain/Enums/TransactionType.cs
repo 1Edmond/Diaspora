@@ -13,5 +13,6 @@ public enum TransactionType
     ProcedurePayment = 4,
     MarketplacePayment = 5,
     MarketplaceReceipt = 6,
-    Refund = 7
+    Refund = 7,
+    Withdrawal = 8
 }

@@ -30,6 +30,7 @@ public partial class AuthController
         return Ok(new { message = "Biometric enrollment successful" });
     }
 
+    [AllowAnonymous]
     [HttpPost("biometric/challenge")]
     public async Task<IActionResult> RequestBiometricChallenge(
         [FromBody] RequestBiometricChallengeCommand command,
@@ -43,6 +44,7 @@ public partial class AuthController
         return Ok(result.Value);
     }
 
+    [AllowAnonymous]
     [HttpPost("biometric/login")]
     public async Task<IActionResult> BiometricLogin(
         [FromBody] BiometricLoginCommand command,

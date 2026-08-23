@@ -73,6 +73,58 @@ public sealed class Wallet : AggregateRoot
         return Result.Success(tx);
     }
 
+    // ── Withdrawal ───────────────────────────────────────────────────────────
+
+    public Result<Transaction> RequestWithdrawal(decimal amount, string description, Guid? referenceId = null)
+    {
+        if (!IsActive)
+            return Result.Failure<Transaction>("Wallet is not active.");
+        if (amount <= 0)
+            return Result.Failure<Transaction>("Withdrawal amount must be positive.");
+        if (Balance < amount)
+            return Result.Failure<Transaction>("Insufficient balance.");
+
+        Balance -= amount;
+
+        var tx = new Transaction(
+            Id, TransactionType.Withdrawal, TransactionDirection.Debit,
+            amount, 0m, Balance, Currency, description, referenceId, "Withdrawal",
+            status: TransactionStatus.Pending);
+
+        _transactions.Add(tx);
+
+        AddDomainEvent(new WithdrawalRequestedDomainEvent(Id, tx.Id, amount, Currency));
+
+        return Result.Success(tx);
+    }
+
+    public Result ConfirmWithdrawal(Transaction transaction)
+    {
+        if (transaction.WalletId != Id)
+            return Result.Failure("Transaction does not belong to this wallet.");
+        if (transaction.Type != TransactionType.Withdrawal)
+            return Result.Failure("Transaction is not a withdrawal.");
+
+        transaction.MarkCompleted();
+        AddDomainEvent(new WithdrawalCompletedDomainEvent(Id, transaction.Id, transaction.Amount, Currency));
+
+        return Result.Success();
+    }
+
+    public Result FailWithdrawal(Transaction transaction)
+    {
+        if (transaction.WalletId != Id)
+            return Result.Failure("Transaction does not belong to this wallet.");
+        if (transaction.Type != TransactionType.Withdrawal)
+            return Result.Failure("Transaction is not a withdrawal.");
+
+        Balance += transaction.Amount;
+        transaction.MarkFailed();
+        AddDomainEvent(new WithdrawalFailedDomainEvent(Id, transaction.Id, transaction.Amount, Currency));
+
+        return Result.Success();
+    }
+
 
 
   
