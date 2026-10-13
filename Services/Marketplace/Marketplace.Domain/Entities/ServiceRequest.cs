@@ -27,6 +27,9 @@ public class ServiceRequest : AggregateRoot
     public DateTime? CancelledAt { get; private set; }
     public string? CancellationReason { get; private set; }
 
+    // Messagerie — référence vers le fil de discussion créé côté Chat Service
+    public Guid? ChatThreadId { get; private set; }
+
     public ServiceListing Listing { get; private set; } = null!;
 
     private ServiceRequest() { }
@@ -88,5 +91,10 @@ public class ServiceRequest : AggregateRoot
     {
         WalletTransactionId = transactionId;
         PaymentStatus = PaymentStatus.Completed;
+    }
+
+    public void LinkChatThread(Guid chatThreadId)
+    {
+        ChatThreadId = chatThreadId;
     }
 }

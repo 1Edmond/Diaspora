@@ -20,6 +20,7 @@
     <ProjectReference Include="..\..\Gateway\ServcicesGateway\ServcicesGateway.csproj" />
     <ProjectReference Include="..\..\Services\Chat\Chat.Api\Chat.Api.csproj" />
     <ProjectReference Include="..\..\Services\Document\Document.API\Document.API.csproj" />
+    <ProjectReference Include="..\..\Services\Freelance\Freelance.Api\Freelance.Api.csproj" />
     <ProjectReference Include="..\..\Services\Identity\IdentityService.API\IdentityService.API.csproj" />
     <ProjectReference Include="..\..\Services\KYC\KYC.Api\KYC.Api.csproj" />
     <ProjectReference Include="..\..\Services\Marketplace\Marketplace.Api\Marketplace.Api.csproj" />
@@ -27,7 +28,6 @@
     <ProjectReference Include="..\..\Services\Procedure\Procedure.Api\Procedure.Api.csproj" />
     <ProjectReference Include="..\..\Services\Profile\Profile.Api\Profile.Api.csproj" />
     <ProjectReference Include="..\..\Services\Wallet\Wallet.Api\Wallet.Api.csproj" />
-    <ProjectReference Include="..\..\Backoffice\Diaspora.Backoffice\Diaspora.Backoffice.csproj" />
   </ItemGroup>
 
 

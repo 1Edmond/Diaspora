@@ -61,8 +61,7 @@ public static class DependencyInjection
             options.ConfigureProfileDomainQueues();
 
             options.ConfigureRabbitMq().BindExchange(ExchangesConstants.IdentityEventsExchange)
-                   .ToQueue("profile-service.identity-events")
-                   ;
+                   .ToQueue("profile-service.identity-events");
 
             var optimizedConnectionString = new NpgsqlConnectionStringBuilder(connectionString)
             {
@@ -125,9 +124,6 @@ public static class DependencyInjection
 
     public static async Task PublishProfileResources<T>(this WebApplication app)
     {
-        // Délai pour laisser le temps aux autres services de démarrer
-        await Task.Delay(TimeSpan.FromMinutes(1));
-
         using var scope = app.Services.CreateScope();
         var resourceService = scope.ServiceProvider
             .GetRequiredService<IResourceDeclarationService>();

@@ -14,14 +14,14 @@ public sealed class ExternalProfileActivatedConsumer(
     IIdempotencyService idempotency,
     ILogger<ExternalProfileActivatedConsumer> logger)
 {
-    public async Task Handle(ExternalProfileActivatedIntegrationEvent @event)
+    public async Task Handle(ProfileActivatedIntegrationEvent @event)
     {
         logger.LogInformation(
             "Creating wallet for ExternalProfile {ExternalProfileId}", @event.ProfileId);
 
         await idempotency.ProcessOnceAsync(
             @event.EventId,
-            nameof(ExternalProfileActivatedIntegrationEvent),
+            nameof(ProfileActivatedIntegrationEvent),
             async () =>
             {
                 var command = new CreateWalletCommand(

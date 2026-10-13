@@ -88,9 +88,15 @@ public static class DependencyInjection
 
             options.PersistMessagesWithPostgresql(optimizedCs, "wolverine_chat");
 
-            options.ListenToRabbitQueue(ExchangesConstants.ChatEventsExchange)
-                .PreFetchCount(20)
-                .UseDurableInbox();
+            options.ConfigureRabbitMq().BindExchange(ExchangesConstants.ProfileEventsExchange)
+                  .ToQueue("chat-service.profile-events");
+
+            // Queue entrante : événements Profiles
+            options.ListenToRabbitQueue("chat-service.profile-events")
+              .PreFetchCount(20)
+              .MaximumParallelMessages(3)
+              .ListenerCount(2)
+              .UseDurableInbox();
 
             options.UseEntityFrameworkCoreTransactions();
             options.Policies.AutoApplyTransactions();

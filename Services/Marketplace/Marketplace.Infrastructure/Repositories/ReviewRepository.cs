@@ -46,4 +46,13 @@ public class ReviewRepository(MarketplaceDbContext _context,
 
         return (reviews.Average(r => r.Rating), reviews.Count);
     }
+
+    public async Task<Review?> GetByIdWithListingAsync(Guid id, CancellationToken cancellationToken = default)
+        => await _context.Reviews
+            .Include(r => r.Listing)
+            .FirstOrDefaultAsync(r => r.Id == id, cancellationToken);
+
+    public async Task<int> CountCreatedSinceAsync(Guid reviewerId, DateTime since, CancellationToken cancellationToken = default)
+        => await _context.Reviews
+            .CountAsync(r => r.ReviewerId == reviewerId && r.CreatedAt >= since, cancellationToken);
 }

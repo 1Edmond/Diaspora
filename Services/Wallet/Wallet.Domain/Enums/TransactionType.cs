@@ -14,5 +14,10 @@ public enum TransactionType
     MarketplacePayment = 5,
     MarketplaceReceipt = 6,
     Refund = 7,
-    Withdrawal = 8
+    Withdrawal = 8,
+    FreelanceEscrowHold = 9,
+    FreelanceEscrowRelease = 10,
+    FreelanceEscrowRefund = 11,
+    FreelancePayment = 12,
+    FreelanceReceipt = 13
 }

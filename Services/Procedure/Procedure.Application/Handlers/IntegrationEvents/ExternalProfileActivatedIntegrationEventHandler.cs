@@ -1,4 +1,5 @@
-﻿using Procedure.Application.Interfaces;
+﻿using Npgsql.Replication;
+using Procedure.Application.Interfaces;
 using Procedure.Domain.Entities;
 using Shared.Domain.Interfaces;
 using Shared.Messaging.Events.Profile;
@@ -14,18 +15,24 @@ public class ExternalProfileActivatedIntegrationEventHandler(IProcedureRepositor
     private readonly IUserProcedureRepository userProcedureRepository = userProcedureRepository;
     private readonly IUnitOfWork unitOfWork = unitOfWork;
 
-    public async Task Handle(ExternalProfileActivatedIntegrationEvent message, CancellationToken cancellationToken)
+    public async Task Handle(ProfileActivatedIntegrationEvent message, CancellationToken cancellationToken)
     {
+        
         var externalTypeProfileProcedures = await procedureRepository.FindAsync(
-            p => p.ProfileTypeId == message.ProfileTypeId
-            );
+            p => p.ProfileTypeId == message.ProfileTypeId);
 
-        var userProcedures = externalTypeProfileProcedures.Select(
-            x => UserProcedure.Create(message.ProfileId, x.Id).Value
-            );
+        var existUserProcedures = await userProcedureRepository.FindAsync(p => p.ProfileId == message.ProfileId);
 
-        await userProcedureRepository.AddRangeAsync(userProcedures.ToList(), cancellationToken);
-        await unitOfWork.SaveChangesAsync(cancellationToken);
+        var existingProcedureIds = existUserProcedures.Select(p => p.ProcedureId).ToHashSet();
+        
+        var userProcedures = externalTypeProfileProcedures
+        .Where(x => !existingProcedureIds.Contains(x.Id))
+        .Select(x => UserProcedure.Create(message.ProfileId, x.Id).Value);
 
+        if (userProcedures.Any()) 
+        {
+            await userProcedureRepository.AddRangeAsync(userProcedures.ToList(), cancellationToken);
+            await unitOfWork.SaveChangesAsync(cancellationToken);
+        }
     }
 }

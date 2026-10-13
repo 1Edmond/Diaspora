@@ -23,5 +23,11 @@ public record ServiceListingDto(
     double AverageRating,
     int ReviewCount,
     int ViewCount,
-    DateTime CreatedAt
+    DateTime CreatedAt,
+    string? City,
+    string? Country,
+    double? Latitude,
+    double? Longitude,
+    IReadOnlyCollection<AvailabilitySlotDto> AvailabilitySlots,
+    bool IsAvailableNow
 );

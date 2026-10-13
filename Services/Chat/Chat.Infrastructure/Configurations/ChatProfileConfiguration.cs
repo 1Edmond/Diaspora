@@ -17,12 +17,9 @@ public sealed class ChatProfileConfiguration : BaseEntityConfiguration<ChatProfi
 
         builder.ToTable("chat_profiles");
 
-        builder.HasIndex(x => x.UserId).IsUnique();
-        builder.HasIndex(x => x.ExternalProfileId).IsUnique()
-            .HasFilter("external_profile_id IS NOT NULL");
-
         builder.Property(x => x.UserId).IsRequired();
-        builder.Property(x => x.ExternalProfileId);
+        builder.Property(x => x.ProfileId).HasColumnName("profile_id");
+        builder.Property(x => x.ProfileTypeId);
         builder.Property(x => x.DisplayName).HasMaxLength(100).IsRequired();
         builder.Property(x => x.AvatarUrl).HasMaxLength(500);
         builder.Property(x => x.IsBot).IsRequired().HasDefaultValue(false);
@@ -32,5 +29,10 @@ public sealed class ChatProfileConfiguration : BaseEntityConfiguration<ChatProfi
             .HasDefaultValue(ChatProfileStatus.Offline);
         builder.Property(x => x.LastSeenAt);
         builder.Property(x => x.IsActive).IsRequired().HasDefaultValue(true);
+
+
+        builder.HasIndex(x => x.UserId).IsUnique();
+        builder.HasIndex(x => x.ProfileId).IsUnique()
+            .HasFilter("profile_id IS NOT NULL");
     }
 }

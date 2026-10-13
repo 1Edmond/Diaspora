@@ -28,9 +28,22 @@ public class ServiceListingController(
         [FromQuery] string? search = null,
         [FromQuery] PaymentMode? paymentMode = null,
         [FromQuery] decimal? minPrice = null,
-        [FromQuery] decimal? maxPrice = null)
+        [FromQuery] decimal? maxPrice = null,
+        [FromQuery] string? city = null,
+        [FromQuery] string? country = null,
+        [FromQuery] ListingSortBy sortBy = ListingSortBy.Relevance,
+        [FromQuery] double? userLatitude = null,
+        [FromQuery] double? userLongitude = null,
+        [FromQuery] double? maxDistanceKm = null,
+        [FromQuery] bool availableNow = false)
     {
-        var query = new GetServiceListingsQuery(page, pageSize, categoryId, search, paymentMode, minPrice, maxPrice);
+        // Le pageSize est plafonné pour éviter les requêtes abusivement coûteuses
+        pageSize = Math.Clamp(pageSize, 1, 50);
+
+        var query = new GetServiceListingsQuery(
+            page, pageSize, categoryId, search, paymentMode, minPrice, maxPrice,
+            ActiveOnly: true, city, country, sortBy, userLatitude, userLongitude, maxDistanceKm, availableNow);
+
         var result = await _messageBus.InvokeAsync<Result<PagedList<ServiceListingSummaryDto>>>(query);
 
         if (result.IsFailure) return BadRequest(new { error = result.Error });
@@ -56,6 +69,7 @@ public class ServiceListingController(
     [HttpGet("my")]
     public async Task<IActionResult> GetMyListings([FromQuery] int page = 1, [FromQuery] int pageSize = 10)
     {
+        pageSize = Math.Clamp(pageSize, 1, 50);
         var result = await _messageBus.InvokeAsync<Result<PagedList<ServiceListingSummaryDto>>>(
             new GetMyListingsQuery(GetCurrentUserId(), page, pageSize));
 
@@ -72,6 +86,7 @@ public class ServiceListingController(
     [HttpGet("pending")]
     public async Task<IActionResult> GetPending([FromQuery] int page = 1, [FromQuery] int pageSize = 10)
     {
+        pageSize = Math.Clamp(pageSize, 1, 50);
         var result = await _messageBus.InvokeAsync<Result<PagedList<ServiceListingSummaryDto>>>(
             new GetPendingListingsQuery(page, pageSize));
 
@@ -199,6 +214,90 @@ public class ServiceListingController(
 
         if (result.IsFailure) return BadRequest(new { error = result.Error });
         return Ok();
+    }
+
+    [Permission(
+        resourceKey: "marketplace.listing",
+        action: "set-availability",
+        description: "Set weekly availability slots for own listing",
+        recommendedRoles: new[] { "User", "Admin" }
+    )]
+    [HttpPut("{id:guid}/availability")]
+    public async Task<IActionResult> SetAvailability(Guid id, [FromBody] IReadOnlyCollection<AvailabilitySlotDto> slots)
+    {
+        var result = await _messageBus.InvokeAsync<Result>(
+            new SetListingAvailabilityCommand(id, GetCurrentUserId(), slots));
+
+        if (result.IsFailure) return BadRequest(new { error = result.Error });
+        return NoContent();
+    }
+
+    [Permission(
+        resourceKey: "marketplace.listing",
+        action: "read-stats",
+        description: "View own provider statistics dashboard",
+        recommendedRoles: new[] { "User", "Admin" }
+    )]
+    [HttpGet("stats/my")]
+    public async Task<IActionResult> GetMyStats()
+    {
+        var result = await _messageBus.InvokeAsync<Result<ProviderStatsDto>>(
+            new GetProviderStatsQuery(GetCurrentUserId()));
+
+        if (result.IsFailure) return BadRequest(new { error = result.Error });
+        return Ok(result.Value);
+    }
+
+    [Permission(
+        resourceKey: "marketplace.listing",
+        action: "read-stats",
+        description: "View any provider statistics dashboard (admin)",
+        recommendedRoles: new[] { "Admin", "Moderator" }
+    )]
+    [HttpGet("stats/provider/{providerId:guid}")]
+    public async Task<IActionResult> GetProviderStats(Guid providerId)
+    {
+        var result = await _messageBus.InvokeAsync<Result<ProviderStatsDto>>(
+            new GetProviderStatsQuery(providerId));
+
+        if (result.IsFailure) return BadRequest(new { error = result.Error });
+        return Ok(result.Value);
+    }
+
+    [Permission(
+        resourceKey: "marketplace.listing",
+        action: "read-all",
+        description: "View all listings with status filter (admin)",
+        recommendedRoles: new[] { "Admin", "Moderator" }
+    )]
+    [HttpGet("admin")]
+    public async Task<IActionResult> GetAllAdmin(
+        [FromQuery] int page = 1,
+        [FromQuery] int pageSize = 10,
+        [FromQuery] Guid? categoryId = null,
+        [FromQuery] string? search = null,
+        [FromQuery] PaymentMode? paymentMode = null,
+        [FromQuery] decimal? minPrice = null,
+        [FromQuery] decimal? maxPrice = null,
+        [FromQuery] string? city = null,
+        [FromQuery] string? country = null,
+        [FromQuery] ListingSortBy sortBy = ListingSortBy.Relevance,
+        [FromQuery] double? userLatitude = null,
+        [FromQuery] double? userLongitude = null,
+        [FromQuery] double? maxDistanceKm = null,
+        [FromQuery] bool availableNow = false,
+        [FromQuery] ListingStatus? status = null)
+    {
+        pageSize = Math.Clamp(pageSize, 1, 50);
+
+        var query = new GetServiceListingsQuery(
+            page, pageSize, categoryId, search, paymentMode, minPrice, maxPrice,
+            ActiveOnly: false, city, country, sortBy, userLatitude, userLongitude, maxDistanceKm, availableNow, status);
+
+        var result = await _messageBus.InvokeAsync<Result<PagedList<ServiceListingSummaryDto>>>(query);
+
+        if (result.IsFailure) return BadRequest(new { error = result.Error });
+        return Ok(result.Value);
     }
 
     private Guid GetCurrentUserId() => Guid.Parse(_currentUserService.UserId!);

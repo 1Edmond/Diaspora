@@ -15,6 +15,7 @@ public sealed class Conversation : AggregateRoot
     public string? Description { get; private set; }
     public string? AvatarUrl { get; private set; }
     public Guid CreatedByChatProfileId { get; private set; }
+    public Guid ProfileTypeId { get; private set; }
     public bool IsActive { get; private set; }
 
     private readonly List<ConversationParticipant> _participants = new();

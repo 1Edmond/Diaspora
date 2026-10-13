@@ -20,4 +20,10 @@ public class NotificationRule : AggregateRoot
         Channels = channels;
         IsActive = true;
     }
+
+    public void Update(NotificationChannel channels, bool isActive)
+    {
+        Channels = channels;
+        IsActive = isActive;
+    }
 }

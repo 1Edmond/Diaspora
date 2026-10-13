@@ -24,7 +24,7 @@ public sealed class CreateChatProfileCommandHandler(
                 "A chat profile already exists for this user.");
 
         var result = ChatProfile.Create(
-            command.UserId, command.ExternalProfileId,
+            command.UserId, command.ProfileId, command.ProfileTypeId,
             command.DisplayName, command.AvatarUrl,
             command.IsBot, command.BotToken);
 

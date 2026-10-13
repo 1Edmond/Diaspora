@@ -12,7 +12,7 @@ using System.Text;
 
 namespace Chat.Infrastructure.Repositories;
 
-public sealed class MessageRepository(ChatDbContext context,
+public sealed class MessageRepository(DbContext context,
      IEncryptionService encryptionService,
     IKeyManagementService keyManagement,
     IEncryptionMetadataRepository metadataRepository,
@@ -25,7 +25,7 @@ public sealed class MessageRepository(ChatDbContext context,
         logger,
         cache), IMessageRepository
 {
-    private readonly ChatDbContext _context = context;
+    private readonly ChatDbContext _context = (ChatDbContext)context;
 
     public async Task<IEnumerable<Message>> GetByConversationIdAsync(
         Guid conversationId, int page, int pageSize,

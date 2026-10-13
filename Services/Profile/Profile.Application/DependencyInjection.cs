@@ -24,25 +24,25 @@ public static class DependencyInjection
 
     public static void RegisterServiceEvent()
     {
-        EventTypeRegistry.Register<InternalProfileCreatedIntegrationEvent>();
+        EventTypeRegistry.Register<ProfileCreatedIntegrationEvent>();
     }
     public static void ConfigureProfileDomainQueues(this WolverineOptions options)
     {
         // Exchange sortant — Profile Service publie ses events vers les autres services
-        options.PublishMessage<InternalProfileCreatedIntegrationEvent>()
+        options.PublishMessage<ProfileCreatedIntegrationEvent>()
             .ToRabbitExchange(ExchangesConstants.ProfileEventsExchange)
             .UseDurableOutbox();
 
-        options.PublishMessage<InternalProfileVerifiedIntegrationEvent>()
+        options.PublishMessage<ProfileVerifiedIntegrationEvent>()
             .ToRabbitExchange(ExchangesConstants.ProfileEventsExchange).UseDurableOutbox();
 
-        options.PublishMessage<InternalProfileSuspendedIntegrationEvent>()
+        options.PublishMessage<ProfileSuspendedIntegrationEvent>()
             .ToRabbitExchange(ExchangesConstants.ProfileEventsExchange).UseDurableOutbox();
 
         options.PublishMessage<ExternalProfileCreatedIntegrationEvent>()
             .ToRabbitExchange(ExchangesConstants.ProfileEventsExchange).UseDurableOutbox();
 
-        options.PublishMessage<ExternalProfileActivatedIntegrationEvent>()
+        options.PublishMessage<ProfileActivatedIntegrationEvent>()
             .ToRabbitExchange(ExchangesConstants.ProfileEventsExchange).UseDurableOutbox();
 
         options.PublishMessage<ProfileKindChangedIntegrationEvent>()

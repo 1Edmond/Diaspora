@@ -1,4 +1,5 @@
-﻿using Marketplace.Application.Commands;
+﻿using Marketplace.Application.Abstractions;
+using Marketplace.Application.Commands;
 using Marketplace.Application.Interfaces;
 using Marketplace.Domain.Entities;
 using Shared.Domain.Commons;
@@ -16,6 +17,12 @@ public class CreateReviewCommandHandler(
 {
     public async Task<Result<Guid>> Handle(CreateReviewCommand command)
     {
+        var recentCount = await _reviewRepository.CountCreatedSinceAsync(
+            command.ReviewerId, DateTime.UtcNow - RateLimitConstants.ReviewCreationWindow);
+        if (recentCount >= RateLimitConstants.MaxReviewsPerWindow)
+            return Result.Failure<Guid>(
+                $"Trop d'avis postés récemment. Limite : {RateLimitConstants.MaxReviewsPerWindow} avis / {RateLimitConstants.ReviewCreationWindow.TotalHours}h.");
+
         var listing = await _listingRepository.GetByIdAsync(command.ListingId);
         if (listing is null || !listing.IsActive)
             return Result.Failure<Guid>("Listing not found or inactive.");
@@ -27,7 +34,7 @@ public class CreateReviewCommandHandler(
         if (alreadyReviewed)
             return Result.Failure<Guid>("You have already reviewed this listing.");
 
-        var review = Review.Create(command.ListingId, command.ReviewerId, command.Rating, command.Comment);
+        var review = Review.Create(command.ListingId, command.ReviewerId, command.Rating, command.Comment, command.IsVerified);
         await _reviewRepository.AddAsync(review);
 
         // Recalculate rating

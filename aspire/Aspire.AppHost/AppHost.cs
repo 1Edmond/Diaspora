@@ -12,6 +12,7 @@ Directory.CreateDirectory(Path.Combine(sharedVaultPath, "procedure"));
 Directory.CreateDirectory(Path.Combine(sharedVaultPath, "wallet"));
 Directory.CreateDirectory(Path.Combine(sharedVaultPath, "chat"));
 Directory.CreateDirectory(Path.Combine(sharedVaultPath, "marketplace"));
+Directory.CreateDirectory(Path.Combine(sharedVaultPath, "freelance"));
 
 var pgPassword = builder.AddParameter("postgres-password", secret: true);
 var pgUser = builder.AddParameter("postgres-user", secret: true);
@@ -63,7 +64,8 @@ IResourceBuilder<ContainerResource> AddVaultAgent(string name, string service) =
 var identityVaultAgent = AddVaultAgent("identity-vault-agent", "identity");
 var kycVaultAgent = AddVaultAgent("kyc-vault-agent", "kyc");
 var documentVaultAgent = AddVaultAgent("document-vault-agent", "document");
-//var marketplaceVaultAgent = AddVaultAgent("marketplace-vault-agent", "marketplace");
+var marketplaceVaultAgent = AddVaultAgent("marketplace-vault-agent", "marketplace");
+//var freelanceVaultAgent = AddVaultAgent("freelance-vault-agent", "freelance");
 
 
 var cache = builder.AddRedis("redis")
@@ -98,6 +100,7 @@ var procedureDb = postgres.AddDatabase("ProcedureDb", databaseName: "diaspora_pr
 var walletDb = postgres.AddDatabase("WalletDb", databaseName: "diaspora_wallet_db");
 var chatDb = postgres.AddDatabase("ChatDb", databaseName: "diaspora_chat_db");
 var marketPlaceDb = postgres.AddDatabase("MarketplaceDb", databaseName: "diaspora_marketplace_db");
+var freelanceDb = postgres.AddDatabase("FreelanceDb", databaseName: "diaspora_freelance_db");
 
 var rabbitmq = builder.AddRabbitMQ("rabbitmq", userName: rabbitUser, password: rabbitPassword)
     .WithImage("rabbitmq:4-management-alpine")
@@ -240,6 +243,25 @@ var procedureApi = builder.AddProject<Projects.Procedure_Api>("procedureservice"
     .WithHttpHealthCheck("/health");
 AddSharedConfig(procedureApi, "ProcedureService");
 
+//var freelanceApi = builder.AddProject<Projects.Freelance_Api>("freelanceservice")
+//    .WithEnvironment("ASPNETCORE_ENVIRONMENT", "Docker")
+//    .WithEnvironment("Vault__TokenPath", Path.Combine(sharedVaultPath, "freelance", "token"))
+//    .WithEnvironment("Vault__Url", vault.GetEndpoint("http"))
+//    .WithEnvironment("Vault__KeyName", "freelance")
+//    .WithReference(freelanceDb)
+//    .WithReference(rabbitmq)
+//    .WithReference(elasticsearch)
+//    .WithReference(cache)
+//    .WaitFor(freelanceDb)
+//    .WaitFor(identityApi)
+//    .WaitFor(rabbitmq)
+//    .WaitFor(cache)
+//    .WaitFor(elasticsearch)
+//    //.WaitFor(freelanceVaultAgent)
+//    .WithHttpHealthCheck("/health");
+//AddSharedConfig(freelanceApi, "FreelanceService");
+
+
 //var walletApi = builder.AddProject<Projects.Wallet_Api>("walletservice")
 //    .WithEnvironment("ASPNETCORE_ENVIRONMENT", "Docker")
 //.WithEnvironment("Vault__TokenPath", Path.Combine(sharedVaultPath, "identity", "token"))
@@ -257,23 +279,23 @@ AddSharedConfig(procedureApi, "ProcedureService");
 //    .WithHttpHealthCheck("/health");
 //AddSharedConfig(walletApi, "WalletService");
 
-//var chatApi = builder.AddProject<Projects.Chat_Api>("chatservice")
-//    .WithEnvironment("ASPNETCORE_ENVIRONMENT", "Docker")
-//.WithEnvironment("Vault__TokenPath", Path.Combine(sharedVaultPath, "identity", "token"))
-// .WithEnvironment("Vault__Url", vault.GetEndpoint("http"))
-// .WithEnvironment("Vault__KeyName", "identity")
-//    .WithReference(chatDb)
-//    .WithReference(rabbitmq)
-//    .WithReference(elasticsearch)
-//    .WithReference(cache)
-//    .WaitFor(chatDb)
-//    .WaitFor(identityApi)
-//    .WaitFor(rabbitmq)
-//    .WaitFor(cache)
-//    .WaitFor(elasticsearch)
-//    .WithHttpHealthCheck("/health");
+var chatApi = builder.AddProject<Projects.Chat_Api>("chatservice")
+    .WithEnvironment("ASPNETCORE_ENVIRONMENT", "Docker")
+    .WithEnvironment("Vault__TokenPath", Path.Combine(sharedVaultPath, "identity", "token"))
+    .WithEnvironment("Vault__Url", vault.GetEndpoint("http"))
+    .WithEnvironment("Vault__KeyName", "identity")
+    .WithReference(chatDb)
+    .WithReference(rabbitmq)
+    .WithReference(elasticsearch)
+    .WithReference(cache)
+    .WaitFor(chatDb)
+    .WaitFor(identityApi)
+    .WaitFor(rabbitmq)
+    .WaitFor(cache)
+    .WaitFor(elasticsearch)
+    .WithHttpHealthCheck("/health");
 
-//AddSharedConfig(chatApi, "ChatService");
+AddSharedConfig(chatApi, "ChatService");
 
 //var marketplaceApi = builder.AddProject<Projects.Marketplace_Api>("marketplaceservice")
 //    .WithEnvironment("ASPNETCORE_ENVIRONMENT", "Docker")
@@ -289,7 +311,7 @@ AddSharedConfig(procedureApi, "ProcedureService");
 //    .WaitFor(rabbitmq)
 //    .WaitFor(cache)
 //    .WaitFor(elasticsearch)
-//   // .WaitFor(marketplaceVaultAgent)
+//    //.WaitFor(marketplaceVaultAgent)
 //    .WithHttpHealthCheck("/health");
 
 //AddSharedConfig(marketplaceApi, "MarketplaceService");
@@ -308,31 +330,33 @@ var gateway = builder.AddProject<Projects.ServcicesGateway>("servcicesgateway")
     .WithReference(procedureApi)
     .WithReference(notificationApi)
     .WithReference(documentApi)
+    //.WithReference(freelanceApi)
+    //.WithReference(marketplaceApi)
     //.WithReference(kycApi)
     //.WithReference(walletApi)
-    //.WithReference(chatApi)
-    //.WithReference(marketplaceApi)
+    .WithReference(chatApi)
     .WithReference(cache)
     .WithChildRelationship(identityApi)
     .WithChildRelationship(profileApi)
     .WithChildRelationship(procedureApi)
     .WithChildRelationship(notificationApi)
     .WithChildRelationship(documentApi)
+    //.WithChildRelationship(freelanceApi)
+    //.WithChildRelationship(marketplaceApi)
     //.WithChildRelationship(kycApi)
     //.WithChildRelationship(walletApi)
-    //.WithChildRelationship(chatApi)
-    //.WithChildRelationship(marketplaceApi)
+    .WithChildRelationship(chatApi)
     .WaitFor(cache)
     .WaitFor(identityApi)
     .WaitFor(profileApi)
     .WaitFor(procedureApi)
     .WaitFor(notificationApi)
     .WaitFor(documentApi)
+    //.WaitFor(freelanceApi)
+    //.WaitFor(marketplaceApi)
     //.WaitFor(kycApi)
     //.WaitFor(walletApi)
-    //.WaitFor(chatApi)
-    //.WaitFor(marketplaceApi)
-    ;
+    .WaitFor(chatApi);
 
 //var backoffice = builder.AddProject<Projects.Diaspora_Backoffice>("backoffice")
 //    .WithReference(gateway)

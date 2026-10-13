@@ -10,5 +10,6 @@ public record CreateReviewCommand(
     Guid ListingId,
     Guid ReviewerId,
     int Rating,
-    string Comment
+    string Comment,
+    bool IsVerified = false
 ) : ICommand<Result<Guid>>;

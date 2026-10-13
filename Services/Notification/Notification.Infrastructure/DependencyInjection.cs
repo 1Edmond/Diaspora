@@ -57,6 +57,7 @@ public static class DependencyInjection
         services.AddScoped<INotificationCommandService, NotificationCommandService>();
         services.AddScoped<INotificationHistoryService>(sp =>
             (INotificationHistoryService)sp.GetRequiredService<INotificationQueryService>());
+        services.AddScoped<INotificationRuleService, NotificationRuleService>();
         services.AddSingleton<NotificationDispatcher>();
         services.AddScoped<INotificationSender, SmsNotificationSender>();
         services.AddScoped<INotificationSender, EmailNotificationSender>();
@@ -86,11 +87,17 @@ public static class DependencyInjection
             options.ConfigureRabbitMq().BindExchange(ExchangesConstants.IdentityEventsExchange)
                    .ToQueue("notification-service.identity-events")
                    .BindExchange(ExchangesConstants.ProfileEventsExchange)
-                   .ToQueue("notification-service.profile-events");
+                   .ToQueue("notification-service.profile-events")
+                   .BindExchange(ExchangesConstants.MarketplaceEventsExchange)
+                   .ToQueue("notification-service.marketplace-events")
+                   .BindExchange(ExchangesConstants.FreelanceEventsExchange)
+                   .ToQueue("notification-service.freelance-events");
 
 
             options.Discovery.IncludeAssembly(typeof(IdentityNotificationsEventHandler).Assembly);
             options.Discovery.IncludeAssembly(typeof(ProfileNotificationEventHandler).Assembly);
+            options.Discovery.IncludeAssembly(typeof(MarketplaceNotificationEventHandler).Assembly);
+            options.Discovery.IncludeAssembly(typeof(FreelanceNotificationEventHandler).Assembly);
             options.Policies.UseDurableInboxOnAllListeners();
             options.Policies.UseDurableOutboxOnAllSendingEndpoints();
             options.ListenToRabbitQueue("notification-service.identity-events")
@@ -100,6 +107,18 @@ public static class DependencyInjection
               .UseDurableInbox();
             
             options.ListenToRabbitQueue("notification-service.profile-events")
+              .PreFetchCount(15)
+              .MaximumParallelMessages(5)
+              .ListenerCount(2)
+              .UseDurableInbox();
+
+            options.ListenToRabbitQueue("notification-service.marketplace-events")
+              .PreFetchCount(15)
+              .MaximumParallelMessages(5)
+              .ListenerCount(2)
+              .UseDurableInbox();
+
+            options.ListenToRabbitQueue("notification-service.freelance-events")
               .PreFetchCount(15)
               .MaximumParallelMessages(5)
               .ListenerCount(2)

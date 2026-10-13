@@ -1,3 +1,4 @@
+using Shared.Domain.Constants;
 using Shared.Domain.Interfaces;
 using Shared.Infrastructure.Persistence.Translations;
 using System;
@@ -9,14 +10,12 @@ namespace Shared.Infrastructure.Extensions;
 
 public static class TranslatableExtensions
 {
-    private const string DefaultCulture = "fr";
-
     public static string GetTranslated<TOwner>(
         this TOwner owner,
         Expression<Func<TOwner, string>> property,
         IEnumerable<Translation<TOwner>> translations,
         string cultureCode,
-        string defaultCulture = DefaultCulture,
+        string defaultCulture = SharedConstants.DefaultCulture,
         string defaultValue = "")
         where TOwner : class, ITranslatable
     {
@@ -38,7 +37,7 @@ public static class TranslatableExtensions
 
     public static bool HasDefaultCulture<TOwner>(
         this IEnumerable<Translation<TOwner>> translations,
-        string defaultCulture = DefaultCulture)
+        string defaultCulture = SharedConstants.DefaultCulture)
         where TOwner : class, ITranslatable
     {
         return translations.Any(t => t.CultureCode == defaultCulture);

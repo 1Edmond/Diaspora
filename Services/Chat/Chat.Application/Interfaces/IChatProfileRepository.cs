@@ -11,7 +11,7 @@ public interface IChatProfileRepository : IRepository<ChatProfile>
     Task<ChatProfile?> GetByUserIdAsync(
         Guid userId, CancellationToken cancellationToken = default);
 
-    Task<ChatProfile?> GetByExternalProfileIdAsync(
+    Task<ChatProfile?> GetByProfileIdAsync(
         Guid externalProfileId, CancellationToken cancellationToken = default);
 
     Task<bool> ExistsByUserIdAsync(

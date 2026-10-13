@@ -13,4 +13,5 @@ public static class ExchangesConstants
     public const string WalletEventsExchange = "wallet.events";
     public const string ChatEventsExchange = "chat.events";
     public const string MarketplaceEventsExchange = "marketplace.events";
+    public const string FreelanceEventsExchange = "freelance.events";
 }

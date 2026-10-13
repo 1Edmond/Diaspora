@@ -13,7 +13,7 @@ using System.Text;
 
 namespace Chat.Infrastructure.Repositories;
 
-public sealed class ConversationRepository(ChatDbContext context,
+public sealed class ConversationRepository(DbContext context,
     IEncryptionService encryptionService,
     IKeyManagementService keyManagement,
     IEncryptionMetadataRepository metadataRepository,
@@ -26,7 +26,7 @@ public sealed class ConversationRepository(ChatDbContext context,
         logger,
         cache), IConversationRepository
 {
-    private readonly ChatDbContext _context = context;
+    private readonly ChatDbContext _context = (ChatDbContext)context;
 
     public async Task<Conversation?> GetWithParticipantsAsync(
         Guid conversationId, CancellationToken cancellationToken = default)

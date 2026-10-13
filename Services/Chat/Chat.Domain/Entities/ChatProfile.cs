@@ -11,7 +11,8 @@ namespace Chat.Domain.Entities;
 public sealed class ChatProfile : AggregateRoot
 {
     public Guid UserId { get; private set; }
-    public Guid? ExternalProfileId { get; private set; }
+    public Guid? ProfileId { get; private set; }
+    public Guid? ProfileTypeId { get; private set; }
     public string DisplayName { get; private set; } = string.Empty;
     public string? AvatarUrl { get; private set; }
     public bool IsBot { get; private set; }
@@ -28,7 +29,7 @@ public sealed class ChatProfile : AggregateRoot
         : base(id)
     {
         UserId = userId;
-        ExternalProfileId = externalProfileId;
+        ProfileId = externalProfileId;
         DisplayName = displayName;
         AvatarUrl = avatarUrl;
         IsBot = isBot;
@@ -38,7 +39,7 @@ public sealed class ChatProfile : AggregateRoot
     }
 
     public static Result<ChatProfile> Create(
-        Guid userId, Guid? externalProfileId,
+        Guid userId, Guid externalProfileId, Guid profileTypeId,
         string displayName, string? avatarUrl = null,
         bool isBot = false, string? botToken = null)
     {

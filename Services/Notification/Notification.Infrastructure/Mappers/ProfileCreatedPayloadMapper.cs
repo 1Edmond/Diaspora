@@ -10,11 +10,11 @@ namespace Notification.Infrastructure.Mappers;
 
 public class ProfileCreatedPayloadMapper : IInAppNotificationPayloadMapper
 {
-    public string EventType => nameof(InternalProfileCreatedIntegrationEvent);
+    public string EventType => nameof(ProfileCreatedIntegrationEvent);
 
     public InAppNotificationPayload? Map(JsonElement rawPayload)
     {
-        var evt = rawPayload.Deserialize<InternalProfileCreatedIntegrationEvent>(
+        var evt = rawPayload.Deserialize<ProfileCreatedIntegrationEvent>(
             new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
 
         if (evt is null)

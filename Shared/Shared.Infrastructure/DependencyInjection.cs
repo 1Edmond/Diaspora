@@ -77,7 +77,7 @@ public static class DependencyInjection
         services.AddScoped<IOutboxMessageRepository, OutboxMessageRepository>();
         services.AddScoped<IIdempotencyService, IdempotencyService>();
         services.AddScoped(typeof(IRepository<>), typeof(Repository<>));
-        services.AddScoped(typeof(ITranslationRepository<>), typeof(TranslationRepository<>));
+        services.AddScoped(typeof(Shared.Application.Abstractions.ITranslationRepository<>), typeof(TranslationRepository<>));
         services.AddHostedService<OutboxProcessor>();
         services.AddSingleton<IResourceDeclarationService, ResourceDeclarationService>();
 
@@ -159,7 +159,7 @@ public static class DependencyInjection
 
         services.AddWolverine(context =>
         {
-            context.Discovery.IncludeAssembly(typeof(WarmupCommandHandler).Assembly);
+           // context.Discovery.IncludeAssembly(typeof(WarmupCommandHandler).Assembly);
             //context.UseFluentValidation();
            
             

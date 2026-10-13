@@ -5,6 +5,7 @@ using Microsoft.EntityFrameworkCore;
 using Shared.Domain.Commons;
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Text;
 
 namespace Marketplace.Application.Handlers.Queries;
@@ -19,6 +20,8 @@ public class GetServiceListingByIdQueryHandler(IApplicationDbContext _context)
 
         if (listing is null)
             return Result.Failure<ServiceListingDto>("Listing not found.");
+
+        var now = DateTime.UtcNow;
 
         var dto = new ServiceListingDto(
             listing.Id,
@@ -38,7 +41,15 @@ public class GetServiceListingByIdQueryHandler(IApplicationDbContext _context)
             listing.AverageRating,
             listing.ReviewCount,
             listing.ViewCount,
-            listing.CreatedAt
+            listing.CreatedAt,
+            listing.City,
+            listing.Country,
+            listing.Latitude,
+            listing.Longitude,
+            listing.AvailabilitySlots
+                .Select(s => new AvailabilitySlotDto(s.Day, s.StartTime, s.EndTime))
+                .ToList(),
+            listing.IsAvailableAt(now)
         );
 
         return Result.Success(dto);

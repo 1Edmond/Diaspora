@@ -9,7 +9,8 @@ namespace Chat.Application.Commands;
 
 public sealed record CreateChatProfileCommand(
     Guid UserId,
-    Guid? ExternalProfileId,
+    Guid ProfileId,
+    Guid ProfileTypeId,
     string DisplayName,
     string? AvatarUrl = null,
     bool IsBot = false,

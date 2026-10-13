@@ -13,6 +13,7 @@
   <ItemGroup>
     <ProjectReference Include="..\..\..\aspire\Aspire.ServiceDefaults\Diaspora.ServiceDefaults.csproj" />
     <ProjectReference Include="..\Procedure.Infrastructure\Procedure.Infrastructure.csproj" />
+    <ProjectReference Include="..\..\..\Shared\Shared.Web\Shared.Web.csproj" />
   </ItemGroup>
 
 </Project>

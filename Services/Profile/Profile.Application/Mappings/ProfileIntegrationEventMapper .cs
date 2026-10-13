@@ -12,16 +12,16 @@ public sealed class ProfileIntegrationEventMapper : IIntegrationEventMapper
 {
     public IIntegrationEvent? Map(IDomainEvent domainEvent) => domainEvent switch
     {
-        ProfileCreatedDomainEvent e => new InternalProfileCreatedIntegrationEvent(
+        ProfileCreatedDomainEvent e => new ProfileCreatedIntegrationEvent(
             e.ProfileId, e.UserId, e.PhoneNumber),
 
-        ProfileVerifiedDomainEvent e => new InternalProfileVerifiedIntegrationEvent(
+        ProfileVerifiedDomainEvent e => new ProfileVerifiedIntegrationEvent(
             e.ProfileId, e.UserId, e.VerifiedByAdminId, e.VerifiedAt),
 
-        ProfileSuspendedDomainEvent e => new InternalProfileSuspendedIntegrationEvent(
+        ProfileSuspendedDomainEvent e => new ProfileSuspendedIntegrationEvent(
             e.ProfileId, e.UserId),
 
-        ProfileActivatedDomainEvent e => new ExternalProfileActivatedIntegrationEvent(
+        ProfileActivatedDomainEvent e => new ProfileActivatedIntegrationEvent(
             e.ProfileId, e.UserId, e.ProfileTypeId, e.CountryCode, e.Currency , e.ActivatedAt),
 
         ProfileKindChangedDomainEvent e => new ProfileKindChangedIntegrationEvent(

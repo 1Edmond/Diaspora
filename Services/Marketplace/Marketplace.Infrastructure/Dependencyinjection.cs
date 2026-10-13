@@ -47,6 +47,8 @@ public static class DependencyInjection
         services.AddScoped<ICategoryRepository, CategoryRepository>();
         services.AddScoped<IReviewRepository, ReviewRepository>();
         services.AddScoped<IServiceRequestRepository, ServiceRequestRepository>();
+        services.AddScoped<IFavoriteRepository, FavoriteRepository>();
+        services.AddScoped<IReportRepository, ReportRepository>();
         services.AddSingleton<CategorySeeder>();
 
         services.SetCoreInfrastructureServices(configuration, options =>

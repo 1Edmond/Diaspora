@@ -1,7 +1,9 @@
 ﻿using Chat.Application.Commands;
 using Chat.Application.Handlers.Commands;
 using Chat.Application.Interfaces;
+using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.Extensions.Logging;
+using Shared.Domain.Commons;
 using Shared.Infrastructure.Inbox;
 using Shared.Messaging.Events.Profile;
 using System;
@@ -18,17 +20,25 @@ public sealed class ExternalProfileActivatedConsumer(
     IIdempotencyService idempotency,
     ILogger<ExternalProfileActivatedConsumer> logger)
 {
-    public async Task Handle(ExternalProfileActivatedIntegrationEvent @event)
+    public async Task Handle(ProfileActivatedIntegrationEvent @event)
     {
         await idempotency.ProcessOnceAsync(
             @event.EventId,
-            nameof(ExternalProfileActivatedIntegrationEvent),
+            nameof(ProfileActivatedIntegrationEvent),
             async () =>
             {
+
+                var existChatProfile = await chatProfileRepository.ExistsByUserIdAsync(@event.UserId);
+
+                if (existChatProfile)
+                    return Result.Failure("Chat Profile already exists");
+
+
                 // 1. Créer le ChatProfile
                 var command = new CreateChatProfileCommand(
                     @event.UserId,
                     @event.ProfileId,
+                    @event.ProfileTypeId,
                     @event.DisplayName ?? @event.UserId.ToString());
 
                 var result = await createHandler.Handle(command, CancellationToken.None);

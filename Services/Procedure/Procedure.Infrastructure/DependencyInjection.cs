@@ -7,12 +7,16 @@ using Microsoft.Extensions.Logging;
 using Npgsql;
 using Procedure.Application;
 using Procedure.Application.Handlers.Commands;
+using Procedure.Application.Handlers.Queries;
+using Procedure.Application.DTOs;
 using Procedure.Application.Interfaces;
 using Procedure.Application.Mappings;
 using Procedure.Infrastructure.Extensions;
 using Procedure.Infrastructure.Persistences;
 using Procedure.Infrastructure.Repositories;
 using Shared.Application.Abstractions;
+using Shared.Application.Handlers.Commands;
+using Shared.Application.Handlers.Queries;
 using Shared.Infrastructure;
 using Shared.Messaging.Constants;
 using Shared.Messaging.Events;
@@ -49,6 +53,18 @@ public static class DependencyInjection
         // ── Integration Event Mapper ──────────────────────────────────────────
         services.AddScoped<IIntegrationEventMapper, ProcedureIntegrationEventMapper>();
 
+        // ── Translation handlers ───────────────────────────────────────────────
+        services.AddScoped(typeof(CreateWithTranslationsCommandHandler<Procedure.Domain.Entities.Procedure, ProcedureDto>),
+            typeof(CreateProcedureWithTranslationsCommandHandler));
+        services.AddScoped(typeof(UpdateWithTranslationsCommandHandler<Procedure.Domain.Entities.Procedure, ProcedureDto>),
+            typeof(UpdateProcedureWithTranslationsCommandHandler));
+        services.AddScoped(typeof(SetTranslationCommandHandler<Procedure.Domain.Entities.Procedure>),
+            typeof(SetProcedureTranslationCommandHandler));
+        services.AddScoped(typeof(DeleteTranslationCommandHandler<Procedure.Domain.Entities.Procedure>),
+            typeof(DeleteProcedureTranslationCommandHandler));
+        services.AddScoped(typeof(GetTranslationsQueryHandler<Procedure.Domain.Entities.Procedure>),
+            typeof(GetProcedureTranslationsQueryHandler));
+
         // ── Core Infrastructure ───────────────────────────────────────────────
         services.SetCoreInfrastructureServices(configuration, options =>
         {
@@ -71,6 +87,17 @@ public static class DependencyInjection
             options.ListenToRabbitQueue(ExchangesConstants.ProcedureEventsExchange)
                 .PreFetchCount(10)
                 .UseDurableInbox();
+
+
+            options.ConfigureRabbitMq().BindExchange(ExchangesConstants.ProfileEventsExchange)
+                .ToQueue("procedure-service.profile-events");
+
+            // Queue entrante : événements Profiles
+            options.ListenToRabbitQueue("procedure-service.profile-events")
+              .PreFetchCount(20)
+              .MaximumParallelMessages(3)
+              .ListenerCount(2)
+              .UseDurableInbox();
 
             options.UseEntityFrameworkCoreTransactions();
             options.Policies.AutoApplyTransactions();

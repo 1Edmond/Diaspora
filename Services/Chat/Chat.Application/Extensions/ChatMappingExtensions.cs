@@ -9,7 +9,7 @@ namespace Chat.Application.Extensions;
 public static class ChatMappingExtensions
 {
     public static ChatProfileDto ToDto(this ChatProfile p) =>
-        new(p.Id, p.UserId, p.ExternalProfileId, p.DisplayName,
+        new(p.Id, p.UserId, p.ProfileId, p.DisplayName,
             p.AvatarUrl, p.IsBot, p.Status, p.LastSeenAt, p.IsActive, p.CreatedAt);
 
     public static ConversationDto ToDto(this Conversation c, int unreadCount) =>

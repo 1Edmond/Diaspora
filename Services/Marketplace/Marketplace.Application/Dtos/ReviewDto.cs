@@ -12,5 +12,7 @@ public record ReviewDto(
     int Rating,
     string Comment,
     bool IsVerified,
-    DateTime CreatedAt
+    DateTime CreatedAt,
+    string? ProviderReply,
+    DateTime? ProviderRepliedAt
 );

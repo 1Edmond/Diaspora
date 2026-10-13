@@ -11,6 +11,8 @@ public interface IApplicationDbContext
     DbSet<ServiceListing> ServiceListings { get; }
     DbSet<Review> Reviews { get; }
     DbSet<ServiceRequest> ServiceRequests { get; }
+    DbSet<Favorite> Favorites { get; }
+    DbSet<Report> Reports { get; }
 
     Task<int> SaveChangesAsync(CancellationToken cancellationToken = default);
 }

@@ -22,7 +22,7 @@ public sealed class ExternalProfileSuspendedConsumer(
             async () =>
             {
                 var profile = await repository
-                    .GetByExternalProfileIdAsync(@event.ProfileId, CancellationToken.None);
+                    .GetByProfileIdAsync(@event.ProfileId, CancellationToken.None);
 
                 if (profile is null)
                 {

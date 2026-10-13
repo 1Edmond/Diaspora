@@ -1,4 +1,5 @@
-﻿using Marketplace.Application.Commands;
+﻿using Marketplace.Application.Abstractions;
+using Marketplace.Application.Commands;
 using Marketplace.Application.Interfaces;
 using Marketplace.Domain.Entities;
 using Shared.Domain.Commons;
@@ -16,6 +17,12 @@ public class CreateServiceListingCommandHandler(
 {
     public async Task<Result<Guid>> Handle(CreateServiceListingCommand command)
     {
+        var recentCount = await _listingRepository.CountCreatedSinceAsync(
+            command.ProviderId, DateTime.UtcNow - RateLimitConstants.ListingCreationWindow);
+        if (recentCount >= RateLimitConstants.MaxListingsPerWindow)
+            return Result.Failure<Guid>(
+                $"Trop de publications récentes. Limite : {RateLimitConstants.MaxListingsPerWindow} listings / {RateLimitConstants.ListingCreationWindow.TotalHours}h.");
+
         var category = await _categoryRepository.GetByIdAsync(command.CategoryId);
         if (category is null || !category.IsActive)
             return Result.Failure<Guid>("Category not found or inactive.");
@@ -28,7 +35,11 @@ public class CreateServiceListingCommandHandler(
             command.ContactInfo,
             command.PaymentMode,
             command.Price,
-            command.Currency
+            command.Currency,
+            command.City,
+            command.Country,
+            command.Latitude,
+            command.Longitude
         );
 
         await _listingRepository.AddAsync(listing);

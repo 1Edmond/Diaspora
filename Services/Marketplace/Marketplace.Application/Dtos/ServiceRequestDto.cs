@@ -21,5 +21,6 @@ public record ServiceRequestDto(
     Guid? WalletTransactionId,
     DateTime CreatedAt,
     DateTime? AcceptedAt,
-    DateTime? CompletedAt
+    DateTime? CompletedAt,
+    Guid? ChatThreadId
 );

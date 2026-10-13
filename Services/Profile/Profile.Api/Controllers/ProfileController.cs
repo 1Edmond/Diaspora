@@ -1,4 +1,4 @@
-﻿using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc;
 using Profile.Application.Commands;
 using Profile.Application.DTOs;
 using Profile.Application.Queries;
@@ -83,6 +83,34 @@ public class ProfileController(
             return BadRequest(new { error = result.Error });
 
         return Ok(new { message = "Profile kind updated successfully" });
+    }
+
+    [Permission(
+        resourceKey: "profile.internal",
+        action: "list",
+        description: "List internal profiles",
+        recommendedRoles: new[] { "Admin" }
+    )]
+    [HttpGet]
+    public async Task<IActionResult> GetProfiles(
+        [FromQuery] int pageNumber = 1,
+        [FromQuery] int pageSize = 20,
+        [FromQuery] string? searchTerm = null,
+        [FromQuery] int? status = null,
+        [FromQuery] Guid? profileTypeId = null,
+        CancellationToken cancellationToken = default)
+    {
+        var statusEnum = status.HasValue ? (Profile.Domain.Enums.ProfileStatus)status.Value : (Profile.Domain.Enums.ProfileStatus?)null;
+        
+        var query = new GetProfilesQuery(pageNumber, pageSize, searchTerm, statusEnum, profileTypeId);
+
+        var result = await _messageBus.InvokeAsync<Result<PagedList<ProfileDto>>>(
+            query, cancellationToken);
+
+        if (result.IsFailure)
+            return BadRequest(new { error = result.Error });
+
+        return Ok(result.Value);
     }
 
     [Permission(

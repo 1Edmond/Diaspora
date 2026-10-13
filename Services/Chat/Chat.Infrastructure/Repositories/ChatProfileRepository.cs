@@ -12,7 +12,7 @@ using System.Text;
 
 namespace Chat.Infrastructure.Repositories;
 
-public sealed class ChatProfileRepository(ChatDbContext context,
+public sealed class ChatProfileRepository(DbContext context,
     IEncryptionService encryptionService,
     IKeyManagementService keyManagement,
     IEncryptionMetadataRepository metadataRepository,
@@ -25,17 +25,17 @@ public sealed class ChatProfileRepository(ChatDbContext context,
         logger,
         cache), IChatProfileRepository
 {
-    private readonly ChatDbContext _context = context;
+    private readonly ChatDbContext _context = (ChatDbContext) context;
 
     public async Task<ChatProfile?> GetByUserIdAsync(
         Guid userId, CancellationToken cancellationToken = default)
         => await _context.ChatProfiles
             .FirstOrDefaultAsync(p => p.UserId == userId, cancellationToken);
 
-    public async Task<ChatProfile?> GetByExternalProfileIdAsync(
+    public async Task<ChatProfile?> GetByProfileIdAsync(
         Guid externalProfileId, CancellationToken cancellationToken = default)
         => await _context.ChatProfiles
-            .FirstOrDefaultAsync(p => p.ExternalProfileId == externalProfileId, cancellationToken);
+            .FirstOrDefaultAsync(p => p.ProfileId == externalProfileId, cancellationToken);
 
     public async Task<bool> ExistsByUserIdAsync(
         Guid userId, CancellationToken cancellationToken = default)

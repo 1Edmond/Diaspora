@@ -76,9 +76,8 @@ public class NotificationRuleSeeder(
                 "InternalProfileCreatedIntegrationEvent",
                 NotificationChannel.Email |  NotificationChannel.InApp
             ),
-           
-
-
+            
+            
              // KYC
              new (
                 "KYCVerificationCreatedIntegrationEvent",
@@ -118,6 +117,63 @@ public class NotificationRuleSeeder(
             new (
                 "KYCReviewStartedIntegrationEvent",
                 NotificationChannel.Email
+            ),
+
+            // Marketplace
+            new (
+                "ServiceListingApprovedIntegrationEvent",
+                NotificationChannel.InApp | NotificationChannel.Push
+            ),
+
+            new (
+                "ServiceListingRejectedIntegrationEvent",
+                NotificationChannel.InApp | NotificationChannel.Email
+            ),
+
+            new (
+                "ServiceRequestCreatedIntegrationEvent",
+                NotificationChannel.InApp | NotificationChannel.Push
+            ),
+
+            new (
+                "ServiceRequestAcceptedIntegrationEvent",
+                NotificationChannel.InApp | NotificationChannel.Push
+            ),
+
+            new (
+                "ServiceRequestCompletedIntegrationEvent",
+                NotificationChannel.InApp | NotificationChannel.Email
+            ),
+
+            // Freelance
+            new (
+                "JobPostingPublishedIntegrationEvent",
+                NotificationChannel.InApp
+            ),
+
+            new (
+                "JobApplicationCreatedIntegrationEvent",
+                NotificationChannel.InApp | NotificationChannel.Push
+            ),
+
+            new (
+                "JobApplicationAcceptedIntegrationEvent",
+                NotificationChannel.InApp | NotificationChannel.Push
+            ),
+
+            new (
+                "JobApplicationRejectedIntegrationEvent",
+                NotificationChannel.InApp
+            ),
+
+            new (
+                "JobApplicationCompletedIntegrationEvent",
+                NotificationChannel.InApp | NotificationChannel.Email
+            ),
+
+            new (
+                "JobMatchFoundIntegrationEvent",
+                NotificationChannel.InApp | NotificationChannel.Push
             ),
         ];
     }

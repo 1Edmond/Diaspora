@@ -16,13 +16,13 @@ public sealed class MessageMentionConfiguration : BaseEntityConfiguration<Messag
 
         builder.ToTable("message_mentions");
 
-        builder.HasIndex(x => x.MessageId);
-        builder.HasIndex(x => x.ChatProfileId).HasFilter("chat_profile_id IS NOT NULL");
 
         builder.Property(x => x.MessageId).IsRequired();
         builder.Property(x => x.Type)
             .HasConversion<string>().HasMaxLength(20).IsRequired();
-        builder.Property(x => x.ChatProfileId);
+        builder.Property(x => x.ChatProfileId).HasColumnName("chat_profile_id");
         builder.Property(x => x.MentionGroupId);
+        builder.HasIndex(x => x.ChatProfileId).HasFilter("chat_profile_id IS NOT NULL");
+        builder.HasIndex(x => x.MessageId);
     }
 }

@@ -14,7 +14,7 @@ using System.Text;
 
 namespace Chat.Infrastructure.Repositories;
 
-public sealed class CallRepository(ChatDbContext context,
+public sealed class CallRepository(DbContext  context,
     IEncryptionService encryptionService,
     IKeyManagementService keyManagement,
     IEncryptionMetadataRepository metadataRepository,
@@ -29,7 +29,7 @@ public sealed class CallRepository(ChatDbContext context,
         cache
         ), ICallRepository
 {
-    private readonly ChatDbContext _context = context;
+    private readonly ChatDbContext _context = (ChatDbContext)context;
 
     public async Task<IEnumerable<Call>> GetByConversationIdAsync(
         Guid conversationId, int page, int pageSize,

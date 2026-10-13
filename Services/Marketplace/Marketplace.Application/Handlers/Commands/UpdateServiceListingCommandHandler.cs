@@ -33,7 +33,11 @@ public class UpdateServiceListingCommandHandler(
             command.CategoryId,
             command.PaymentMode,
             command.Price,
-            command.Currency
+            command.Currency,
+            command.City,
+            command.Country,
+            command.Latitude,
+            command.Longitude
         );
 
         await _listingRepository.UpdateAsync(listing);

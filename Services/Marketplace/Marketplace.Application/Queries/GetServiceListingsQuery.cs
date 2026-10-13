@@ -16,5 +16,13 @@ public record GetServiceListingsQuery(
     PaymentMode? PaymentMode = null,
     decimal? MinPrice = null,
     decimal? MaxPrice = null,
-    bool ActiveOnly = true
+    bool ActiveOnly = true,
+    string? City = null,
+    string? Country = null,
+    ListingSortBy SortBy = ListingSortBy.Relevance,
+    double? UserLatitude = null,
+    double? UserLongitude = null,
+    double? MaxDistanceKm = null,
+    bool AvailableNow = false,
+    ListingStatus? Status = null
 ) : PagedQuery<Result<PagedList<ServiceListingSummaryDto>>>(PageNumber, PageSize);

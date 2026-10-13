@@ -35,6 +35,7 @@ public sealed class CreateDirectMessageCommandHandler(
         if (recipient is null || !recipient.IsActive)
             return Result.Failure<CreateConversationResponse>("Recipient profile not found.");
 
+        
         var result = Domain.Entities.Conversation.CreateDirect(
             command.InitiatorChatProfileId, command.RecipientChatProfileId);
 

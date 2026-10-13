@@ -26,7 +26,8 @@ public class GetMyListingsQueryHandler(IApplicationDbContext _context)
             .Select(l => new ServiceListingSummaryDto(
                 l.Id, l.ProviderId, string.Empty, l.Category.Name, l.Title,
                 l.PaymentMode, l.Price, l.Currency, l.AverageRating,
-                l.ReviewCount, l.ImageUrls.FirstOrDefault(), l.CreatedAt
+                l.ReviewCount, l.ImageUrls.FirstOrDefault(), l.CreatedAt,
+                l.City, l.Country, null
             ))
             .ToListAsync();
 

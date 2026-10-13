@@ -1,6 +1,7 @@
 ﻿using Marketplace.Application.Commands;
 using Marketplace.Application.Dtos;
 using Marketplace.Application.Queries;
+using Marketplace.Domain.Enums;
 using Microsoft.AspNetCore.Mvc;
 using Shared.Application.Interfaces;
 using Shared.Application.Models;
@@ -144,5 +145,50 @@ public class ServiceRequestController(
         return Ok(new { message = "Request cancelled" });
     }
 
+    [Permission(
+        resourceKey: "marketplace.request",
+        action: "link-chat-thread",
+        description: "Link a chat thread to a service request",
+        recommendedRoles: new[] { "User", "Admin" }
+    )]
+    [HttpPost("{id:guid}/chat-thread")]
+    public async Task<IActionResult> LinkChatThread(Guid id, [FromBody] LinkChatThreadRequest request)
+    {
+        var result = await _messageBus.InvokeAsync<Result>(
+            new LinkServiceRequestChatThreadCommand(id, GetCurrentUserId(), request.ChatThreadId));
+
+        if (result.IsFailure) return BadRequest(new { error = result.Error });
+        return NoContent();
+    }
+
+    [Permission(
+        resourceKey: "marketplace.request",
+        action: "read-all",
+        description: "View all service requests with filters (admin)",
+        recommendedRoles: new[] { "Admin", "Moderator" }
+    )]
+    [HttpGet("admin")]
+    public async Task<IActionResult> GetAllAdmin(
+        [FromQuery] int page = 1,
+        [FromQuery] int pageSize = 10,
+        [FromQuery] ServiceRequestStatus? status = null,
+        [FromQuery] PaymentStatus? paymentStatus = null,
+        [FromQuery] Guid? providerId = null,
+        [FromQuery] Guid? requesterId = null,
+        [FromQuery] DateTime? dateFrom = null,
+        [FromQuery] DateTime? dateTo = null)
+    {
+        pageSize = Math.Clamp(pageSize, 1, 50);
+
+        var query = new GetAllServiceRequestsQuery(page, pageSize, status, paymentStatus, providerId, requesterId, dateFrom, dateTo);
+
+        var result = await _messageBus.InvokeAsync<Result<PagedList<ServiceRequestDto>>>(query);
+
+        if (result.IsFailure) return BadRequest(new { error = result.Error });
+        return Ok(result.Value);
+    }
+
     private Guid GetCurrentUserId() => Guid.Parse(_currentUserService.UserId!);
 }
+
+public record LinkChatThreadRequest(Guid ChatThreadId);

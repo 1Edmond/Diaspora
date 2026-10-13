@@ -23,6 +23,8 @@ public class MarketplaceDbContext(
     public DbSet<ServiceListing> ServiceListings => Set<ServiceListing>();
     public DbSet<Review> Reviews => Set<Review>();
     public DbSet<ServiceRequest> ServiceRequests => Set<ServiceRequest>();
+    public DbSet<Favorite> Favorites => Set<Favorite>();
+    public DbSet<Report> Reports => Set<Report>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {

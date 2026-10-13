@@ -17,5 +17,9 @@ public record ServiceListingSummaryDto(
     double AverageRating,
     int ReviewCount,
     string? ThumbnailUrl,
-    DateTime CreatedAt
+    DateTime CreatedAt,
+    string? City,
+    string? Country,
+    double? DistanceKm = null,
+    ListingStatus Status = ListingStatus.Pending
 );

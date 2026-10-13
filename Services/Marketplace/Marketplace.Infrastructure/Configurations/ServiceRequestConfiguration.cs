@@ -29,5 +29,6 @@ public class ServiceRequestConfiguration : BaseEntityConfiguration<ServiceReques
         builder.HasIndex(r => r.RequesterId);
         builder.HasIndex(r => r.ProviderId);
         builder.HasIndex(r => r.Status);
+        builder.HasIndex(r => r.ChatThreadId);
     }
 }

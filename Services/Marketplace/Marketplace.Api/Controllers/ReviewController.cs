@@ -39,7 +39,7 @@ public class ReviewController(
     [HttpPost]
     public async Task<IActionResult> Create(Guid listingId, [FromBody] CreateReviewRequest request)
     {
-        var command = new CreateReviewCommand(listingId, GetCurrentUserId(), request.Rating, request.Comment);
+        var command = new CreateReviewCommand(listingId, GetCurrentUserId(), request.Rating, request.Comment, request.IsVerified);
         var result = await _messageBus.InvokeAsync<Result<Guid>>(command);
 
         if (result.IsFailure) return BadRequest(new { error = result.Error });
@@ -69,10 +69,30 @@ public class ReviewController(
         recommendedRoles: new[] { "User", "Admin", "Moderator" }
     )]
     [HttpDelete("{reviewId:guid}")]
-    public async Task<IActionResult> Delete(Guid reviewId, [FromQuery] bool isAdmin = false)
+    public async Task<IActionResult> Delete(Guid reviewId)
     {
+        // Le statut admin/modérateur est déterminé côté serveur à partir des rôles
+        // du token authentifié — il ne doit jamais être accepté depuis la requête du client.
+        var isAdmin = _currentUserService.IsInRole("Admin") || _currentUserService.IsInRole("Moderator");
+
         var result = await _messageBus.InvokeAsync<Result>(
             new DeleteReviewCommand(reviewId, GetCurrentUserId(), isAdmin));
+
+        if (result.IsFailure) return BadRequest(new { error = result.Error });
+        return NoContent();
+    }
+
+    [Permission(
+        resourceKey: "marketplace.review",
+        action: "reply",
+        description: "Reply publicly to a review as the listing's provider",
+        recommendedRoles: new[] { "User", "Admin" }
+    )]
+    [HttpPost("{reviewId:guid}/reply")]
+    public async Task<IActionResult> Reply(Guid reviewId, [FromBody] ReplyToReviewRequest request)
+    {
+        var result = await _messageBus.InvokeAsync<Result>(
+            new ReplyToReviewCommand(reviewId, GetCurrentUserId(), request.ReplyText));
 
         if (result.IsFailure) return BadRequest(new { error = result.Error });
         return NoContent();
@@ -81,5 +101,5 @@ public class ReviewController(
     private Guid GetCurrentUserId() => Guid.Parse(_currentUserService.UserId!);
 }
 
-public record CreateReviewRequest(int Rating, string Comment);
-
+public record CreateReviewRequest(int Rating, string Comment, bool IsVerified = false);
+public record ReplyToReviewRequest(string ReplyText);

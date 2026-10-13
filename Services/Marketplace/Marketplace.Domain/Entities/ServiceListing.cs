@@ -4,6 +4,7 @@ using Shared.Domain.Interfaces;
 using Shared.Domain.Primitives;
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Text;
 
 namespace Marketplace.Domain.Entities;
@@ -25,6 +26,16 @@ public class ServiceListing : AggregateRoot, ISoftDeletable
     public ListingStatus Status { get; private set; }
     public bool IsActive { get; private set; }
 
+    // Localisation (recherche géographique)
+    public string? City { get; private set; }
+    public string? Country { get; private set; }
+    public double? Latitude { get; private set; }
+    public double? Longitude { get; private set; }
+
+    // Disponibilité (créneaux hebdomadaires récurrents, UTC)
+    private readonly List<AvailabilitySlot> _availabilitySlots = new();
+    public IReadOnlyCollection<AvailabilitySlot> AvailabilitySlots => _availabilitySlots.AsReadOnly();
+
     // Images (stockées en chemin local, Storage Service plus tard)
     private readonly List<string> _imageUrls = new();
     public IReadOnlyCollection<string> ImageUrls => _imageUrls.AsReadOnly();
@@ -38,7 +49,6 @@ public class ServiceListing : AggregateRoot, ISoftDeletable
     public bool IsDeleted { get; private set; }
     public DateTime? DeletedAt { get; private set; }
     public string? DeletedBy { get; private set; }
-
 
 
     // Navigation
@@ -58,7 +68,11 @@ public class ServiceListing : AggregateRoot, ISoftDeletable
         string? contactInfo,
         PaymentMode paymentMode,
         decimal? price,
-        string? currency)
+        string? currency,
+        string? city = null,
+        string? country = null,
+        double? latitude = null,
+        double? longitude = null)
     {
         var listing = new ServiceListing
         {
@@ -71,6 +85,10 @@ public class ServiceListing : AggregateRoot, ISoftDeletable
             PaymentMode = paymentMode,
             Price = price,
             Currency = currency,
+            City = city,
+            Country = country,
+            Latitude = latitude,
+            Longitude = longitude,
             Status = ListingStatus.Pending,
             IsActive = false,
             AverageRating = 0,
@@ -90,7 +108,11 @@ public class ServiceListing : AggregateRoot, ISoftDeletable
         Guid categoryId,
         PaymentMode paymentMode,
         decimal? price,
-        string? currency)
+        string? currency,
+        string? city = null,
+        string? country = null,
+        double? latitude = null,
+        double? longitude = null)
     {
         Title = title;
         Description = description;
@@ -99,7 +121,28 @@ public class ServiceListing : AggregateRoot, ISoftDeletable
         PaymentMode = paymentMode;
         Price = price;
         Currency = currency;
+        City = city;
+        Country = country;
+        Latitude = latitude;
+        Longitude = longitude;
+
+        // Un listing déjà approuvé qui est modifié repasse en modération :
+        // on évite qu'un provider contourne le contrôle admin en éditant un listing actif.
+        if (Status == ListingStatus.Approved)
+        {
+            Status = ListingStatus.Pending;
+            IsActive = false;
+        }
     }
+
+    public void SetAvailability(IEnumerable<AvailabilitySlot> slots)
+    {
+        _availabilitySlots.Clear();
+        _availabilitySlots.AddRange(slots);
+    }
+
+    public bool IsAvailableAt(DateTime utcMoment)
+        => _availabilitySlots.Count == 0 || _availabilitySlots.Any(s => s.Contains(utcMoment));
 
     public void Approve()
     {

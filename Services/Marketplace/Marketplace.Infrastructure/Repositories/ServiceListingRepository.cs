@@ -34,4 +34,8 @@ public class ServiceListingRepository(MarketplaceDbContext _context,
         => await _context.ServiceListings
             .Where(l => l.CategoryId == categoryId && l.IsActive)
             .ToListAsync(cancellationToken);
+
+    public async Task<int> CountCreatedSinceAsync(Guid providerId, DateTime since, CancellationToken cancellationToken = default)
+        => await _context.ServiceListings
+            .CountAsync(l => l.ProviderId == providerId && l.CreatedAt >= since, cancellationToken);
 }

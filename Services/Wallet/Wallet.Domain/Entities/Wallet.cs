@@ -16,6 +16,7 @@ public sealed class Wallet : AggregateRoot
     public Guid UserId { get; private set; }
     public string Currency { get; private set; } = string.Empty;
     public decimal Balance { get; private set; }
+    public decimal HeldBalance { get; private set; }
     public bool IsActive { get; private set; }
 
     private readonly List<Transaction> _transactions = new();
@@ -30,6 +31,7 @@ public sealed class Wallet : AggregateRoot
         UserId = userId;
         Currency = currency.ToUpperInvariant();
         Balance = 0m;
+        HeldBalance = 0m;
         IsActive = true;
     }
 
@@ -266,4 +268,107 @@ public sealed class Wallet : AggregateRoot
 
     public void Deactivate() => IsActive = false;
     public void Activate() => IsActive = true;
+
+    // ── Freelance — Escrow (HoldFundsUpfront) ──────────────────────────────────
+
+    public Result<Transaction> HoldForFreelance(decimal amount, Guid jobApplicationId, string description)
+    {
+        if (!IsActive)
+            return Result.Failure<Transaction>("Wallet is not active.");
+        if (amount <= 0)
+            return Result.Failure<Transaction>("Amount must be positive.");
+        if (Balance < amount)
+            return Result.Failure<Transaction>(
+                $"Insufficient balance. Required: {amount} {Currency}, Available: {Balance} {Currency}.");
+
+        Balance -= amount;
+        HeldBalance += amount;
+
+        var tx = new Transaction(
+            Id, TransactionType.FreelanceEscrowHold, TransactionDirection.Debit,
+            amount, 0m, Balance, Currency, description,
+            jobApplicationId, "JobApplication");
+
+        _transactions.Add(tx);
+
+        return Result.Success(tx);
+    }
+
+    /// <summary>Libère le hold côté employeur (appelé sur le wallet de l'employeur, à la complétion).</summary>
+    public Result<Transaction> ReleaseFreelanceHold(decimal amount, Guid jobApplicationId, string description)
+    {
+        if (HeldBalance < amount)
+            return Result.Failure<Transaction>("Held balance is lower than the amount to release.");
+
+        HeldBalance -= amount;
+
+        var tx = new Transaction(
+            Id, TransactionType.FreelanceEscrowRelease, TransactionDirection.Debit,
+            amount, 0m, Balance, Currency, description,
+            jobApplicationId, "JobApplication");
+
+        _transactions.Add(tx);
+
+        return Result.Success(tx);
+    }
+
+    /// <summary>Rembourse le hold vers le solde disponible de l'employeur (annulation après acceptation).</summary>
+    public Result<Transaction> RefundFreelanceHold(decimal amount, Guid jobApplicationId, string description)
+    {
+        if (HeldBalance < amount)
+            return Result.Failure<Transaction>("Held balance is lower than the amount to refund.");
+
+        HeldBalance -= amount;
+        Balance += amount;
+
+        var tx = new Transaction(
+            Id, TransactionType.FreelanceEscrowRefund, TransactionDirection.Credit,
+            amount, 0m, Balance, Currency, description,
+            jobApplicationId, "JobApplication");
+
+        _transactions.Add(tx);
+
+        return Result.Success(tx);
+    }
+
+    // ── Freelance — Paiement direct (PayOnCompletion) ───────────────────────────
+
+    public Result<Transaction> DebitForFreelance(decimal amount, Guid jobApplicationId, string description)
+    {
+        if (!IsActive)
+            return Result.Failure<Transaction>("Wallet is not active.");
+        if (amount <= 0)
+            return Result.Failure<Transaction>("Amount must be positive.");
+        if (Balance < amount)
+            return Result.Failure<Transaction>(
+                $"Insufficient balance. Required: {amount} {Currency}, Available: {Balance} {Currency}.");
+
+        Balance -= amount;
+
+        var tx = new Transaction(
+            Id, TransactionType.FreelancePayment, TransactionDirection.Debit,
+            amount, 0m, Balance, Currency, description,
+            jobApplicationId, "JobApplication");
+
+        _transactions.Add(tx);
+
+        return Result.Success(tx);
+    }
+
+    public Result<Transaction> CreditFromFreelance(decimal amount, Guid jobApplicationId, string description)
+    {
+        if (!IsActive)
+            return Result.Failure<Transaction>("Wallet is not active.");
+
+        Balance += amount;
+
+        var tx = new Transaction(
+            Id, TransactionType.FreelanceReceipt, TransactionDirection.Credit,
+            amount, 0m, Balance, Currency, description,
+            jobApplicationId, "JobApplication");
+
+        _transactions.Add(tx);
+
+        return Result.Success(tx);
+    }
 }

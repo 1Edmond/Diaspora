@@ -9,6 +9,7 @@ using Shared.Application.Models;
 using Shared.Domain.Commons;
 using Shared.Domain.Enums;
 using Shared.Security.Attributes;
+using Shared.Web.Controllers;
 using Wolverine;
 
 namespace Procedure.Api.Controllers;
@@ -16,9 +17,10 @@ namespace Procedure.Api.Controllers;
 [ApiController]
 [Route("api/[controller]")]
 public class ProcedureController(
-    IMessageBus _messageBus,
-    ICurrentUserService _currentUserService,
-    ILogger<ProcedureController> _logger) : ControllerBase
+    IMessageBus messageBus,
+    ICurrentUserService currentUserService,
+    ILogger<ProcedureController> logger)
+    : BaseTranslatableController<Procedure.Domain.Entities.Procedure, ProcedureDto>(messageBus)
 {
     [Permission(
         resourceKey: "procedure",
@@ -31,7 +33,7 @@ public class ProcedureController(
         Guid procedureId,
         CancellationToken cancellationToken)
     {
-        var result = await _messageBus.InvokeAsync<Result<ProcedureDto>>(
+        var result = await messageBus.InvokeAsync<Result<ProcedureDto>>(
             new GetProcedureByIdQuery(procedureId), cancellationToken);
 
         if (result.IsFailure)
@@ -54,7 +56,7 @@ public class ProcedureController(
         [FromQuery] int pageSize = 20,
         CancellationToken cancellationToken = default)
     {
-        var result = await _messageBus.InvokeAsync<Result<PagedList<ProcedureDto>>>(
+        var result = await messageBus.InvokeAsync<Result<PagedList<ProcedureDto>>>(
             new GetProceduresByProfileTypeQuery(profileType, profileTypeId, pageNumber, pageSize),
             cancellationToken);
 
@@ -75,7 +77,7 @@ public class ProcedureController(
         [FromBody] CreateProcedureCommand command,
         CancellationToken cancellationToken)
     {
-        var result = await _messageBus.InvokeAsync<Result<Guid>>(
+        var result = await messageBus.InvokeAsync<Result<Guid>>(
             command, cancellationToken);
 
         if (result.IsFailure)
@@ -108,7 +110,7 @@ public class ProcedureController(
             request.DependencyIds,
             request.RequiredDocumentTypeIds);
 
-        var result = await _messageBus.InvokeAsync<Result>(command, cancellationToken);
+        var result = await messageBus.InvokeAsync<Result>(command, cancellationToken);
 
         if (result.IsFailure)
             return BadRequest(new { error = result.Error });
@@ -127,7 +129,7 @@ public class ProcedureController(
         Guid procedureId,
         CancellationToken cancellationToken)
     {
-        var result = await _messageBus.InvokeAsync<Result>(
+        var result = await messageBus.InvokeAsync<Result>(
             new DeleteProcedureCommand(procedureId), cancellationToken);
 
         if (result.IsFailure)
@@ -136,5 +138,3 @@ public class ProcedureController(
         return Ok(new { message = "Procedure deactivated successfully" });
     }
 }
-
-

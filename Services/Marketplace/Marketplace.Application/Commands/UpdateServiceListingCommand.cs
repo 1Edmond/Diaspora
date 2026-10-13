@@ -16,5 +16,9 @@ public record UpdateServiceListingCommand(
     Guid CategoryId,
     PaymentMode PaymentMode,
     decimal? Price,
-    string? Currency
+    string? Currency,
+    string? City = null,
+    string? Country = null,
+    double? Latitude = null,
+    double? Longitude = null
 ) : ICommand<Result>;

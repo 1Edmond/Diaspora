@@ -26,7 +26,8 @@ public class GetListingReviewsQueryHandler(IApplicationDbContext _context)
             .Select(r => new ReviewDto(
                 r.Id, r.ListingId, r.ReviewerId,
                 string.Empty, // Résolu via Profile Service
-                r.Rating, r.Comment, r.IsVerified, r.CreatedAt
+                r.Rating, r.Comment, r.IsVerified, r.CreatedAt,
+                r.ProviderReply, r.ProviderRepliedAt
             ))
             .ToListAsync();
 

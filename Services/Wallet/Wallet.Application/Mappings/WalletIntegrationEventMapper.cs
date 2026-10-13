@@ -1,6 +1,7 @@
 ﻿using Shared.Domain.Interfaces;
 using Shared.Messaging.Events;
 using Shared.Messaging.Events.Wallet;
+using Shared.Messaging.Events.Freelance;
 using System;
 using System.Collections.Generic;
 using System.Text;
@@ -29,6 +30,18 @@ public sealed class WalletIntegrationEventMapper : IIntegrationEventMapper
             MarketplacePaymentCompletedDomainEvent e => new MarketplacePaymentCompletedIntegrationEvent(
                 e.BuyerWalletId, e.SellerWalletId, e.TransactionId,
                 e.ServiceId, e.Amount, e.Currency),
+
+            FreelanceEscrowHoldCompletedDomainEvent e => new FreelanceEscrowHoldCompletedIntegrationEvent(
+                e.EmployerWalletId, e.TransactionId, e.JobApplicationId, e.Amount, e.Currency),
+
+            FreelanceEscrowReleasedDomainEvent e => new FreelanceEscrowReleasedIntegrationEvent(
+                e.EmployerWalletId, e.WorkerWalletId, e.TransactionId, e.JobApplicationId, e.Amount, e.Currency),
+
+            FreelanceEscrowRefundedDomainEvent e => new FreelanceEscrowRefundedIntegrationEvent(
+                e.EmployerWalletId, e.TransactionId, e.JobApplicationId, e.Amount, e.Currency),
+
+            FreelancePaymentCompletedDomainEvent e => new FreelancePaymentCompletedIntegrationEvent(
+                e.EmployerWalletId, e.WorkerWalletId, e.TransactionId, e.JobApplicationId, e.Amount, e.Currency),
 
             _ => null
         };

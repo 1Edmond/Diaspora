@@ -28,7 +28,8 @@ public class GetPendingListingsQueryHandler(IApplicationDbContext _context)
             .Select(l => new ServiceListingSummaryDto(
                 l.Id, l.ProviderId, string.Empty, l.Category.Name, l.Title,
                 l.PaymentMode, l.Price, l.Currency, 0, 0,
-                l.ImageUrls.FirstOrDefault(), l.CreatedAt
+                l.ImageUrls.FirstOrDefault(), l.CreatedAt,
+                l.City, l.Country, null
             ))
             .ToListAsync();
 

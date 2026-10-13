@@ -15,6 +15,10 @@ public class Review : AggregateRoot, ISoftDeletable
     public string Comment { get; private set; } = string.Empty;
     public bool IsVerified { get; private set; }       // A eu une transaction avec le prestataire
 
+    // Réponse publique du prestataire
+    public string? ProviderReply { get; private set; }
+    public DateTime? ProviderRepliedAt { get; private set; }
+
     // Soft delete
     public bool IsDeleted { get; private set; }
     public DateTime? DeletedAt { get; private set; }
@@ -65,5 +69,14 @@ public class Review : AggregateRoot, ISoftDeletable
         IsDeleted = false;
         DeletedAt = null;
         DeletedBy = null;
+    }
+
+public void Reply(string replyText)
+    {
+        if (string.IsNullOrWhiteSpace(replyText))
+            throw new ArgumentException("Reply text cannot be empty.");
+
+        ProviderReply = replyText;
+        ProviderRepliedAt = DateTime.UtcNow;
     }
 }

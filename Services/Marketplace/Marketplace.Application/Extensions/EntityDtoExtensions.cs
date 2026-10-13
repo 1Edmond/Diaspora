@@ -15,6 +15,6 @@ public static class EntityDtoExtensions
         r.Message, r.Status,
         r.AgreedPrice, r.AgreedCurrency,
         r.PaymentStatus, r.WalletTransactionId,
-        r.CreatedAt, r.AcceptedAt, r.CompletedAt
+        r.CreatedAt, r.AcceptedAt, r.CompletedAt, r.ChatThreadId
     );
 }

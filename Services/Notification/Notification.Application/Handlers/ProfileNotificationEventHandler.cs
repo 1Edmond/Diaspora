@@ -12,6 +12,6 @@ public class ProfileNotificationEventHandler(
     INotificationService notificationService)
 {
 
-    public Task Handle(InternalProfileCreatedIntegrationEvent message)
+    public Task Handle(ProfileCreatedIntegrationEvent message)
         => BaseNotificationEventHandler.HandleAsync(message, logger, notificationService);
 }
