@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Text;
 
@@ -11,5 +11,6 @@ public sealed record WalletDto(
     string Currency,
     decimal Balance,
     bool IsActive,
-    DateTime CreatedAt
+    DateTime CreatedAt,
+    decimal HeldBalance = 0m
 );

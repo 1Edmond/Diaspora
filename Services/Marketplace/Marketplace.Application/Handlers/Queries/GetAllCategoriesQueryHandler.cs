@@ -5,7 +5,9 @@ using Microsoft.EntityFrameworkCore;
 using Shared.Domain.Commons;
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Text;
+using System.Threading.Tasks;
 
 namespace Marketplace.Application.Handlers.Queries;
 
@@ -17,6 +19,7 @@ public class GetAllCategoriesQueryHandler(
     public async Task<Result<List<CategoryDto>>> Handle(GetAllCategoriesQuery query)
     {
         var rawCategories = await _context.Categories
+            .Include(c => c.Policy)
             .Where(c => !query.ActiveOnly || c.IsActive)
             .OrderBy(c => c.DisplayOrder)
             .Select(c => new
@@ -28,7 +31,16 @@ public class GetAllCategoriesQueryHandler(
                 c.IconUrl,
                 c.IsActive,
                 c.DisplayOrder,
-                ActiveListingCount = c.Listings.Count(l => l.IsActive)
+                ActiveListingCount = c.Listings.Count(l => l.IsActive),
+                Policy = c.Policy == null ? null : new CategoryPolicyDto(
+                    c.Policy.MinPublishLevel,
+                    c.Policy.MinBookLevel,
+                    c.Policy.MaxWeightKg,
+                    c.Policy.MaxValueAmount,
+                    c.Policy.RequiresEscrow,
+                    c.Policy.RequiresPreModeration,
+                    c.Policy.DefaultCommissionRate
+                )
             })
             .ToListAsync();
 
@@ -50,7 +62,8 @@ public class GetAllCategoriesQueryHandler(
                 c.IconUrl,
                 c.IsActive,
                 c.DisplayOrder,
-                c.ActiveListingCount
+                c.ActiveListingCount,
+                c.Policy
             );
         }).ToList();
 

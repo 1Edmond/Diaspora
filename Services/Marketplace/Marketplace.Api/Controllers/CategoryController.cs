@@ -1,4 +1,4 @@
-﻿using Marketplace.Application.Commands;
+using Marketplace.Application.Commands;
 using Marketplace.Application.Queries;
 using Microsoft.AspNetCore.Mvc;
 using Shared.Domain.Commons;
@@ -70,6 +70,21 @@ public class CategoryController(IMessageBus _messageBus, ILogger<CategoryControl
     public async Task<IActionResult> ToggleStatus(Guid id, [FromBody] bool isActive)
     {
         var result = await _messageBus.InvokeAsync<Result>(new ToggleCategoryStatusCommand(id, isActive));
+        if (result.IsFailure) return BadRequest(new { error = result.Error });
+        return NoContent();
+    }
+
+    [Permission(
+        resourceKey: "marketplace.category",
+        action: "update-policy",
+        description: "Update a service category policy",
+        recommendedRoles: new[] { "Admin" }
+    )]
+    [HttpPut("{id:guid}/policy")]
+    public async Task<IActionResult> UpdatePolicy(Guid id, [FromBody] UpdateCategoryPolicyCommand command)
+    {
+        var cmd = command with { CategoryId = id };
+        var result = await _messageBus.InvokeAsync<Result>(cmd);
         if (result.IsFailure) return BadRequest(new { error = result.Error });
         return NoContent();
     }
