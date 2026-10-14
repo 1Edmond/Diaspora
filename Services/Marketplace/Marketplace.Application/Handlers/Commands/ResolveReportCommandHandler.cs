@@ -2,15 +2,18 @@ using Marketplace.Application.Commands;
 using Marketplace.Application.Interfaces;
 using Shared.Domain.Commons;
 using Shared.Domain.Interfaces;
+using Shared.Messaging.Events.Marketplace;
 using System;
 using System.Collections.Generic;
 using System.Text;
+using Wolverine;
 
 namespace Marketplace.Application.Handlers.Commands;
 
 public class ResolveReportCommandHandler(
     IReportRepository _reportRepository,
-    IUnitOfWork _unitOfWork)
+    IUnitOfWork _unitOfWork,
+    IMessageBus? _messageBus = null)
 {
     public async Task<Result> Handle(ResolveReportCommand command)
     {
@@ -29,6 +32,16 @@ public class ResolveReportCommandHandler(
 
         await _reportRepository.UpdateAsync(report);
         await _unitOfWork.SaveChangesAsync();
+
+        if (_messageBus is not null)
+        {
+            await _messageBus.PublishAsync(new ReportResolvedIntegrationEvent(
+                report.Id,
+                report.ReporterId,
+                report.TargetType.ToString(),
+                report.TargetId,
+                command.ResolutionNotes ?? string.Empty));
+        }
 
         return Result.Success();
     }

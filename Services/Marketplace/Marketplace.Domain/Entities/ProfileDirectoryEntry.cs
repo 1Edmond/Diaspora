@@ -29,6 +29,9 @@ public class ProfileDirectoryEntry : AggregateRoot
 
     public bool IsSuspended { get; private set; }
 
+    /// <summary>Vérification KYC approuvée.</summary>
+    public bool IsKycApproved { get; private set; }
+
     /// <summary>Un profil peut publier / recevoir des demandes s'il est activé et non suspendu.</summary>
     public bool IsEligibleProvider => IsActivated && !IsSuspended;
 
@@ -62,6 +65,12 @@ public class ProfileDirectoryEntry : AggregateRoot
     }
 
     public void ApplyVerification() => IsVerified = true;
+
+    public void ApplyKycApproval()
+    {
+        IsKycApproved = true;
+        IsVerified = true;
+    }
 
     public void ApplySuspension() => IsSuspended = true;
 }

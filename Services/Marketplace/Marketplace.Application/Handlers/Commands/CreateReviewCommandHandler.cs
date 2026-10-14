@@ -8,13 +8,16 @@ using System;
 using System.Collections.Generic;
 using System.Text;
 
+using Wolverine;
+
 namespace Marketplace.Application.Handlers.Commands;
 
 public class CreateReviewCommandHandler(
     IReviewRepository _reviewRepository,
     IServiceListingRepository _listingRepository,
     IServiceRequestRepository _requestRepository,
-    IUnitOfWork _unitOfWork)
+    IUnitOfWork _unitOfWork,
+    IMessageBus? _messageBus = null)
 {
     public async Task<Result<Guid>> Handle(CreateReviewCommand command)
     {
@@ -61,6 +64,17 @@ public class CreateReviewCommandHandler(
         listing.RecalculateRating(Math.Round(average, 2), count);
         await _listingRepository.UpdateAsync(listing);
         await _unitOfWork.SaveChangesAsync();
+
+        if (_messageBus is not null)
+        {
+            await _messageBus.PublishAsync(new Shared.Messaging.Events.Marketplace.ReviewCreatedIntegrationEvent(
+                review.Id,
+                review.ListingId,
+                listing.ProviderId,
+                review.ReviewerId,
+                review.Rating,
+                review.Comment));
+        }
 
         return Result.Success(review.Id);
     }

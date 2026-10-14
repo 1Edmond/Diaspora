@@ -40,5 +40,20 @@ public static class WolverineMarketplaceExtensions
 
         options.PublishMessage<MarketplacePaymentRefundRequestedIntegrationEvent>()
             .ToRabbitExchange(ExchangesConstants.MarketplaceEventsExchange);
+
+        options.PublishMessage<ServiceRequestDeclinedIntegrationEvent>()
+            .ToRabbitExchange(ExchangesConstants.MarketplaceEventsExchange);
+
+        options.PublishMessage<ServiceRequestCancelledIntegrationEvent>()
+            .ToRabbitExchange(ExchangesConstants.MarketplaceEventsExchange);
+
+        options.PublishMessage<ReviewCreatedIntegrationEvent>()
+            .ToRabbitExchange(ExchangesConstants.MarketplaceEventsExchange);
+
+        options.PublishMessage<ReviewRepliedIntegrationEvent>()
+            .ToRabbitExchange(ExchangesConstants.MarketplaceEventsExchange);
+
+        options.PublishMessage<ReportResolvedIntegrationEvent>()
+            .ToRabbitExchange(ExchangesConstants.MarketplaceEventsExchange);
     }
 }

@@ -34,6 +34,14 @@ public class DeclineServiceRequestCommandHandler(
                 new MarketplacePaymentRefundRequestedIntegrationEvent(request.Id));
         }
 
+        await _messageBus.PublishAsync(
+            new ServiceRequestDeclinedIntegrationEvent(
+                request.Id,
+                request.ListingId,
+                request.RequesterId,
+                request.ProviderId,
+                command.Reason ?? string.Empty));
+
         return Result.Success();
     }
 }

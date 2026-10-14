@@ -31,6 +31,20 @@ public class ProfileDirectoryConsumer(
     public Task Handle(ProfileSuspendedIntegrationEvent message)
         => UpsertAsync(message.ProfileId, message.UserId, entry => entry.ApplySuspension());
 
+    public Task Handle(Shared.Messaging.Events.Kyc.KycArrivalProofApprovedIntegrationEvent message)
+        => UpsertAsync(message.ProfileId, message.UserId, entry => entry.ApplyKycApproval());
+
+    public async Task Handle(Shared.Messaging.Events.Kyc.KYCVerificationApprovedIntegrationEvent message)
+    {
+        var entry = await _repository.GetByUserIdAsync(message.UserId);
+        if (entry is not null)
+        {
+            entry.ApplyKycApproval();
+            await _repository.UpdateAsync(entry);
+            await _unitOfWork.SaveChangesAsync();
+        }
+    }
+
     private async Task UpsertAsync(Guid profileId, Guid userId, Action<ProfileDirectoryEntry> apply)
     {
         if (profileId == Guid.Empty || userId == Guid.Empty)

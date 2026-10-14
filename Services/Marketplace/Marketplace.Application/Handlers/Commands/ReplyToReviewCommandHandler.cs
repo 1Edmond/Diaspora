@@ -2,15 +2,18 @@ using Marketplace.Application.Commands;
 using Marketplace.Application.Interfaces;
 using Shared.Domain.Commons;
 using Shared.Domain.Interfaces;
+using Shared.Messaging.Events.Marketplace;
 using System;
 using System.Collections.Generic;
 using System.Text;
+using Wolverine;
 
 namespace Marketplace.Application.Handlers.Commands;
 
 public class ReplyToReviewCommandHandler(
     IReviewRepository _reviewRepository,
-    IUnitOfWork _unitOfWork)
+    IUnitOfWork _unitOfWork,
+    IMessageBus? _messageBus = null)
 {
     public async Task<Result> Handle(ReplyToReviewCommand command)
     {
@@ -33,6 +36,16 @@ public class ReplyToReviewCommandHandler(
 
         await _reviewRepository.UpdateAsync(review);
         await _unitOfWork.SaveChangesAsync();
+
+        if (_messageBus is not null)
+        {
+            await _messageBus.PublishAsync(new ReviewRepliedIntegrationEvent(
+                review.Id,
+                review.ListingId,
+                review.ReviewerId,
+                command.ProviderId,
+                command.ReplyText));
+        }
 
         return Result.Success();
     }

@@ -102,6 +102,16 @@ public static class DependencyInjection
                 .ListenerCount(2)
                 .UseDurableInbox();
 
+            // Événements du KYC Service : badge vérifié / preuve d'arrivée
+            options.ConfigureRabbitMq().BindExchange(ExchangesConstants.KycEventsExchange)
+                .ToQueue("marketplace-service.kyc-events");
+
+            options.ListenToRabbitQueue("marketplace-service.kyc-events")
+                .PreFetchCount(20)
+                .MaximumParallelMessages(3)
+                .ListenerCount(2)
+                .UseDurableInbox();
+
             options.UseEntityFrameworkCoreTransactions();
             options.Policies.AutoApplyTransactions();
             options.Discovery.IncludeAssembly(typeof(CreateCategoryCommandHandler).Assembly);
