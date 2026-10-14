@@ -1,4 +1,4 @@
-﻿using Marketplace.Application.Commands;
+using Marketplace.Application.Commands;
 using Marketplace.Application.Dtos;
 using Marketplace.Application.Queries;
 using Microsoft.AspNetCore.Mvc;
@@ -37,9 +37,11 @@ public class ReviewController(
         recommendedRoles: new[] { "User", "Admin" }
     )]
     [HttpPost]
-    public async Task<IActionResult> Create(Guid listingId, [FromBody] CreateReviewRequest request)
+    public async Task<IActionResult> Create(Guid listingId, [FromBody] ReviewRequest request)
     {
-        var command = new CreateReviewCommand(listingId, GetCurrentUserId(), request.Rating, request.Comment, request.IsVerified);
+        // Le caractère « vérifié » est calculé côté serveur : le client ne peut pas l'imposer.
+        var command = new CreateReviewCommand(
+            listingId, GetCurrentUserId(), request.Rating, request.Comment ?? string.Empty);
         var result = await _messageBus.InvokeAsync<Result<Guid>>(command);
 
         if (result.IsFailure) return BadRequest(new { error = result.Error });
@@ -53,9 +55,10 @@ public class ReviewController(
         recommendedRoles: new[] { "User", "Admin" }
     )]
     [HttpPut("{reviewId:guid}")]
-    public async Task<IActionResult> Update(Guid reviewId, [FromBody] CreateReviewRequest request)
+    public async Task<IActionResult> Update(Guid reviewId, [FromBody] ReviewRequest request)
     {
-        var command = new UpdateReviewCommand(reviewId, GetCurrentUserId(), request.Rating, request.Comment);
+        var command = new UpdateReviewCommand(
+            reviewId, GetCurrentUserId(), request.Rating, request.Comment ?? string.Empty);
         var result = await _messageBus.InvokeAsync<Result>(command);
 
         if (result.IsFailure) return BadRequest(new { error = result.Error });
@@ -101,5 +104,7 @@ public class ReviewController(
     private Guid GetCurrentUserId() => Guid.Parse(_currentUserService.UserId!);
 }
 
-public record CreateReviewRequest(int Rating, string Comment, bool IsVerified = false);
+/// <summary>Corps de création/modification d'un avis. Ne contient volontairement aucun indicateur « vérifié ».</summary>
+public record ReviewRequest(int Rating, string? Comment);
+
 public record ReplyToReviewRequest(string ReplyText);

@@ -1,4 +1,4 @@
-﻿using Marketplace.Application.Abstractions;
+using Marketplace.Application.Abstractions;
 using Marketplace.Application.Commands;
 using Marketplace.Application.Interfaces;
 using Marketplace.Domain.Entities;
@@ -13,10 +13,15 @@ namespace Marketplace.Application.Handlers.Commands;
 public class CreateReviewCommandHandler(
     IReviewRepository _reviewRepository,
     IServiceListingRepository _listingRepository,
+    IServiceRequestRepository _requestRepository,
     IUnitOfWork _unitOfWork)
 {
     public async Task<Result<Guid>> Handle(CreateReviewCommand command)
     {
+        var validation = ReviewRules.Validate(command.Rating, command.Comment);
+        if (validation.IsFailure)
+            return Result.Failure<Guid>(validation.Error);
+
         var recentCount = await _reviewRepository.CountCreatedSinceAsync(
             command.ReviewerId, DateTime.UtcNow - RateLimitConstants.ReviewCreationWindow);
         if (recentCount >= RateLimitConstants.MaxReviewsPerWindow)
@@ -34,15 +39,27 @@ public class CreateReviewCommandHandler(
         if (alreadyReviewed)
             return Result.Failure<Guid>("You have already reviewed this listing.");
 
-        var review = Review.Create(command.ListingId, command.ReviewerId, command.Rating, command.Comment, command.IsVerified);
+        // Le statut « vérifié » est dérivé exclusivement de l'état serveur : l'auteur doit avoir
+        // une demande de service COMPLÉTÉE sur ce listing. Il n'est jamais fourni par le client.
+        var isVerified = await _requestRepository.HasCompletedRequestAsync(
+            command.ReviewerId, command.ListingId);
+
+        var review = Review.Create(
+            command.ListingId,
+            command.ReviewerId,
+            command.Rating,
+            ReviewRules.NormalizeComment(command.Comment),
+            isVerified);
+
         await _reviewRepository.AddAsync(review);
+        await _unitOfWork.SaveChangesAsync();
 
-        // Recalculate rating
-        var (avg, count) = await _reviewRepository.GetRatingStatsAsync(command.ListingId);
-        var newAvg = (avg * count + command.Rating) / (count + 1);
-        listing.RecalculateRating(Math.Round(newAvg, 2), count + 1);
+        // Les statistiques sont recalculées depuis l'état PERSISTÉ (et non incrémentalement) :
+        // l'opération est idempotente et se « auto-répare » si un appel concurrent a modifié
+        // les avis entre-temps.
+        var (average, count) = await _reviewRepository.GetRatingStatsAsync(command.ListingId);
+        listing.RecalculateRating(Math.Round(average, 2), count);
         await _listingRepository.UpdateAsync(listing);
-
         await _unitOfWork.SaveChangesAsync();
 
         return Result.Success(review.Id);

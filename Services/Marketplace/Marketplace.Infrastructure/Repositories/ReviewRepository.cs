@@ -1,4 +1,4 @@
-﻿using JasperFx.Core;
+using JasperFx.Core;
 using Marketplace.Application.Interfaces;
 using Marketplace.Domain.Entities;
 using Marketplace.Infrastructure.Persistence;
@@ -33,8 +33,14 @@ public class ReviewRepository(MarketplaceDbContext _context,
             .OrderByDescending(r => r.CreatedAt)
             .ToListAsync(cancellationToken);
 
+    // IgnoreQueryFilters : l'index unique (ListingId, ReviewerId) s'applique aussi aux avis
+    // supprimés (soft delete). Sans cela, un auteur ayant supprimé son avis passerait ce contrôle,
+    // puis l'INSERT échouerait sur l'index unique (HTTP 500). Un avis supprimé compte donc comme
+    // « déjà posté » et l'appelant reçoit une erreur métier claire.
     public async Task<bool> HasReviewedAsync(Guid listingId, Guid reviewerId, CancellationToken cancellationToken = default)
-        => await _context.Reviews.AnyAsync(r => r.ListingId == listingId && r.ReviewerId == reviewerId, cancellationToken);
+        => await _context.Reviews
+            .IgnoreQueryFilters()
+            .AnyAsync(r => r.ListingId == listingId && r.ReviewerId == reviewerId, cancellationToken);
 
     public async Task<(double Average, int Count)> GetRatingStatsAsync(Guid listingId, CancellationToken cancellationToken = default)
     {

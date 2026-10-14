@@ -1,6 +1,7 @@
-﻿using JasperFx.Core;
+using JasperFx.Core;
 using Marketplace.Application.Interfaces;
 using Marketplace.Domain.Entities;
+using Marketplace.Domain.Enums;
 using Marketplace.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Caching.Distributed;
@@ -46,4 +47,11 @@ public class ServiceRequestRepository(MarketplaceDbContext _context,
             .Where(r => r.ListingId == listingId)
             .OrderByDescending(r => r.CreatedAt)
             .ToListAsync(cancellationToken);
+
+    public async Task<bool> HasCompletedRequestAsync(Guid requesterId, Guid listingId, CancellationToken cancellationToken = default)
+        => await _context.ServiceRequests
+            .AnyAsync(r => r.RequesterId == requesterId
+                        && r.ListingId == listingId
+                        && r.Status == ServiceRequestStatus.Completed,
+                cancellationToken);
 }
