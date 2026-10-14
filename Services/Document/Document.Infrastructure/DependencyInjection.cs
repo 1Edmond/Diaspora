@@ -48,6 +48,10 @@ public static class DependencyInjection
         services.AddScoped<IDocumentRepository, DocumentRepository>();
         services.AddScoped<IDocumentTypeRepository, DocumentTypeRepository>();
         services.AddScoped<IProfileDirectoryRepository, ProfileDirectoryRepository>();
+        services.AddScoped<Shared.Application.Abstractions.ITranslationRepository<Document.Domain.Entities.DocumentType>>(sp =>
+            new Shared.Infrastructure.Persistence.Translations.TranslationRepository<Document.Domain.Entities.DocumentType>(
+                sp.GetRequiredService<DocumentDbContext>(),
+                sp.GetRequiredService<ILogger<Shared.Infrastructure.Persistence.Translations.TranslationRepository<Document.Domain.Entities.DocumentType>>>()));
 
         // ── File Storage — chiffré via Vault + AES-GCM ────────────────────────
         services.AddScoped<IFileStorageService, EncryptedLocalFileStorageService>();

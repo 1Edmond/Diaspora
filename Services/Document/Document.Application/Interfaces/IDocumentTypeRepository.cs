@@ -1,4 +1,4 @@
-﻿using Document.Domain.Entities;
+using Document.Domain.Entities;
 using Shared.Domain.Interfaces;
 using System;
 using System.Collections.Generic;
@@ -16,4 +16,7 @@ public interface IDocumentTypeRepository : IRepository<DocumentType>
 
     Task<IEnumerable<DocumentType>> GetAllActiveAsync(
         CancellationToken cancellationToken = default);
+
+    Task<IEnumerable<DocumentType>> GetActiveByProfileTypeAsync(
+        Guid? profileTypeId, CancellationToken cancellationToken = default);
 }

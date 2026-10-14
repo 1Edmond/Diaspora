@@ -1,4 +1,4 @@
-﻿using Document.Application.Interfaces;
+using Document.Application.Interfaces;
 using Document.Domain.Entities;
 using Document.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
@@ -45,4 +45,17 @@ public sealed class DocumentTypeRepository(
             .Where(x => x.IsActive)
             .OrderBy(x => x.Name)
             .ToListAsync(cancellationToken);
+
+    public async Task<IEnumerable<DocumentType>> GetActiveByProfileTypeAsync(
+        Guid? profileTypeId, CancellationToken cancellationToken = default)
+    {
+        var query = _context.DocumentTypes.Where(x => x.IsActive);
+
+        if (profileTypeId.HasValue && profileTypeId.Value != Guid.Empty)
+        {
+            query = query.Where(x => x.ProfileTypeId == profileTypeId.Value || x.ProfileTypeId == Guid.Empty);
+        }
+
+        return await query.OrderBy(x => x.Name).ToListAsync(cancellationToken);
+    }
 }

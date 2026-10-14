@@ -2,6 +2,7 @@ using Document.Domain.Entities;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using Shared.Application.Interfaces;
+using Shared.Infrastructure.Persistence.Translations;
 using Shared.Messaging.Events;
 using System;
 using System.Collections.Generic;
@@ -25,5 +26,6 @@ public sealed class DocumentDbContext(
         base.OnModelCreating(modelBuilder);
         //modelBuilder.ApplyConfigurationsFromAssembly(typeof(DocumentDbContext).Assembly);
         modelBuilder.HasDefaultSchema("document");
+        modelBuilder.ApplyTranslatableEntities();
     }
 }

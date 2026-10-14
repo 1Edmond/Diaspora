@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Text;
 
@@ -12,5 +12,6 @@ public sealed record DocumentTypeDto(
     bool IsRenewable,
     int RenewalAlertDays,
     bool IsRequired,
-    bool IsActive
+    bool IsActive,
+    Guid ProfileTypeId = default
 );

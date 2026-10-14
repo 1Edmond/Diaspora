@@ -1,4 +1,5 @@
-﻿using Shared.Domain.Commons;
+using Shared.Domain.Commons;
+using Shared.Domain.Interfaces;
 using Shared.Domain.Primitives;
 using System;
 using System.Collections.Generic;
@@ -6,7 +7,7 @@ using System.Text;
 
 namespace Document.Domain.Entities;
 
-public sealed class DocumentType : AggregateRoot
+public sealed class DocumentType : AggregateRoot, ITranslatable
 {
     public string Name { get; private set; } = string.Empty;
 

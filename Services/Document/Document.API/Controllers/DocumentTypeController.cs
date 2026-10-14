@@ -1,4 +1,5 @@
-﻿using Document.Application.Extensions;
+using Document.Application.DTOs;
+using Document.Application.Extensions;
 using Document.Application.Interfaces;
 using Document.Application.Requests;
 using Document.Domain.Entities;
@@ -11,6 +12,8 @@ namespace Document.API.Controllers;
 [Route("api/document-types")]
 public class DocumentTypeController(
     IDocumentTypeRepository _repository,
+    Shared.Application.Abstractions.ITranslationRepository<DocumentType> _translationRepo,
+    Shared.Application.Interfaces.ICurrentUserService _currentUserService,
     ILogger<DocumentTypeController> _logger) : ControllerBase
 {
     [Permission(
@@ -20,10 +23,36 @@ public class DocumentTypeController(
         recommendedRoles: new[] { "User", "Admin" }
     )]
     [HttpGet]
-    public async Task<IActionResult> GetAll(CancellationToken cancellationToken)
+    public async Task<IActionResult> GetAll(
+        [FromQuery] Guid? profileTypeId,
+        CancellationToken cancellationToken)
     {
-        var types = await _repository.GetAllActiveAsync(cancellationToken);
-        return Ok(types.Select(t => t.ToDto()));
+        var types = (await _repository.GetActiveByProfileTypeAsync(profileTypeId, cancellationToken)).ToList();
+        var typeIds = types.Select(t => t.Id).ToList();
+        var translations = await _translationRepo.GetByOwnerIdsAsync(typeIds, cancellationToken);
+        var preferredLang = _currentUserService.DataLanguage;
+
+        var dtos = types.Select(t =>
+        {
+            var trans = translations.GetValueOrDefault(t.Id);
+            var translatedName = Shared.Application.Translations.TranslationResolver.Resolve(
+                t.Name, nameof(DocumentType.Name), trans, preferredLang);
+            var translatedDesc = Shared.Application.Translations.TranslationResolver.Resolve(
+                t.Description ?? string.Empty, nameof(DocumentType.Description), trans, preferredLang);
+
+            return new DocumentTypeDto(
+                t.Id,
+                translatedName,
+                t.Code,
+                string.IsNullOrEmpty(translatedDesc) ? null : translatedDesc,
+                t.IsRenewable,
+                t.RenewalAlertDays,
+                t.IsRequired,
+                t.IsActive,
+                t.ProfileTypeId);
+        });
+
+        return Ok(dtos);
     }
 
     [Permission(

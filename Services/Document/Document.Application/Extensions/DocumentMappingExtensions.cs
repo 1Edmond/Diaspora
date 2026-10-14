@@ -1,4 +1,4 @@
-﻿using Document.Application.DTOs;
+using Document.Application.DTOs;
 using Document.Domain.Entities;
 using System;
 using System.Collections.Generic;
@@ -36,5 +36,6 @@ public static class DocumentMappingExtensions
             type.IsRenewable,
             type.RenewalAlertDays,
             type.IsRequired,
-            type.IsActive);
+            type.IsActive,
+            type.ProfileTypeId);
 }
