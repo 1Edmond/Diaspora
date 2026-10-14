@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Text;
 
@@ -14,4 +14,5 @@ public static class ExchangesConstants
     public const string ChatEventsExchange = "chat.events";
     public const string MarketplaceEventsExchange = "marketplace.events";
     public const string FreelanceEventsExchange = "freelance.events";
+    public const string KycEventsExchange = "kyc.events";
 }
