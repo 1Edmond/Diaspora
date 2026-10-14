@@ -105,7 +105,12 @@ public static class DependencyInjection
 
         // ── DbContext ─────────────────────────────────────────────────────────
         services.AddPostgresDatabase<WalletDbContext>(connectionString, migrationsAssembly);
-        //services.AddScoped<IApplicationDbContext, WalletDbContext>();
+
+        var genericDbContextDescriptor = services.FirstOrDefault(d => d.ServiceType == typeof(DbContext));
+        if (genericDbContextDescriptor != null)
+        {
+            services.Remove(genericDbContextDescriptor);
+        }
     }
 
     public static void BuildInfrastructure(

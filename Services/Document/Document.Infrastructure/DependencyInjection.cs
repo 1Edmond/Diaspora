@@ -119,7 +119,14 @@ public static class DependencyInjection
 
         // ── DbContext (inclut les tables DEK de Shared.Security.Persistence) ──
         services.AddPostgresDatabase<DocumentDbContext>(connectionString, migrationsAssembly);
-        //services.AddScoped<IApplicationDbContext, DocumentDbContext>();
+
+        // Supprime l'enregistrement générique DbContext pour éviter le conflit Wolverine
+        // "multiple DbContext types detected: DbContext, DocumentDbContext"
+        var genericDbContextDescriptor = services.FirstOrDefault(d => d.ServiceType == typeof(DbContext));
+        if (genericDbContextDescriptor != null)
+        {
+            services.Remove(genericDbContextDescriptor);
+        }
     }
 
     public static void BuildInfrastructure(

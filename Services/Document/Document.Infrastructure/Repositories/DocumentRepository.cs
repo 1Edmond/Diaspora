@@ -1,4 +1,4 @@
-﻿using Document.Application.Interfaces;
+using Document.Application.Interfaces;
 using Document.Domain.Enums;
 using Document.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
@@ -13,7 +13,7 @@ using System.Text;
 namespace Document.Infrastructure.Repositories;
 
 public sealed class DocumentRepository(
-    DbContext context,
+    DocumentDbContext context,
     IEncryptionService encryptionService,
     IKeyManagementService keyManagement,
     IEncryptionMetadataRepository metadataRepository,
@@ -27,7 +27,7 @@ public sealed class DocumentRepository(
         logger,
         cache), IDocumentRepository
 {
-    private readonly DocumentDbContext _context = (DocumentDbContext)context;
+    private readonly DocumentDbContext _context = context;
 
     public async Task<IEnumerable<Domain.Entities.Document>> GetByExternalProfileIdAsync(
         Guid externalProfileId, CancellationToken cancellationToken = default)

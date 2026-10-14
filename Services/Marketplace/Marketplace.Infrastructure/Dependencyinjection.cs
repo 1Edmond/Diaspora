@@ -122,6 +122,12 @@ public static class DependencyInjection
 
         services.AddPostgresDatabase<MarketplaceDbContext>(connectionString, migrationsAssembly);
         services.AddScoped<IApplicationDbContext, MarketplaceDbContext>();
+
+        var genericDbContextDescriptor = services.FirstOrDefault(d => d.ServiceType == typeof(DbContext));
+        if (genericDbContextDescriptor != null)
+        {
+            services.Remove(genericDbContextDescriptor);
+        }
     }
 
     public static void BuildInfrastructure(
