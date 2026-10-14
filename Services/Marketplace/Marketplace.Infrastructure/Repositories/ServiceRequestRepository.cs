@@ -52,6 +52,6 @@ public class ServiceRequestRepository(MarketplaceDbContext _context,
         => await _context.ServiceRequests
             .AnyAsync(r => r.RequesterId == requesterId
                         && r.ListingId == listingId
-                        && r.Status == ServiceRequestStatus.Completed,
+                        && (r.Status == ServiceRequestStatus.Completed || r.Status == ServiceRequestStatus.Delivered),
                 cancellationToken);
 }

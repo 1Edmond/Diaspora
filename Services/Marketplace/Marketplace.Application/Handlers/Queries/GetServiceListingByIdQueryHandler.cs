@@ -56,7 +56,21 @@ public class GetServiceListingByIdQueryHandler(
             listing.AvailabilitySlots
                 .Select(s => new AvailabilitySlotDto(s.Day, s.StartTime, s.EndTime))
                 .ToList(),
-            listing.IsAvailableAt(now)
+            listing.IsAvailableAt(now),
+            listing.DepartureCountryCode,
+            listing.DepartureCity,
+            listing.ArrivalCountryCode,
+            listing.ArrivalCity,
+            listing.DepartureDate,
+            listing.ArrivalDate,
+            listing.PickupDeadline,
+            listing.CapacityKg,
+            listing.RemainingKg,
+            listing.PricePerKg,
+            listing.TransportMode,
+            listing.FlightOrTransportNumber,
+            listing.ProhibitedItemsDescription,
+            listing.MeetingPoints
         );
 
         return Result.Success(dto);

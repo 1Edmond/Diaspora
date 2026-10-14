@@ -51,6 +51,13 @@ public class CreateServiceListingCommandHandler(
                 $"Votre niveau de vérification ({provider.Level}) est insuffisant pour publier dans la catégorie '{category.Name}'. Niveau minimum requis : {category.Policy.MinPublishLevel}.");
         }
 
+        // 5. Contrôle du poids maximum autorisé par la politique de catégorie.
+        if (category.Policy?.MaxWeightKg.HasValue == true && command.CapacityKg.HasValue && command.CapacityKg.Value > category.Policy.MaxWeightKg.Value)
+        {
+            return Result.Failure<Guid>(
+                $"La capacité proposée ({command.CapacityKg.Value} kg) dépasse le maximum autorisé pour cette catégorie ({category.Policy.MaxWeightKg.Value} kg).");
+        }
+
         var listing = ServiceListing.Create(
             command.ProviderId,
             command.CategoryId,
@@ -65,6 +72,32 @@ public class CreateServiceListingCommandHandler(
             command.Latitude,
             command.Longitude
         );
+
+        if (!string.IsNullOrWhiteSpace(command.DepartureCountryCode)
+            && !string.IsNullOrWhiteSpace(command.ArrivalCountryCode)
+            && command.DepartureDate.HasValue
+            && command.ArrivalDate.HasValue
+            && command.CapacityKg.HasValue
+            && command.PricePerKg.HasValue)
+        {
+            var travelResult = listing.SetTravelDetails(
+                command.DepartureCountryCode,
+                command.DepartureCity ?? string.Empty,
+                command.ArrivalCountryCode,
+                command.ArrivalCity ?? string.Empty,
+                command.DepartureDate.Value,
+                command.ArrivalDate.Value,
+                command.PickupDeadline,
+                command.CapacityKg.Value,
+                command.PricePerKg.Value,
+                command.TransportMode,
+                command.FlightOrTransportNumber,
+                command.ProhibitedItemsDescription,
+                command.MeetingPoints);
+
+            if (travelResult.IsFailure)
+                return Result.Failure<Guid>(travelResult.Error);
+        }
 
         await _listingRepository.AddAsync(listing);
         await _unitOfWork.SaveChangesAsync();

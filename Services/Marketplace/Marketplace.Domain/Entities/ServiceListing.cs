@@ -1,5 +1,6 @@
 using Marketplace.Domain.Enums;
 using Marketplace.Domain.Events;
+using Shared.Domain.Commons;
 using Shared.Domain.Interfaces;
 using Shared.Domain.Primitives;
 using System;
@@ -31,6 +32,26 @@ public class ServiceListing : AggregateRoot, ISoftDeletable
     public string? Country { get; private set; }
     public double? Latitude { get; private set; }
     public double? Longitude { get; private set; }
+
+    // Corridor & Trajets
+    public string? DepartureCountryCode { get; private set; }
+    public string? DepartureCity { get; private set; }
+    public string? ArrivalCountryCode { get; private set; }
+    public string? ArrivalCity { get; private set; }
+    public DateTime? DepartureDate { get; private set; }
+    public DateTime? ArrivalDate { get; private set; }
+    public DateTime? PickupDeadline { get; private set; }
+
+    // Capacité & Tarification colis
+    public decimal? CapacityKg { get; private set; }
+    public decimal? RemainingKg { get; private set; }
+    public decimal? PricePerKg { get; private set; }
+
+    // Logistique
+    public string? TransportMode { get; private set; }
+    public string? FlightOrTransportNumber { get; private set; }
+    public string? ProhibitedItemsDescription { get; private set; }
+    public string? MeetingPoints { get; private set; }
 
     // Disponibilité (créneaux hebdomadaires récurrents, UTC)
     private readonly List<AvailabilitySlot> _availabilitySlots = new();
@@ -182,6 +203,84 @@ public class ServiceListing : AggregateRoot, ISoftDeletable
     {
         AverageRating = newAverage;
         ReviewCount = newCount;
+    }
+
+    public Result SetTravelDetails(
+        string depCountry,
+        string depCity,
+        string arrCountry,
+        string arrCity,
+        DateTime depDate,
+        DateTime arrDate,
+        DateTime? pickupDeadline,
+        decimal capacityKg,
+        decimal pricePerKg,
+        string? transportMode = null,
+        string? transportNumber = null,
+        string? prohibitedItems = null,
+        string? meetingPoints = null)
+    {
+        if (string.IsNullOrWhiteSpace(depCountry))
+            return Result.Failure("Le pays de départ est obligatoire.");
+        if (string.IsNullOrWhiteSpace(depCity))
+            return Result.Failure("La ville de départ est obligatoire.");
+        if (string.IsNullOrWhiteSpace(arrCountry))
+            return Result.Failure("Le pays d'arrivée est obligatoire.");
+        if (string.IsNullOrWhiteSpace(arrCity))
+            return Result.Failure("La ville d'arrivée est obligatoire.");
+        if (arrDate < depDate)
+            return Result.Failure("La date d'arrivée doit être postérieure ou égale à la date de départ.");
+        if (pickupDeadline.HasValue && pickupDeadline.Value > depDate)
+            return Result.Failure("La date limite de récupération doit être antérieure ou égale à la date de départ.");
+        if (capacityKg <= 0)
+            return Result.Failure("La capacité (en kg) doit être strictement positive.");
+        if (pricePerKg < 0)
+            return Result.Failure("Le prix par kg ne peut pas être négatif.");
+
+        DepartureCountryCode = depCountry.Trim().ToUpperInvariant();
+        DepartureCity = depCity.Trim();
+        ArrivalCountryCode = arrCountry.Trim().ToUpperInvariant();
+        ArrivalCity = arrCity.Trim();
+        DepartureDate = depDate;
+        ArrivalDate = arrDate;
+        PickupDeadline = pickupDeadline;
+        CapacityKg = capacityKg;
+        RemainingKg = capacityKg;
+        PricePerKg = pricePerKg;
+        TransportMode = transportMode;
+        FlightOrTransportNumber = transportNumber;
+        ProhibitedItemsDescription = prohibitedItems;
+        MeetingPoints = meetingPoints;
+
+        return Result.Success();
+    }
+
+    public Result ReserveCapacity(decimal kg)
+    {
+        if (kg <= 0)
+            return Result.Failure("Le poids réservé doit être supérieur à zéro.");
+
+        if (!RemainingKg.HasValue)
+            return Result.Failure("Cette annonce n'a pas de capacité définie.");
+
+        if (RemainingKg.Value < kg)
+            return Result.Failure($"Capacité restante insuffisante ({RemainingKg.Value} kg disponibles, {kg} kg demandés).");
+
+        RemainingKg -= kg;
+        return Result.Success();
+    }
+
+    public Result ReleaseCapacity(decimal kg)
+    {
+        if (kg <= 0)
+            return Result.Failure("Le poids à libérer doit être supérieur à zéro.");
+
+        if (!RemainingKg.HasValue)
+            return Result.Failure("Cette annonce n'a pas de capacité définie.");
+
+        var maxCap = CapacityKg ?? RemainingKg.Value;
+        RemainingKg = Math.Min(maxCap, RemainingKg.Value + kg);
+        return Result.Success();
     }
 
     public void Delete(string deletedBy)

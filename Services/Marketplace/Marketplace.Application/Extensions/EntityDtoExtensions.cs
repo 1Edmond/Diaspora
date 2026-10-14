@@ -31,6 +31,16 @@ public static class EntityDtoExtensions
         r.CreatedAt,
         r.AcceptedAt,
         r.CompletedAt,
-        r.ChatThreadId
+        r.ChatThreadId,
+        r.WeightKg,
+        r.PackageDescription,
+        r.PackageContentCategory,
+        r.DeclaredValue,
+        r.HandoverConfirmedAt,
+        r.HandoverProofUrl,
+        r.DeliveryConfirmedAt,
+        r.DeliveryProofUrl,
+        !string.IsNullOrWhiteSpace(r.HandoverOtpHash),
+        !string.IsNullOrWhiteSpace(r.DeliveryOtpHash)
     );
 }

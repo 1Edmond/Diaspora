@@ -210,7 +210,73 @@ public class ServiceRequestController(
         return Ok(result.Value);
     }
 
+    [Permission(
+        resourceKey: "marketplace.request",
+        action: "confirm-handover",
+        description: "Confirm parcel handover with OTP and photo proof",
+        recommendedRoles: new[] { "User", "Admin" }
+    )]
+    [HttpPost("{id:guid}/confirm-handover")]
+    public async Task<IActionResult> ConfirmHandover(Guid id, [FromBody] ConfirmHandoverRequest request)
+    {
+        var result = await _messageBus.InvokeAsync<Result>(
+            new ConfirmHandoverCommand(id, GetCurrentUserId(), request.Otp, request.ProofPhotoUrl));
+
+        if (result.IsFailure) return BadRequest(new { error = result.Error });
+        return Ok(new { message = "Handover confirmed" });
+    }
+
+    [Permission(
+        resourceKey: "marketplace.request",
+        action: "mark-in-transit",
+        description: "Mark parcel as in transit",
+        recommendedRoles: new[] { "User", "Admin" }
+    )]
+    [HttpPost("{id:guid}/mark-in-transit")]
+    public async Task<IActionResult> MarkInTransit(Guid id)
+    {
+        var result = await _messageBus.InvokeAsync<Result>(
+            new MarkInTransitCommand(id, GetCurrentUserId()));
+
+        if (result.IsFailure) return BadRequest(new { error = result.Error });
+        return Ok(new { message = "Status updated to InTransit" });
+    }
+
+    [Permission(
+        resourceKey: "marketplace.request",
+        action: "mark-arrived",
+        description: "Mark parcel as arrived at destination",
+        recommendedRoles: new[] { "User", "Admin" }
+    )]
+    [HttpPost("{id:guid}/mark-arrived")]
+    public async Task<IActionResult> MarkArrived(Guid id)
+    {
+        var result = await _messageBus.InvokeAsync<Result>(
+            new MarkArrivedAtDestinationCommand(id, GetCurrentUserId()));
+
+        if (result.IsFailure) return BadRequest(new { error = result.Error });
+        return Ok(new { message = "Status updated to ArrivedAtDestination" });
+    }
+
+    [Permission(
+        resourceKey: "marketplace.request",
+        action: "confirm-delivery",
+        description: "Confirm parcel delivery with OTP and photo proof",
+        recommendedRoles: new[] { "User", "Admin" }
+    )]
+    [HttpPost("{id:guid}/confirm-delivery")]
+    public async Task<IActionResult> ConfirmDelivery(Guid id, [FromBody] ConfirmDeliveryRequest request)
+    {
+        var result = await _messageBus.InvokeAsync<Result>(
+            new ConfirmDeliveryCommand(id, GetCurrentUserId(), request.Otp, request.ProofPhotoUrl));
+
+        if (result.IsFailure) return BadRequest(new { error = result.Error });
+        return Ok(new { message = "Delivery confirmed" });
+    }
+
     private Guid GetCurrentUserId() => Guid.Parse(_currentUserService.UserId!);
 }
 
 public record LinkChatThreadRequest(Guid ChatThreadId);
+public record ConfirmHandoverRequest(string Otp, string? ProofPhotoUrl = null);
+public record ConfirmDeliveryRequest(string Otp, string? ProofPhotoUrl = null);

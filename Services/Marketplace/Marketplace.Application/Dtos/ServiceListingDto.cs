@@ -32,5 +32,19 @@ public record ServiceListingDto(
     double? Latitude,
     double? Longitude,
     IReadOnlyCollection<AvailabilitySlotDto> AvailabilitySlots,
-    bool IsAvailableNow
+    bool IsAvailableNow,
+    string? DepartureCountryCode = null,
+    string? DepartureCity = null,
+    string? ArrivalCountryCode = null,
+    string? ArrivalCity = null,
+    DateTime? DepartureDate = null,
+    DateTime? ArrivalDate = null,
+    DateTime? PickupDeadline = null,
+    decimal? CapacityKg = null,
+    decimal? RemainingKg = null,
+    decimal? PricePerKg = null,
+    string? TransportMode = null,
+    string? FlightOrTransportNumber = null,
+    string? ProhibitedItemsDescription = null,
+    string? MeetingPoints = null
 );

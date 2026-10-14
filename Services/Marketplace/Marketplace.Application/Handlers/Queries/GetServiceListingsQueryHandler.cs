@@ -56,6 +56,41 @@ public class GetServiceListingsQueryHandler(
             q = q.Where(l => l.Country != null && l.Country == countryIso);
         }
 
+        if (!string.IsNullOrWhiteSpace(query.DepartureCountry))
+        {
+            var depIso = query.DepartureCountry.Trim().ToUpperInvariant();
+            q = q.Where(l => l.DepartureCountryCode == depIso);
+        }
+
+        if (!string.IsNullOrWhiteSpace(query.DepartureCity))
+        {
+            var depCity = query.DepartureCity.Trim().ToLower();
+            q = q.Where(l => l.DepartureCity != null && l.DepartureCity.ToLower() == depCity);
+        }
+
+        if (!string.IsNullOrWhiteSpace(query.ArrivalCountry))
+        {
+            var arrIso = query.ArrivalCountry.Trim().ToUpperInvariant();
+            q = q.Where(l => l.ArrivalCountryCode == arrIso);
+        }
+
+        if (!string.IsNullOrWhiteSpace(query.ArrivalCity))
+        {
+            var arrCity = query.ArrivalCity.Trim().ToLower();
+            q = q.Where(l => l.ArrivalCity != null && l.ArrivalCity.ToLower() == arrCity);
+        }
+
+        if (query.MinRemainingKg.HasValue)
+        {
+            q = q.Where(l => l.RemainingKg != null && l.RemainingKg >= query.MinRemainingKg.Value);
+        }
+
+        if (query.TravelDate.HasValue)
+        {
+            var travelDateUtc = query.TravelDate.Value.Date;
+            q = q.Where(l => l.DepartureDate != null && l.DepartureDate.Value.Date >= travelDateUtc);
+        }
+
         // Distance/disponibilité nécessitent un post-traitement en mémoire car AvailabilitySlots
         // est stocké en JSON (non traduisible en SQL) et le calcul de distance (Haversine) n'est
         // pas traduisible non plus. On matérialise le sous-ensemble filtré par les critères SQL,
@@ -92,7 +127,9 @@ public class GetServiceListingsQueryHandler(
                     return new ServiceListingSummaryDto(
                         l.Id, l.ProviderId, p?.Id, p?.DisplayName ?? string.Empty, p?.IsVerified ?? false, p?.CountryCode,
                         l.Category.Name, l.Title, l.PaymentMode, l.Price, l.Currency, l.AverageRating, l.ReviewCount,
-                        l.ImageUrls.FirstOrDefault(), l.CreatedAt, l.City, l.Country, null, l.Status
+                        l.ImageUrls.FirstOrDefault(), l.CreatedAt, l.City, l.Country, null, l.Status,
+                        l.DepartureCountryCode, l.DepartureCity, l.ArrivalCountryCode, l.ArrivalCity,
+                        l.DepartureDate, l.ArrivalDate, l.RemainingKg, l.PricePerKg, l.TransportMode
                     );
                 })
                 .ToList();
@@ -146,11 +183,16 @@ public class GetServiceListingsQueryHandler(
                     x.Listing.Id, x.Listing.ProviderId, p?.Id, p?.DisplayName ?? string.Empty, p?.IsVerified ?? false, p?.CountryCode,
                     x.Listing.Category.Name, x.Listing.Title, x.Listing.PaymentMode, x.Listing.Price, x.Listing.Currency,
                     x.Listing.AverageRating, x.Listing.ReviewCount, x.Listing.ImageUrls.FirstOrDefault(), x.Listing.CreatedAt,
-                    x.Listing.City, x.Listing.Country, x.Distance, x.Listing.Status
+                    x.Listing.City, x.Listing.Country, x.Distance, x.Listing.Status,
+                    x.Listing.DepartureCountryCode, x.Listing.DepartureCity, x.Listing.ArrivalCountryCode, x.Listing.ArrivalCity,
+                    x.Listing.DepartureDate, x.Listing.ArrivalDate, x.Listing.RemainingKg, x.Listing.PricePerKg, x.Listing.TransportMode
                 );
             })
             .ToList();
 
         return Result.Success(new PagedList<ServiceListingSummaryDto>(pagedInMemory, inMemoryTotalCount, query.PageNumber, query.PageSize));
     }
+
+    public Task<Result<PagedList<ServiceListingSummaryDto>>> Handle(SearchServiceListingsQuery query)
+        => Handle((GetServiceListingsQuery)query);
 }

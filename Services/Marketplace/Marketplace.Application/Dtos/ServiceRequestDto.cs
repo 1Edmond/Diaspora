@@ -26,5 +26,15 @@ public record ServiceRequestDto(
     DateTime CreatedAt,
     DateTime? AcceptedAt,
     DateTime? CompletedAt,
-    Guid? ChatThreadId
+    Guid? ChatThreadId,
+    decimal? WeightKg = null,
+    string? PackageDescription = null,
+    string? PackageContentCategory = null,
+    decimal? DeclaredValue = null,
+    DateTime? HandoverConfirmedAt = null,
+    string? HandoverProofUrl = null,
+    DateTime? DeliveryConfirmedAt = null,
+    string? DeliveryProofUrl = null,
+    bool HasHandoverOtp = false,
+    bool HasDeliveryOtp = false
 );

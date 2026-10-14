@@ -1,4 +1,4 @@
-﻿using Marketplace.Application.Dtos;
+using Marketplace.Application.Dtos;
 using Marketplace.Domain.Enums;
 using Shared.Application.Models;
 using Shared.Domain.Commons;
@@ -24,5 +24,11 @@ public record GetServiceListingsQuery(
     double? UserLongitude = null,
     double? MaxDistanceKm = null,
     bool AvailableNow = false,
-    ListingStatus? Status = null
+    ListingStatus? Status = null,
+    string? DepartureCountry = null,
+    string? DepartureCity = null,
+    string? ArrivalCountry = null,
+    string? ArrivalCity = null,
+    decimal? MinRemainingKg = null,
+    DateTime? TravelDate = null
 ) : PagedQuery<Result<PagedList<ServiceListingSummaryDto>>>(PageNumber, PageSize);

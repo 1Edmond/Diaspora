@@ -32,13 +32,34 @@ public class CreateServiceRequestCommandHandler(
         if (provider is null || !provider.IsEligibleProvider)
             return Result.Failure<Guid>("Le profil du prestataire n'est pas actif ou est suspendu.");
 
+        var agreedPrice = command.AgreedPrice;
+        var agreedCurrency = command.AgreedCurrency ?? listing.Currency;
+
+        if (command.WeightKg.HasValue)
+        {
+            if (command.WeightKg.Value <= 0)
+                return Result.Failure<Guid>("Le poids doit être strictement supérieur à zéro.");
+
+            if (listing.RemainingKg.HasValue && listing.RemainingKg.Value < command.WeightKg.Value)
+                return Result.Failure<Guid>($"Capacité restante insuffisante ({listing.RemainingKg.Value} kg disponibles).");
+
+            if ((!agreedPrice.HasValue || agreedPrice.Value == 0) && listing.PricePerKg.HasValue)
+            {
+                agreedPrice = command.WeightKg.Value * listing.PricePerKg.Value;
+            }
+        }
+
         var request = ServiceRequest.Create(
             command.ListingId,
             command.RequesterId,
             listing.ProviderId,
             command.Message,
-            command.AgreedPrice,
-            command.AgreedCurrency
+            agreedPrice,
+            agreedCurrency,
+            command.WeightKg,
+            command.PackageDescription,
+            command.PackageContentCategory,
+            command.DeclaredValue
         );
 
         await _requestRepository.AddAsync(request);

@@ -1,4 +1,4 @@
-﻿using Marketplace.Domain.Enums;
+using Marketplace.Domain.Enums;
 using Shared.Application.Abstractions;
 using Shared.Domain.Commons;
 using System;
@@ -18,5 +18,18 @@ public record CreateServiceListingCommand(
     string? City = null,
     string? Country = null,
     double? Latitude = null,
-    double? Longitude = null
+    double? Longitude = null,
+    string? DepartureCountryCode = null,
+    string? DepartureCity = null,
+    string? ArrivalCountryCode = null,
+    string? ArrivalCity = null,
+    DateTime? DepartureDate = null,
+    DateTime? ArrivalDate = null,
+    DateTime? PickupDeadline = null,
+    decimal? CapacityKg = null,
+    decimal? PricePerKg = null,
+    string? TransportMode = null,
+    string? FlightOrTransportNumber = null,
+    string? ProhibitedItemsDescription = null,
+    string? MeetingPoints = null
 ) : ICommand<Result<Guid>>;

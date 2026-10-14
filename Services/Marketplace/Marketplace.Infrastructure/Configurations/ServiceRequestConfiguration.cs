@@ -1,4 +1,4 @@
-﻿using Marketplace.Domain.Entities;
+using Marketplace.Domain.Entities;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 using Shared.Infrastructure.Persistence.Configurations;
@@ -20,6 +20,16 @@ public class ServiceRequestConfiguration : BaseEntityConfiguration<ServiceReques
         builder.Property(r => r.AgreedPrice).HasPrecision(18, 2);
         builder.Property(r => r.AgreedCurrency).HasMaxLength(10);
         builder.Property(r => r.CancellationReason).HasMaxLength(500);
+
+        // Colis & Suivi physique
+        builder.Property(r => r.WeightKg).HasPrecision(18, 2);
+        builder.Property(r => r.PackageDescription).HasMaxLength(1000);
+        builder.Property(r => r.PackageContentCategory).HasMaxLength(100);
+        builder.Property(r => r.DeclaredValue).HasPrecision(18, 2);
+        builder.Property(r => r.HandoverOtpHash).HasMaxLength(500);
+        builder.Property(r => r.DeliveryOtpHash).HasMaxLength(500);
+        builder.Property(r => r.HandoverProofUrl).HasMaxLength(500);
+        builder.Property(r => r.DeliveryProofUrl).HasMaxLength(500);
 
         builder.HasOne(r => r.Listing)
             .WithMany(l => l.Requests)

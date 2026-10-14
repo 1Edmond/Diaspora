@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Text;
 
@@ -10,5 +10,9 @@ public enum ServiceRequestStatus
     Accepted = 1,
     Declined = 2,
     Completed = 3,
-    Cancelled = 4
+    Cancelled = 4,
+    PackageHandedOver = 5,
+    InTransit = 6,
+    ArrivedAtDestination = 7,
+    Delivered = 8
 }

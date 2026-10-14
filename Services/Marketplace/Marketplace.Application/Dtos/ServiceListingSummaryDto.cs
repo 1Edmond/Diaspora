@@ -24,5 +24,14 @@ public record ServiceListingSummaryDto(
     string? City,
     string? Country,
     double? DistanceKm = null,
-    ListingStatus Status = ListingStatus.Pending
+    ListingStatus Status = ListingStatus.Pending,
+    string? DepartureCountryCode = null,
+    string? DepartureCity = null,
+    string? ArrivalCountryCode = null,
+    string? ArrivalCity = null,
+    DateTime? DepartureDate = null,
+    DateTime? ArrivalDate = null,
+    decimal? RemainingKg = null,
+    decimal? PricePerKg = null,
+    string? TransportMode = null
 );

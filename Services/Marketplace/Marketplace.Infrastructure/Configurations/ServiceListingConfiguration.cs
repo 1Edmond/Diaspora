@@ -1,4 +1,4 @@
-﻿using Marketplace.Domain.Entities;
+using Marketplace.Domain.Entities;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 using Shared.Infrastructure.Persistence.Configurations;
@@ -54,5 +54,22 @@ public class ServiceListingConfiguration : BaseEntityConfiguration<ServiceListin
         builder.HasIndex(l => l.Status);
         builder.HasIndex(l => l.IsActive);
         builder.HasIndex(l => new { l.City, l.Country });
+
+        // Trajets & Capacité
+        builder.Property(l => l.DepartureCountryCode).HasMaxLength(10);
+        builder.Property(l => l.DepartureCity).HasMaxLength(150);
+        builder.Property(l => l.ArrivalCountryCode).HasMaxLength(10);
+        builder.Property(l => l.ArrivalCity).HasMaxLength(150);
+        builder.Property(l => l.CapacityKg).HasPrecision(18, 2);
+        builder.Property(l => l.RemainingKg).HasPrecision(18, 2);
+        builder.Property(l => l.PricePerKg).HasPrecision(18, 2);
+        builder.Property(l => l.TransportMode).HasMaxLength(50);
+        builder.Property(l => l.FlightOrTransportNumber).HasMaxLength(50);
+        builder.Property(l => l.ProhibitedItemsDescription).HasMaxLength(2000);
+        builder.Property(l => l.MeetingPoints).HasMaxLength(1000);
+
+        builder.HasIndex(l => new { l.DepartureCountryCode, l.ArrivalCountryCode });
+        builder.HasIndex(l => l.RemainingKg);
+        builder.HasIndex(l => l.DepartureDate);
     }
 }

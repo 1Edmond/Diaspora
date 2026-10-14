@@ -1,4 +1,4 @@
-﻿using Shared.Application.Abstractions;
+using Shared.Application.Abstractions;
 using Shared.Domain.Commons;
 using System;
 using System.Collections.Generic;
@@ -11,5 +11,9 @@ public record CreateServiceRequestCommand(
     Guid RequesterId,
     string Message,
     decimal? AgreedPrice,
-    string? AgreedCurrency
+    string? AgreedCurrency,
+    decimal? WeightKg = null,
+    string? PackageDescription = null,
+    string? PackageContentCategory = null,
+    decimal? DeclaredValue = null
 ) : ICommand<Result<Guid>>;
