@@ -1,4 +1,4 @@
-﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using Notification.Domain.Entities;
 using Notification.Domain.Enums;
@@ -143,6 +143,58 @@ public class NotificationRuleSeeder(
             new (
                 "ServiceRequestCompletedIntegrationEvent",
                 NotificationChannel.InApp | NotificationChannel.Email
+            ),
+
+            new (
+                "ServiceRequestDeclinedIntegrationEvent",
+                NotificationChannel.InApp | NotificationChannel.Push
+            ),
+
+            new (
+                "ServiceRequestCancelledIntegrationEvent",
+                NotificationChannel.InApp | NotificationChannel.Push
+            ),
+
+            new (
+                "ReviewCreatedIntegrationEvent",
+                NotificationChannel.InApp | NotificationChannel.Push
+            ),
+
+            new (
+                "ReviewRepliedIntegrationEvent",
+                NotificationChannel.InApp | NotificationChannel.Push
+            ),
+
+            new (
+                "ReportResolvedIntegrationEvent",
+                NotificationChannel.InApp | NotificationChannel.Email
+            ),
+
+            // Wallet Marketplace Escrow
+            new (
+                "MarketplacePaymentHeldIntegrationEvent",
+                NotificationChannel.InApp | NotificationChannel.Push
+            ),
+
+            new (
+                "MarketplacePaymentReleasedIntegrationEvent",
+                NotificationChannel.InApp | NotificationChannel.Push
+            ),
+
+            new (
+                "MarketplacePaymentRefundedIntegrationEvent",
+                NotificationChannel.InApp | NotificationChannel.Push
+            ),
+
+            new (
+                "MarketplacePaymentFailedIntegrationEvent",
+                NotificationChannel.InApp | NotificationChannel.Push | NotificationChannel.Email
+            ),
+
+            // KYC Arrival Proof
+            new (
+                "KycArrivalProofApprovedIntegrationEvent",
+                NotificationChannel.InApp | NotificationChannel.Push | NotificationChannel.Email
             ),
 
             // Freelance

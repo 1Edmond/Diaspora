@@ -1,4 +1,4 @@
-﻿using JasperFx.Resources;
+using JasperFx.Resources;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
@@ -91,13 +91,19 @@ public static class DependencyInjection
                    .BindExchange(ExchangesConstants.MarketplaceEventsExchange)
                    .ToQueue("notification-service.marketplace-events")
                    .BindExchange(ExchangesConstants.FreelanceEventsExchange)
-                   .ToQueue("notification-service.freelance-events");
+                   .ToQueue("notification-service.freelance-events")
+                   .BindExchange(ExchangesConstants.KycEventsExchange)
+                   .ToQueue("notification-service.kyc-events")
+                   .BindExchange(ExchangesConstants.WalletEventsExchange)
+                   .ToQueue("notification-service.wallet-events");
 
 
             options.Discovery.IncludeAssembly(typeof(IdentityNotificationsEventHandler).Assembly);
             options.Discovery.IncludeAssembly(typeof(ProfileNotificationEventHandler).Assembly);
             options.Discovery.IncludeAssembly(typeof(MarketplaceNotificationEventHandler).Assembly);
             options.Discovery.IncludeAssembly(typeof(FreelanceNotificationEventHandler).Assembly);
+            options.Discovery.IncludeAssembly(typeof(KYCNotificationsEventHandler).Assembly);
+            options.Discovery.IncludeAssembly(typeof(WalletNotificationEventHandler).Assembly);
             options.Policies.UseDurableInboxOnAllListeners();
             options.Policies.UseDurableOutboxOnAllSendingEndpoints();
             options.ListenToRabbitQueue("notification-service.identity-events")
@@ -119,6 +125,18 @@ public static class DependencyInjection
               .UseDurableInbox();
 
             options.ListenToRabbitQueue("notification-service.freelance-events")
+              .PreFetchCount(15)
+              .MaximumParallelMessages(5)
+              .ListenerCount(2)
+              .UseDurableInbox();
+
+            options.ListenToRabbitQueue("notification-service.kyc-events")
+              .PreFetchCount(15)
+              .MaximumParallelMessages(5)
+              .ListenerCount(2)
+              .UseDurableInbox();
+
+            options.ListenToRabbitQueue("notification-service.wallet-events")
               .PreFetchCount(15)
               .MaximumParallelMessages(5)
               .ListenerCount(2)

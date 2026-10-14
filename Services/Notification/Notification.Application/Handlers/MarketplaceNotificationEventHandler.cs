@@ -25,4 +25,19 @@ public class MarketplaceNotificationEventHandler(
 
     public Task Handle(ServiceRequestCompletedIntegrationEvent message)
         => BaseNotificationEventHandler.HandleAsync(message, logger, notificationService);
+
+    public Task Handle(ServiceRequestDeclinedIntegrationEvent message)
+        => BaseNotificationEventHandler.HandleAsync(message, logger, notificationService);
+
+    public Task Handle(ServiceRequestCancelledIntegrationEvent message)
+        => BaseNotificationEventHandler.HandleAsync(message, logger, notificationService);
+
+    public Task Handle(ReviewCreatedIntegrationEvent message)
+        => BaseNotificationEventHandler.HandleAsync(message, logger, notificationService);
+
+    public Task Handle(ReviewRepliedIntegrationEvent message)
+        => BaseNotificationEventHandler.HandleAsync(message, logger, notificationService);
+
+    public Task Handle(ReportResolvedIntegrationEvent message)
+        => BaseNotificationEventHandler.HandleAsync(message, logger, notificationService);
 }

@@ -1,4 +1,4 @@
-﻿using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Logging;
 using Notification.Application.Abstractions;
 using Notification.Application.Models;
 using Shared.Messaging.Events;
@@ -38,6 +38,9 @@ public class KYCNotificationsEventHandler
         => HandleAsync(message);
 
     public Task Handle(KYCDocumentUploadedIntegrationEvent message)
+        => HandleAsync(message);
+
+    public Task Handle(KycArrivalProofApprovedIntegrationEvent message)
         => HandleAsync(message);
     private async Task HandleAsync<TEvent>(TEvent message)
         where TEvent : IIntegrationEvent
