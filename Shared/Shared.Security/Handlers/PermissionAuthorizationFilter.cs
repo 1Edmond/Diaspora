@@ -1,4 +1,4 @@
-﻿using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Filters;
 using Microsoft.Extensions.Logging;
 using Shared.Domain.Attributes;
@@ -24,6 +24,32 @@ public class PermissionAuthorizationFilter : IAuthorizationFilter
         var httpContext = context.HttpContext;
         var requiredPermission = $"{_permission.ResourceKey}.{_permission.Action}";
 
+        // 1. Check if user roles from gateway match recommended roles (e.g. User or Admin)
+        var userRoles = httpContext.Request.Headers["X-User-Roles"]
+            .ToString()
+            .Split(',', StringSplitOptions.RemoveEmptyEntries)
+            .Select(r => r.Trim())
+            .ToArray();
+
+        var userId = httpContext.Request.Headers["X-User-Id"].ToString();
+
+        if (_permission.RecommendedRoles != null && _permission.RecommendedRoles.Length > 0)
+        {
+            var hasMatchingRole = userRoles.Any(r =>
+                _permission.RecommendedRoles.Contains(r, StringComparer.OrdinalIgnoreCase));
+
+            // Authenticated user with standard User role or explicitly matched role
+            if (hasMatchingRole || (!string.IsNullOrEmpty(userId) && _permission.RecommendedRoles.Contains("User", StringComparer.OrdinalIgnoreCase)))
+            {
+                if (_logger.IsEnabled(LogLevel.Debug))
+                    _logger.LogDebug(
+                        "[PermissionFilter] ✅ Role-based permission granted for {Permission} (User={UserId}, Roles=[{Roles}])",
+                        requiredPermission, userId, string.Join(", ", userRoles)
+                    );
+                return;
+            }
+        }
+
         var grantedPermissions = httpContext.Request.Headers["X-Granted-Permission"]
             .ToString()
             .Split(',', StringSplitOptions.RemoveEmptyEntries)
@@ -46,8 +72,6 @@ public class PermissionAuthorizationFilter : IAuthorizationFilter
 
         if (!grantedPermissions.Any(p => p.Equals(requiredPermission, StringComparison.OrdinalIgnoreCase)))
         {
-            var userId = httpContext.Request.Headers["X-User-Id"].ToString();
-
             _logger.LogWarning(
                 "[PermissionFilter] ⛔ Permission mismatch: User={UserId}, Required={Required}, Granted=[{Granted}]",
                 userId,

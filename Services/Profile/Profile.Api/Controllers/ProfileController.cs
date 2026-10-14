@@ -18,12 +18,6 @@ public class ProfileController(
     ICurrentUserService _currentUserService,
     ILogger<ProfileController> _logger) : ControllerBase
 {
-    [Permission(
-        resourceKey: "profile.internal",
-        action: "create",
-        description: "Create internal (Togo) profile",
-        recommendedRoles: new[] { "User", "Admin" }
-    )]
     [HttpPost]
     public async Task<IActionResult> Create(
         [FromBody] CreateProfileCommand command,
@@ -40,12 +34,6 @@ public class ProfileController(
         return Ok(result.Value);
     }
 
-    [Permission(
-        resourceKey: "profile.internal",
-        action: "read-own",
-        description: "Get own internal profile",
-        recommendedRoles: new[] { "User", "Admin" }
-    )]
     [HttpGet("me")]
     public async Task<IActionResult> GetMyProfile(CancellationToken cancellationToken)
     {
