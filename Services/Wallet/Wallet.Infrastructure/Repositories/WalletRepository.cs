@@ -1,4 +1,4 @@
-﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Caching.Distributed;
 using Microsoft.Extensions.Logging;
 using Shared.Infrastructure.Persistence.Repositories;
@@ -30,12 +30,14 @@ public sealed class WalletRepository(WalletDbContext context,
         Guid externalProfileId,
         CancellationToken cancellationToken = default)
         => await _context.Wallets
+            .Include(w => w.Transactions)
             .FirstOrDefaultAsync(w => w.ExternalProfileId == externalProfileId, cancellationToken);
 
     public async Task<Domain.Entities.Wallet?> GetByUserIdAsync(
         Guid userId,
         CancellationToken cancellationToken = default)
         => await _context.Wallets
+            .Include(w => w.Transactions)
             .FirstOrDefaultAsync(w => w.UserId == userId, cancellationToken);
 
     public async Task<bool> ExistsByExternalProfileIdAsync(

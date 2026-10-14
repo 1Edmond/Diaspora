@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Text;
 
@@ -19,5 +19,8 @@ public enum TransactionType
     FreelanceEscrowRelease = 10,
     FreelanceEscrowRefund = 11,
     FreelancePayment = 12,
-    FreelanceReceipt = 13
+    FreelanceReceipt = 13,
+    MarketplacePaymentHold = 14,
+    MarketplacePaymentRelease = 15,
+    MarketplacePaymentRefund = 16
 }

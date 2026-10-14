@@ -1,4 +1,4 @@
-﻿using Shared.Domain.Interfaces;
+using Shared.Domain.Interfaces;
 using Shared.Messaging.Events;
 using Shared.Messaging.Events.Wallet;
 using Shared.Messaging.Events.Freelance;
@@ -27,9 +27,6 @@ public sealed class WalletIntegrationEventMapper : IIntegrationEventMapper
             ProcedurePaymentCompletedDomainEvent e => new ProcedurePaymentCompletedIntegrationEvent(
                 e.WalletId, e.TransactionId, e.ProcedureId, e.Amount, e.Currency),
 
-            MarketplacePaymentCompletedDomainEvent e => new MarketplacePaymentCompletedIntegrationEvent(
-                e.BuyerWalletId, e.SellerWalletId, e.TransactionId,
-                e.ServiceId, e.Amount, e.Currency),
 
             FreelanceEscrowHoldCompletedDomainEvent e => new FreelanceEscrowHoldCompletedIntegrationEvent(
                 e.EmployerWalletId, e.TransactionId, e.JobApplicationId, e.Amount, e.Currency),

@@ -1,4 +1,4 @@
-﻿using Shared.Messaging.Constants;
+using Shared.Messaging.Constants;
 using Shared.Messaging.Events.Profile;
 using Shared.Messaging.Events.Wallet;
 using System;
@@ -20,7 +20,13 @@ public static class WolverineProfileExtensions
         // Exchange sortant — Profile Service publie ses events vers les autres services
         options.PublishMessage<DepositCompletedIntegrationEvent>()
             .ToRabbitExchange(ExchangesConstants.WalletEventsExchange);
-        options.PublishMessage<MarketplacePaymentCompletedIntegrationEvent>()
+        options.PublishMessage<MarketplacePaymentHeldIntegrationEvent>()
+            .ToRabbitExchange(ExchangesConstants.WalletEventsExchange);
+        options.PublishMessage<MarketplacePaymentFailedIntegrationEvent>()
+            .ToRabbitExchange(ExchangesConstants.WalletEventsExchange);
+        options.PublishMessage<MarketplacePaymentReleasedIntegrationEvent>()
+            .ToRabbitExchange(ExchangesConstants.WalletEventsExchange);
+        options.PublishMessage<MarketplacePaymentRefundedIntegrationEvent>()
             .ToRabbitExchange(ExchangesConstants.WalletEventsExchange);
         options.PublishMessage<ProcedurePaymentCompletedIntegrationEvent>()
             .ToRabbitExchange(ExchangesConstants.WalletEventsExchange);

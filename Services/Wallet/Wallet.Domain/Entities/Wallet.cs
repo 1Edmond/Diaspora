@@ -1,4 +1,4 @@
-﻿using Shared.Domain.Commons;
+using Shared.Domain.Commons;
 using Shared.Domain.Interfaces;
 using Shared.Domain.Primitives;
 using Shared.Domain.ValueObjects;
@@ -215,51 +215,179 @@ public sealed class Wallet : AggregateRoot
         return Result.Success(tx);
     }
 
-    // ── Marketplace Payment (débit acheteur) ──────────────────────────────────
+    // ── Marketplace — Escrow (Hold / Release / Refund) ────────────────────────
 
     public new void AddDomainEvent(IDomainEvent domainEvent) => base.AddDomainEvent(domainEvent);
-    public Result<Transaction> DebitForMarketplace(
+
+    public Result<Transaction> HoldForMarketplace(
+        Guid serviceRequestId,
         decimal amount,
-        Guid serviceId,
-        Guid sellerWalletId,
-        string description)
+        string currency,
+        string description = "",
+        Guid? sellerProfileId = null)
     {
+        var existingTx = _transactions.FirstOrDefault(t =>
+            t.ReferenceId == serviceRequestId &&
+            t.Type == TransactionType.MarketplacePaymentHold);
+
+        if (existingTx is not null)
+            return Result.Success(existingTx);
+
         if (!IsActive)
             return Result.Failure<Transaction>("Wallet is not active.");
+
         if (amount <= 0)
             return Result.Failure<Transaction>("Amount must be positive.");
+
+        if (!string.Equals(Currency, currency, StringComparison.OrdinalIgnoreCase))
+            return Result.Failure<Transaction>(
+                $"Currency mismatch. Wallet currency: {Currency}, requested: {currency}.");
+
         if (Balance < amount)
             return Result.Failure<Transaction>(
                 $"Insufficient balance. Required: {amount} {Currency}, Available: {Balance} {Currency}.");
 
         Balance -= amount;
+        HeldBalance += amount;
+
+        var referenceType = sellerProfileId.HasValue
+            ? $"SellerProfile:{sellerProfileId.Value}"
+            : "ServiceRequest";
 
         var tx = new Transaction(
-            Id, TransactionType.MarketplacePayment, TransactionDirection.Debit,
-            amount, 0m, Balance, Currency, description,
-            serviceId, "MarketplaceService");
+            Id,
+            TransactionType.MarketplacePaymentHold,
+            TransactionDirection.Debit,
+            amount,
+            0m,
+            Balance,
+            Currency,
+            string.IsNullOrWhiteSpace(description) ? $"Hold for Marketplace service request {serviceRequestId}" : description,
+            serviceRequestId,
+            referenceType);
 
         _transactions.Add(tx);
 
         return Result.Success(tx);
     }
 
-    // ── Marketplace Receipt (crédit vendeur) ──────────────────────────────────
-
-    public Result<Transaction> CreditFromMarketplace(
-        decimal amount,
-        Guid serviceId,
-        string description)
+    public Result<Transaction> ReleaseMarketplaceHold(
+        Guid serviceRequestId,
+        Wallet sellerWallet,
+        decimal amount = 0m,
+        string description = "")
     {
-        if (!IsActive)
-            return Result.Failure<Transaction>("Wallet is not active.");
+        var existingTx = _transactions.FirstOrDefault(t =>
+            t.ReferenceId == serviceRequestId &&
+            t.Type == TransactionType.MarketplacePaymentRelease);
 
+        if (existingTx is not null)
+            return Result.Success(existingTx);
+
+        if (amount <= 0)
+        {
+            var holdTx = _transactions.FirstOrDefault(t =>
+                t.ReferenceId == serviceRequestId &&
+                t.Type == TransactionType.MarketplacePaymentHold);
+
+            if (holdTx is null)
+                return Result.Failure<Transaction>("No hold found for this service request.");
+
+            amount = holdTx.Amount;
+        }
+
+        if (HeldBalance < amount)
+            return Result.Failure<Transaction>("Held balance is lower than the amount to release.");
+
+        if (!sellerWallet.IsActive)
+            return Result.Failure<Transaction>("Seller wallet is not active.");
+
+        if (!string.Equals(Currency, sellerWallet.Currency, StringComparison.OrdinalIgnoreCase))
+            return Result.Failure<Transaction>(
+                $"Currency mismatch between buyer ({Currency}) and seller ({sellerWallet.Currency}).");
+
+        HeldBalance -= amount;
+
+        var buyerTx = new Transaction(
+            Id,
+            TransactionType.MarketplacePaymentRelease,
+            TransactionDirection.Debit,
+            amount,
+            0m,
+            Balance,
+            Currency,
+            string.IsNullOrWhiteSpace(description) ? $"Release hold for Marketplace service request {serviceRequestId}" : description,
+            serviceRequestId,
+            "ServiceRequest");
+
+        _transactions.Add(buyerTx);
+
+        var sellerExistingTx = sellerWallet._transactions.FirstOrDefault(t =>
+            t.ReferenceId == serviceRequestId &&
+            t.Type == TransactionType.MarketplacePaymentRelease);
+
+        if (sellerExistingTx is null)
+        {
+            sellerWallet.Balance += amount;
+            var sellerTx = new Transaction(
+                sellerWallet.Id,
+                TransactionType.MarketplacePaymentRelease,
+                TransactionDirection.Credit,
+                amount,
+                0m,
+                sellerWallet.Balance,
+                sellerWallet.Currency,
+                string.IsNullOrWhiteSpace(description) ? $"Payment received for Marketplace service request {serviceRequestId}" : description,
+                serviceRequestId,
+                "ServiceRequest");
+
+            sellerWallet._transactions.Add(sellerTx);
+        }
+
+        return Result.Success(buyerTx);
+    }
+
+    public Result<Transaction> RefundMarketplaceHold(
+        Guid serviceRequestId,
+        decimal amount = 0m,
+        string description = "")
+    {
+        var existingTx = _transactions.FirstOrDefault(t =>
+            t.ReferenceId == serviceRequestId &&
+            t.Type == TransactionType.MarketplacePaymentRefund);
+
+        if (existingTx is not null)
+            return Result.Success(existingTx);
+
+        if (amount <= 0)
+        {
+            var holdTx = _transactions.FirstOrDefault(t =>
+                t.ReferenceId == serviceRequestId &&
+                t.Type == TransactionType.MarketplacePaymentHold);
+
+            if (holdTx is null)
+                return Result.Failure<Transaction>("No hold found for this service request.");
+
+            amount = holdTx.Amount;
+        }
+
+        if (HeldBalance < amount)
+            return Result.Failure<Transaction>("Held balance is lower than the amount to refund.");
+
+        HeldBalance -= amount;
         Balance += amount;
 
         var tx = new Transaction(
-            Id, TransactionType.MarketplaceReceipt, TransactionDirection.Credit,
-            amount, 0m, Balance, Currency, description,
-            serviceId, "MarketplaceService");
+            Id,
+            TransactionType.MarketplacePaymentRefund,
+            TransactionDirection.Credit,
+            amount,
+            0m,
+            Balance,
+            Currency,
+            string.IsNullOrWhiteSpace(description) ? $"Refund hold for Marketplace service request {serviceRequestId}" : description,
+            serviceRequestId,
+            "ServiceRequest");
 
         _transactions.Add(tx);
 

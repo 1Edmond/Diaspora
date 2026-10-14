@@ -108,41 +108,6 @@ public sealed class TransactionController(
         return Ok(result);
     }
 
-    // ⚠ Endpoint transitoire (phase 1). Le paiement Marketplace sera remplacé en phase 2 par un flux
-    // piloté par le Marketplace (séquestre) ; cet endpoint sera alors supprimé.
-    // D'ici là : seul le propriétaire du wallet acheteur peut déclencher le paiement.
-    [Permission("wallet", "pay-marketplace", "Pay for a marketplace service",
-        recommendedRoles: new[] { "User" })]
-    [HttpPost("marketplace-payment")]
-    public async Task<IActionResult> PayMarketplace(
-        [FromBody] MarketplacePaymentRequest request,
-        CancellationToken cancellationToken)
-    {
-        if (request.Amount <= 0)
-            return BadRequest(new { error = "Amount must be greater than zero." });
-
-        if (request.BuyerExternalProfileId == request.SellerExternalProfileId)
-            return BadRequest(new { error = "Buyer and seller must be different." });
-
-        if (!await WalletOwnership.IsOwnerAsync(
-                _walletRepository, _currentUserService, request.BuyerExternalProfileId, cancellationToken))
-            return AccessDenied();
-
-        var command = new MarketplacePaymentCommand(
-            request.BuyerExternalProfileId,
-            request.SellerExternalProfileId,
-            request.ServiceId,
-            request.Amount,
-            request.Description);
-
-        var result = await _messageBus.InvokeAsync<Result<Guid>>(
-            command, cancellationToken);
-
-        if (result.IsFailure)
-            return BadRequest(new { error = result.Error });
-
-        return Ok(result);
-    }
 
     private IActionResult AccessDenied()
         => StatusCode(StatusCodes.Status403Forbidden, new { error = "Access to this wallet is denied." });

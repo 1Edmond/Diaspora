@@ -1,4 +1,4 @@
-﻿using Microsoft.AspNetCore.Builder;
+using Microsoft.AspNetCore.Builder;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -59,6 +59,9 @@ public static class DependencyInjection
         services.AddScoped<DeactivateWalletCommandHandler>();
         services.AddScoped<ExternalProfileActivatedConsumer>();
         services.AddScoped<ExternalProfileSuspendedConsumer>();
+        services.AddScoped<MarketplacePaymentRequestedConsumer>();
+        services.AddScoped<MarketplacePaymentReleaseRequestedConsumer>();
+        services.AddScoped<MarketplacePaymentRefundRequestedConsumer>();
 
         // ── Core Infrastructure (Wolverine, RabbitMQ, Outbox/Inbox, Logging) ──
         services.SetCoreInfrastructureServices(configuration, options =>
@@ -80,6 +83,16 @@ public static class DependencyInjection
 
             options.ListenToRabbitQueue(ExchangesConstants.WalletEventsExchange)
                 .PreFetchCount(10)
+                .UseDurableInbox();
+
+            // Événements du Marketplace Service : traitement des demandes de paiement séquestre
+            options.ConfigureRabbitMq().BindExchange(ExchangesConstants.MarketplaceEventsExchange)
+                .ToQueue("wallet-service.marketplace-events");
+
+            options.ListenToRabbitQueue("wallet-service.marketplace-events")
+                .PreFetchCount(20)
+                .MaximumParallelMessages(3)
+                .ListenerCount(2)
                 .UseDurableInbox();
 
             options.UseEntityFrameworkCoreTransactions();
