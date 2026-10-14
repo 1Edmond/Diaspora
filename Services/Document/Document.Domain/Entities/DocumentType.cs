@@ -1,3 +1,4 @@
+using Shared.Domain.Attributes;
 using Shared.Domain.Commons;
 using Shared.Domain.Interfaces;
 using Shared.Domain.Primitives;
@@ -9,10 +10,13 @@ namespace Document.Domain.Entities;
 
 public sealed class DocumentType : AggregateRoot, ITranslatable
 {
+    [Translatable]
     public string Name { get; private set; } = string.Empty;
 
     public Guid ProfileTypeId { get; private set; }
     public string Code { get; private set; } = string.Empty;
+
+    [Translatable]
     public string? Description { get; private set; }
     public bool IsRenewable { get; private set; }
     public int RenewalAlertDays { get; private set; }

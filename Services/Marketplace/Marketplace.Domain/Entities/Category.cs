@@ -1,3 +1,4 @@
+using Shared.Domain.Attributes;
 using Shared.Domain.Interfaces;
 using Shared.Domain.Primitives;
 using System;
@@ -8,8 +9,11 @@ namespace Marketplace.Domain.Entities;
 
 public class Category : AggregateRoot, ITranslatable
 {
+    [Translatable]
     public string Name { get; private set; } = string.Empty;
     public string Slug { get; private set; } = string.Empty;
+
+    [Translatable]
     public string? Description { get; private set; }
     public string? IconUrl { get; private set; }
     public bool IsActive { get; private set; }
