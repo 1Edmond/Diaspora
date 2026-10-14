@@ -1,4 +1,4 @@
-﻿using Marketplace.Domain.Enums;
+using Marketplace.Domain.Enums;
 using System;
 using System.Collections.Generic;
 using System.Text;
@@ -8,7 +8,10 @@ namespace Marketplace.Application.Dtos;
 public record ServiceListingSummaryDto(
     Guid Id,
     Guid ProviderId,
+    Guid? ProviderProfileId,
     string ProviderName,
+    bool ProviderIsVerified,
+    string? ProviderCountryCode,
     string CategoryName,
     string Title,
     PaymentMode PaymentMode,

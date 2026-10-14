@@ -1,4 +1,4 @@
-﻿using Marketplace.Domain.Enums;
+using Marketplace.Domain.Enums;
 using System;
 using System.Collections.Generic;
 using System.Text;
@@ -10,9 +10,13 @@ public record ServiceRequestDto(
     Guid ListingId,
     string ListingTitle,
     Guid RequesterId,
+    Guid? RequesterProfileId,
     string RequesterName,
     Guid ProviderId,
+    Guid? ProviderProfileId,
     string ProviderName,
+    bool ProviderIsVerified,
+    string? ProviderCountryCode,
     string Message,
     ServiceRequestStatus Status,
     decimal? AgreedPrice,

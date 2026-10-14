@@ -1,4 +1,4 @@
-﻿using Marketplace.Application.Commands;
+using Marketplace.Application.Commands;
 using Marketplace.Application.Dtos;
 using Marketplace.Application.Queries;
 using Marketplace.Domain.Enums;
@@ -300,5 +300,20 @@ public class ServiceListingController(
         return Ok(result.Value);
     }
 
+    [Permission(
+        resourceKey: "marketplace.listing",
+        action: "admin-normalize",
+        description: "Normalize country and currency to ISO standards for existing listings",
+        recommendedRoles: new[] { "Admin" }
+    )]
+    [HttpPost("admin/normalize-locales")]
+    public async Task<IActionResult> NormalizeLocales()
+    {
+        var result = await _messageBus.InvokeAsync<Result<Marketplace.Application.Normalization.NormalizationReport>>(
+            new Marketplace.Application.Commands.NormalizeListingLocalesCommand());
+
+        if (result.IsFailure) return BadRequest(new { error = result.Error });
+        return Ok(result.Value);
+    }
     private Guid GetCurrentUserId() => Guid.Parse(_currentUserService.UserId!);
 }

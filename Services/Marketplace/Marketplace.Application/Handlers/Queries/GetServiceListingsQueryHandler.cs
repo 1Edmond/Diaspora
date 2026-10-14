@@ -1,5 +1,6 @@
-﻿using Marketplace.Application.Abstractions;
+using Marketplace.Application.Abstractions;
 using Marketplace.Application.Dtos;
+using Marketplace.Application.Interfaces;
 using Marketplace.Application.Queries;
 using Marketplace.Domain.Enums;
 using Microsoft.EntityFrameworkCore;
@@ -12,7 +13,9 @@ using System.Text;
 
 namespace Marketplace.Application.Handlers.Queries;
 
-public class GetServiceListingsQueryHandler(IApplicationDbContext _context)
+public class GetServiceListingsQueryHandler(
+    IApplicationDbContext _context,
+    IProfileDirectoryRepository _profileDirectory)
 {
     public async Task<Result<PagedList<ServiceListingSummaryDto>>> Handle(GetServiceListingsQuery query)
     {
@@ -48,7 +51,10 @@ public class GetServiceListingsQueryHandler(IApplicationDbContext _context)
             q = q.Where(l => l.City != null && l.City.ToLower() == query.City.ToLower());
 
         if (!string.IsNullOrWhiteSpace(query.Country))
-            q = q.Where(l => l.Country != null && l.Country.ToLower() == query.Country.ToLower());
+        {
+            var countryIso = query.Country.Trim().ToUpperInvariant();
+            q = q.Where(l => l.Country != null && l.Country == countryIso);
+        }
 
         // Distance/disponibilité nécessitent un post-traitement en mémoire car AvailabilitySlots
         // est stocké en JSON (non traduisible en SQL) et le calcul de distance (Haversine) n'est
@@ -71,15 +77,25 @@ public class GetServiceListingsQueryHandler(IApplicationDbContext _context)
                 _ => q.OrderByDescending(l => l.AverageRating).ThenByDescending(l => l.CreatedAt)
             };
 
-            var pagedItems = await sortedQuery
+            var pagedListings = await sortedQuery
                 .Skip((query.PageNumber - 1) * query.PageSize)
                 .Take(query.PageSize)
-                .Select(l => new ServiceListingSummaryDto(
-                    l.Id, l.ProviderId, string.Empty, l.Category.Name, l.Title,
-                    l.PaymentMode, l.Price, l.Currency, l.AverageRating, l.ReviewCount,
-                    l.ImageUrls.FirstOrDefault(), l.CreatedAt, l.City, l.Country, null, l.Status
-                ))
                 .ToListAsync();
+
+            var providerIds = pagedListings.Select(l => l.ProviderId).Distinct();
+            var profiles = await _profileDirectory.GetByUserIdsAsync(providerIds);
+
+            var pagedItems = pagedListings
+                .Select(l =>
+                {
+                    profiles.TryGetValue(l.ProviderId, out var p);
+                    return new ServiceListingSummaryDto(
+                        l.Id, l.ProviderId, p?.Id, p?.DisplayName ?? string.Empty, p?.IsVerified ?? false, p?.CountryCode,
+                        l.Category.Name, l.Title, l.PaymentMode, l.Price, l.Currency, l.AverageRating, l.ReviewCount,
+                        l.ImageUrls.FirstOrDefault(), l.CreatedAt, l.City, l.Country, null, l.Status
+                    );
+                })
+                .ToList();
 
             return Result.Success(new PagedList<ServiceListingSummaryDto>(pagedItems, totalCount, query.PageNumber, query.PageSize));
         }
@@ -114,14 +130,25 @@ public class GetServiceListingsQueryHandler(IApplicationDbContext _context)
         var orderedList = ordered.ToList();
         var inMemoryTotalCount = orderedList.Count;
 
-        var pagedInMemory = orderedList
+        var pagedCandidates = orderedList
             .Skip((query.PageNumber - 1) * query.PageSize)
             .Take(query.PageSize)
-            .Select(x => new ServiceListingSummaryDto(
-                x.Listing.Id, x.Listing.ProviderId, string.Empty, x.Listing.Category.Name, x.Listing.Title,
-                x.Listing.PaymentMode, x.Listing.Price, x.Listing.Currency, x.Listing.AverageRating, x.Listing.ReviewCount,
-                x.Listing.ImageUrls.FirstOrDefault(), x.Listing.CreatedAt, x.Listing.City, x.Listing.Country, x.Distance, x.Listing.Status
-            ))
+            .ToList();
+
+        var inMemoryProviderIds = pagedCandidates.Select(x => x.Listing.ProviderId).Distinct();
+        var inMemoryProfiles = await _profileDirectory.GetByUserIdsAsync(inMemoryProviderIds);
+
+        var pagedInMemory = pagedCandidates
+            .Select(x =>
+            {
+                inMemoryProfiles.TryGetValue(x.Listing.ProviderId, out var p);
+                return new ServiceListingSummaryDto(
+                    x.Listing.Id, x.Listing.ProviderId, p?.Id, p?.DisplayName ?? string.Empty, p?.IsVerified ?? false, p?.CountryCode,
+                    x.Listing.Category.Name, x.Listing.Title, x.Listing.PaymentMode, x.Listing.Price, x.Listing.Currency,
+                    x.Listing.AverageRating, x.Listing.ReviewCount, x.Listing.ImageUrls.FirstOrDefault(), x.Listing.CreatedAt,
+                    x.Listing.City, x.Listing.Country, x.Distance, x.Listing.Status
+                );
+            })
             .ToList();
 
         return Result.Success(new PagedList<ServiceListingSummaryDto>(pagedInMemory, inMemoryTotalCount, query.PageNumber, query.PageSize));

@@ -1,6 +1,7 @@
 using Marketplace.Application.Abstractions;
 using Marketplace.Application.Dtos;
 using Marketplace.Application.Extensions;
+using Marketplace.Application.Interfaces;
 using Marketplace.Application.Queries;
 using Marketplace.Domain.Enums;
 using Microsoft.EntityFrameworkCore;
@@ -13,7 +14,9 @@ using System.Text;
 
 namespace Marketplace.Application.Handlers.Queries;
 
-public class GetAllServiceRequestsQueryHandler(IApplicationDbContext _context)
+public class GetAllServiceRequestsQueryHandler(
+    IApplicationDbContext _context,
+    IProfileDirectoryRepository _profileDirectory)
 {
     public async Task<Result<PagedList<ServiceRequestDto>>> Handle(GetAllServiceRequestsQuery query)
     {
@@ -41,12 +44,25 @@ public class GetAllServiceRequestsQueryHandler(IApplicationDbContext _context)
 
         var totalCount = await q.CountAsync();
 
-        var items = await q
+        var requests = await q
             .OrderByDescending(r => r.CreatedAt)
             .Skip((query.PageNumber - 1) * query.PageSize)
             .Take(query.PageSize)
-            .Select(r => r.MapToDto())
             .ToListAsync();
+
+        var userIds = requests.Select(r => r.RequesterId)
+            .Concat(requests.Select(r => r.ProviderId))
+            .Distinct()
+            .ToList();
+
+        var profiles = await _profileDirectory.GetByUserIdsAsync(userIds);
+
+        var items = requests.Select(r =>
+        {
+            profiles.TryGetValue(r.RequesterId, out var req);
+            profiles.TryGetValue(r.ProviderId, out var prov);
+            return r.MapToDto(req, prov);
+        }).ToList();
 
         return Result.Success(new PagedList<ServiceRequestDto>(items, totalCount, query.PageNumber, query.PageSize));
     }

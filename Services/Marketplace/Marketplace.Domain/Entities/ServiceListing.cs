@@ -1,4 +1,4 @@
-﻿using Marketplace.Domain.Enums;
+using Marketplace.Domain.Enums;
 using Marketplace.Domain.Events;
 using Shared.Domain.Interfaces;
 using Shared.Domain.Primitives;
@@ -139,6 +139,15 @@ public class ServiceListing : AggregateRoot, ISoftDeletable
     {
         _availabilitySlots.Clear();
         _availabilitySlots.AddRange(slots);
+    }
+
+    /// <summary>
+    /// Met à jour les valeurs de pays et devise normalisées sans altérer le statut de publication ni le flag IsActive.
+    /// </summary>
+    public void NormalizeLocale(string? country, string? currency)
+    {
+        Country = country;
+        Currency = currency;
     }
 
     public bool IsAvailableAt(DateTime utcMoment)

@@ -1,5 +1,6 @@
-﻿using Marketplace.Application.Abstractions;
+using Marketplace.Application.Abstractions;
 using Marketplace.Application.Dtos;
+using Marketplace.Application.Interfaces;
 using Marketplace.Application.Queries;
 using Microsoft.EntityFrameworkCore;
 using Shared.Domain.Commons;
@@ -10,7 +11,9 @@ using System.Text;
 
 namespace Marketplace.Application.Handlers.Queries;
 
-public class GetServiceListingByIdQueryHandler(IApplicationDbContext _context)
+public class GetServiceListingByIdQueryHandler(
+    IApplicationDbContext _context,
+    IProfileDirectoryRepository _profileDirectory)
 {
     public async Task<Result<ServiceListingDto>> Handle(GetServiceListingByIdQuery query)
     {
@@ -21,12 +24,16 @@ public class GetServiceListingByIdQueryHandler(IApplicationDbContext _context)
         if (listing is null)
             return Result.Failure<ServiceListingDto>("Listing not found.");
 
+        var provider = await _profileDirectory.GetByUserIdAsync(listing.ProviderId);
         var now = DateTime.UtcNow;
 
         var dto = new ServiceListingDto(
             listing.Id,
             listing.ProviderId,
-            string.Empty, // Résolu via Profile Service
+            provider?.Id,
+            provider?.DisplayName ?? string.Empty,
+            provider?.IsVerified ?? false,
+            provider?.CountryCode,
             listing.CategoryId,
             listing.Category.Name,
             listing.Title,

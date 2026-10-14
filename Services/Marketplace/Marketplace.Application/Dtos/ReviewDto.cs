@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Text;
 
@@ -8,7 +8,9 @@ public record ReviewDto(
     Guid Id,
     Guid ListingId,
     Guid ReviewerId,
+    Guid? ReviewerProfileId,
     string ReviewerName,
+    bool ReviewerIsVerified,
     int Rating,
     string Comment,
     bool IsVerified,

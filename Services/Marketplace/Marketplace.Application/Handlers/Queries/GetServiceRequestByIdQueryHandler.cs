@@ -1,6 +1,7 @@
-﻿using Marketplace.Application.Abstractions;
+using Marketplace.Application.Abstractions;
 using Marketplace.Application.Dtos;
 using Marketplace.Application.Extensions;
+using Marketplace.Application.Interfaces;
 using Marketplace.Application.Queries;
 using Microsoft.EntityFrameworkCore;
 using Shared.Domain.Commons;
@@ -10,7 +11,9 @@ using System.Text;
 
 namespace Marketplace.Application.Handlers.Queries;
 
-public class GetServiceRequestByIdQueryHandler(IApplicationDbContext _context)
+public class GetServiceRequestByIdQueryHandler(
+    IApplicationDbContext _context,
+    IProfileDirectoryRepository _profileDirectory)
 {
     public async Task<Result<ServiceRequestDto>> Handle(GetServiceRequestByIdQuery query)
     {
@@ -24,6 +27,10 @@ public class GetServiceRequestByIdQueryHandler(IApplicationDbContext _context)
         if (request.RequesterId != query.RequestedBy && request.ProviderId != query.RequestedBy)
             return Result.Failure<ServiceRequestDto>("Access denied.");
 
-        return Result.Success(request.MapToDto());
+        var profiles = await _profileDirectory.GetByUserIdsAsync(new[] { request.RequesterId, request.ProviderId });
+        profiles.TryGetValue(request.RequesterId, out var requesterProfile);
+        profiles.TryGetValue(request.ProviderId, out var providerProfile);
+
+        return Result.Success(request.MapToDto(requesterProfile, providerProfile));
     }
 }
