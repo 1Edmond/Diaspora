@@ -107,8 +107,9 @@ public static class DependencyInjection
                  .ListenerCount(2)
                  .UseDurableInbox();
 
-            options.UseEntityFrameworkCoreTransactions();
-            options.Policies.AutoApplyTransactions();
+            // Les handlers applicatifs de Document gèrent leur propre persistance via IUnitOfWork.
+            // Laisser AutoApplyTransactions() actif déclenche une ambiguïté Wolverine entre DocumentDbContext et DbContext.
+            // options.UseEntityFrameworkCoreTransactions();
 
             options.Discovery.IncludeAssembly(
                 typeof(UploadDocumentCommandHandler).Assembly);
@@ -119,14 +120,6 @@ public static class DependencyInjection
 
         // ── DbContext (inclut les tables DEK de Shared.Security.Persistence) ──
         services.AddPostgresDatabase<DocumentDbContext>(connectionString, migrationsAssembly);
-
-        // Supprime l'enregistrement générique DbContext pour éviter le conflit Wolverine
-        // "multiple DbContext types detected: DbContext, DocumentDbContext"
-        var genericDbContextDescriptor = services.FirstOrDefault(d => d.ServiceType == typeof(DbContext));
-        if (genericDbContextDescriptor != null)
-        {
-            services.Remove(genericDbContextDescriptor);
-        }
     }
 
     public static void BuildInfrastructure(

@@ -95,9 +95,7 @@ public static class DependencyInjection
                 .ListenerCount(2)
                 .UseDurableInbox();
 
-            options.UseEntityFrameworkCoreTransactions();
-            options.Policies.AutoApplyTransactions();
-
+            // Handlers gèrent leur propre persistance via IUnitOfWork.
             options.Discovery.IncludeAssembly(typeof(CreateWalletCommandHandler).Assembly);
             options.Discovery.IncludeAssembly(typeof(ExternalProfileActivatedConsumer).Assembly);
             options.Discovery.IncludeAssembly(migrationsAssembly!);
@@ -105,12 +103,6 @@ public static class DependencyInjection
 
         // ── DbContext ─────────────────────────────────────────────────────────
         services.AddPostgresDatabase<WalletDbContext>(connectionString, migrationsAssembly);
-
-        var genericDbContextDescriptor = services.FirstOrDefault(d => d.ServiceType == typeof(DbContext));
-        if (genericDbContextDescriptor != null)
-        {
-            services.Remove(genericDbContextDescriptor);
-        }
     }
 
     public static void BuildInfrastructure(

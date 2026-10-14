@@ -112,8 +112,7 @@ public static class DependencyInjection
                 .ListenerCount(2)
                 .UseDurableInbox();
 
-            options.UseEntityFrameworkCoreTransactions();
-            options.Policies.AutoApplyTransactions();
+            // Handlers gèrent leur propre persistance via IUnitOfWork.
             options.Discovery.IncludeAssembly(typeof(CreateCategoryCommandHandler).Assembly);
             options.Discovery.IncludeAssembly(typeof(MarketplacePaymentHeldConsumer).Assembly);
             options.Discovery.IncludeAssembly(typeof(ProfileDirectoryConsumer).Assembly);
@@ -122,12 +121,6 @@ public static class DependencyInjection
 
         services.AddPostgresDatabase<MarketplaceDbContext>(connectionString, migrationsAssembly);
         services.AddScoped<IApplicationDbContext, MarketplaceDbContext>();
-
-        var genericDbContextDescriptor = services.FirstOrDefault(d => d.ServiceType == typeof(DbContext));
-        if (genericDbContextDescriptor != null)
-        {
-            services.Remove(genericDbContextDescriptor);
-        }
     }
 
     public static void BuildInfrastructure(
