@@ -18,6 +18,7 @@ public class ProfileDirectoryEntry : AggregateRoot
     public bool IsActivated { get; private set; }
     public bool IsVerified { get; private set; }
     public bool IsSuspended { get; private set; }
+    public bool IsKycApproved { get; private set; }
 
     public bool IsEligibleProvider => IsActivated && !IsSuspended;
 
@@ -51,6 +52,12 @@ public class ProfileDirectoryEntry : AggregateRoot
     }
 
     public void ApplyVerification() => IsVerified = true;
+
+    public void ApplyKycApproval()
+    {
+        IsKycApproved = true;
+        IsVerified = true;
+    }
 
     public void ApplySuspension() => IsSuspended = true;
 }

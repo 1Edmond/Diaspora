@@ -1,4 +1,4 @@
-﻿using Microsoft.AspNetCore.Builder;
+using Microsoft.AspNetCore.Builder;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -63,6 +63,9 @@ public static class DependencyInjection
             options.ConfigureRabbitMq().BindExchange(ExchangesConstants.IdentityEventsExchange)
                    .ToQueue("profile-service.identity-events");
 
+            options.ConfigureRabbitMq().BindExchange(ExchangesConstants.KycEventsExchange)
+                   .ToQueue("profile-service.kyc-events");
+
             var optimizedConnectionString = new NpgsqlConnectionStringBuilder(connectionString)
             {
                 Timeout = 60,
@@ -79,6 +82,13 @@ public static class DependencyInjection
 
             // Queue entrante : événements Identity
             options.ListenToRabbitQueue("profile-service.identity-events")
+              .PreFetchCount(20)
+              .MaximumParallelMessages(3)
+              .ListenerCount(2)
+              .UseDurableInbox();
+
+            // Queue entrante : événements KYC
+            options.ListenToRabbitQueue("profile-service.kyc-events")
               .PreFetchCount(20)
               .MaximumParallelMessages(3)
               .ListenerCount(2)

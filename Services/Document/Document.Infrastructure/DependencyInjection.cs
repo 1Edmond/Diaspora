@@ -72,6 +72,9 @@ public static class DependencyInjection
             options.ConfigureRabbitMq().BindExchange(ExchangesConstants.ProfileEventsExchange)
                    .ToQueue("document-service.profile-events");
 
+            options.ConfigureRabbitMq().BindExchange(ExchangesConstants.KycEventsExchange)
+                   .ToQueue("document-service.kyc-events");
+
             var optimizedConnectionString = new NpgsqlConnectionStringBuilder(connectionString)
             {
                 Timeout = 60,
@@ -93,6 +96,12 @@ public static class DependencyInjection
                  .UseDurableInbox();
 
             options.ListenToRabbitQueue("document-service.profile-events")
+                 .PreFetchCount(20)
+                 .MaximumParallelMessages(3)
+                 .ListenerCount(2)
+                 .UseDurableInbox();
+
+            options.ListenToRabbitQueue("document-service.kyc-events")
                  .PreFetchCount(20)
                  .MaximumParallelMessages(3)
                  .ListenerCount(2)
