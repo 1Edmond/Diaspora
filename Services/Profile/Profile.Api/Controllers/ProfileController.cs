@@ -218,5 +218,24 @@ public class ProfileController(
         return Ok(new { message = "Profile suspended successfully" });
     }
 
+    [Permission(
+        resourceKey: "profile",
+        action: "admin",
+        description: "Republier l'annuaire des profils",
+        recommendedRoles: new[] { "Admin" }
+    )]
+    [HttpPost("admin/republish-directory")]
+    public async Task<IActionResult> RepublishDirectory(CancellationToken cancellationToken)
+    {
+        var command = new RepublishProfileDirectoryCommand();
+        var result = await _messageBus.InvokeAsync<Result<RepublishProfileDirectoryResponse>>(
+            command, cancellationToken);
+
+        if (result.IsFailure)
+            return BadRequest(new { error = result.Error });
+
+        return Ok(result.Value);
+    }
+
     private Guid GetCurrentUserId() => Guid.Parse(_currentUserService.UserId!);
 }

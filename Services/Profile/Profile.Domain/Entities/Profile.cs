@@ -1,4 +1,4 @@
-﻿using Profile.Domain.Enums;
+using Profile.Domain.Enums;
 using Profile.Domain.Events;
 using Shared.Domain.Commons;
 using Shared.Domain.Primitives;
@@ -133,11 +133,20 @@ public sealed class Profile : AggregateRoot
 
     public Result Activate()
     {
+        if (Status == ProfileStatus.Suspended)
+            return Result.Failure("Profil suspendu, impossible d'activer.");
+
         if (Status == ProfileStatus.Activate)
-            return Result.Failure("Profile is already suspended.");
+            return Result.Failure("Profile is already activated.");
 
         Status = ProfileStatus.Activate;
-        AddDomainEvent(new ProfileActivatedDomainEvent(Id, ProfileTypeId, UserId, ProfileType.CountryCode, ProfileType.Currency, DateTime.UtcNow));
+        AddDomainEvent(new ProfileActivatedDomainEvent(
+            Id,
+            ProfileTypeId,
+            UserId,
+            ProfileType?.CountryCode ?? string.Empty,
+            ProfileType?.Currency ?? string.Empty,
+            DateTime.UtcNow));
 
         return Result.Success();
     }

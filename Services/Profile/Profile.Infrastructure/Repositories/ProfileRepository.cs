@@ -1,4 +1,4 @@
-﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Caching.Distributed;
 using Microsoft.Extensions.Logging;
 using Profile.Application.Interfaces;
@@ -57,5 +57,22 @@ public sealed class ProfileRepository(
        return await _context.InternalProfiles
             .Include(x => x.ProfileType)
             .Where(x => x.UserId == userId).ToListAsync(cancellationToken);
+    }
+
+    public async Task<List<Domain.Entities.Profile>> GetBatchWithProfileTypeAsync(
+        int skip, int take, CancellationToken cancellationToken = default)
+    {
+        return await _context.InternalProfiles
+            .AsNoTracking()
+            .Include(x => x.ProfileType)
+            .OrderBy(x => x.CreatedAt)
+            .Skip(skip)
+            .Take(take)
+            .ToListAsync(cancellationToken);
+    }
+
+    public async Task<int> GetTotalCountAsync(CancellationToken cancellationToken = default)
+    {
+        return await _context.InternalProfiles.CountAsync(cancellationToken);
     }
 }

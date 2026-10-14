@@ -1,4 +1,4 @@
-﻿using Profile.Domain.Events;
+using Profile.Domain.Events;
 using Shared.Domain.Interfaces;
 using Shared.Messaging.Events;
 using Shared.Messaging.Events.Profile;
@@ -22,7 +22,7 @@ public sealed class ProfileIntegrationEventMapper : IIntegrationEventMapper
             e.ProfileId, e.UserId),
 
         ProfileActivatedDomainEvent e => new ProfileActivatedIntegrationEvent(
-            e.ProfileId, e.UserId, e.ProfileTypeId, e.CountryCode, e.Currency , e.ActivatedAt),
+            e.ProfileId, e.ProfileTypeId, e.UserId, e.CountryCode, e.Currency, e.ActivatedAt),
 
         ProfileKindChangedDomainEvent e => new ProfileKindChangedIntegrationEvent(
             e.ProfileId, e.UserId, e.OldKind.ToString(), e.NewKind.ToString()),
