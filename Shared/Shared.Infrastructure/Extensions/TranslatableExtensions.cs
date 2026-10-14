@@ -1,6 +1,6 @@
 using Shared.Domain.Constants;
 using Shared.Domain.Interfaces;
-using Shared.Infrastructure.Persistence.Translations;
+using Shared.Domain.Translations;
 using System;
 using System.Collections.Generic;
 using System.Linq;

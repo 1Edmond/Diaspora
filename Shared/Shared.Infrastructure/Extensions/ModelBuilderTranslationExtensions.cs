@@ -1,5 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using Shared.Domain.Interfaces;
+using Shared.Domain.Translations;
 using System.Linq;
 
 namespace Shared.Infrastructure.Persistence.Translations;
