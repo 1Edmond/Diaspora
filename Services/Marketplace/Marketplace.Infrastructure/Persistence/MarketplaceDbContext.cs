@@ -1,4 +1,4 @@
-﻿using Marketplace.Application.Abstractions;
+using Marketplace.Application.Abstractions;
 using Marketplace.Domain.Entities;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
@@ -25,6 +25,7 @@ public class MarketplaceDbContext(
     public DbSet<ServiceRequest> ServiceRequests => Set<ServiceRequest>();
     public DbSet<Favorite> Favorites => Set<Favorite>();
     public DbSet<Report> Reports => Set<Report>();
+    public DbSet<ProfileDirectoryEntry> ProfileDirectory => Set<ProfileDirectoryEntry>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {

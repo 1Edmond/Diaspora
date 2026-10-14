@@ -1,4 +1,4 @@
-﻿using Marketplace.Domain.Entities;
+using Marketplace.Domain.Entities;
 using Microsoft.EntityFrameworkCore;
 using System;
 using System.Collections.Generic;
@@ -13,6 +13,7 @@ public interface IApplicationDbContext
     DbSet<ServiceRequest> ServiceRequests { get; }
     DbSet<Favorite> Favorites { get; }
     DbSet<Report> Reports { get; }
+    DbSet<ProfileDirectoryEntry> ProfileDirectory { get; }
 
     Task<int> SaveChangesAsync(CancellationToken cancellationToken = default);
 }

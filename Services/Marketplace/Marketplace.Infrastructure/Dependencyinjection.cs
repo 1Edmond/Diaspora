@@ -1,8 +1,9 @@
-﻿using Marketplace.Application.Abstractions;
+using Marketplace.Application.Abstractions;
 using Marketplace.Application.Handlers.Commands;
 using Marketplace.Application.Handlers.IntegrationEvents;
 using Marketplace.Application.Interfaces;
 using Marketplace.Application.Mappings;
+using Marketplace.Infrastructure.Consumers;
 using Marketplace.Infrastructure.Extensions;
 using Marketplace.Infrastructure.Persistence;
 using Marketplace.Infrastructure.Repositories;
@@ -49,6 +50,7 @@ public static class DependencyInjection
         services.AddScoped<IServiceRequestRepository, ServiceRequestRepository>();
         services.AddScoped<IFavoriteRepository, FavoriteRepository>();
         services.AddScoped<IReportRepository, ReportRepository>();
+        services.AddScoped<IProfileDirectoryRepository, ProfileDirectoryRepository>();
         services.AddSingleton<CategorySeeder>();
 
         services.SetCoreInfrastructureServices(configuration, options =>
@@ -72,10 +74,22 @@ public static class DependencyInjection
                 .PreFetchCount(15)
                 .UseDurableInbox();
 
+            // Événements du Profile Service : alimentent la projection locale des profils
+            // (correspondance UserId ↔ ProfileId, nom, pays, devise, statut de vérification).
+            options.ConfigureRabbitMq().BindExchange(ExchangesConstants.ProfileEventsExchange)
+                .ToQueue("marketplace-service.profile-events");
+
+            options.ListenToRabbitQueue("marketplace-service.profile-events")
+                .PreFetchCount(20)
+                .MaximumParallelMessages(3)
+                .ListenerCount(2)
+                .UseDurableInbox();
+
             options.UseEntityFrameworkCoreTransactions();
             options.Policies.AutoApplyTransactions();
             options.Discovery.IncludeAssembly(typeof(CreateCategoryCommandHandler).Assembly);
             options.Discovery.IncludeAssembly(typeof(WalletPaymentCompletedIntegrationEventHandler).Assembly);
+            options.Discovery.IncludeAssembly(typeof(ProfileDirectoryConsumer).Assembly);
             options.Discovery.IncludeAssembly(migrationsAssembly!);
         });
 
