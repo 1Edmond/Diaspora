@@ -22,6 +22,7 @@
   <ItemGroup>
     <ProjectReference Include="..\Profile.Domain\Profile.Domain.csproj" />
     <ProjectReference Include="..\Profile.Application\Profile.Application.csproj" />
+    <ProjectReference Include="..\Profile.Api\Profile.Api.csproj" />
   </ItemGroup>
 
 </Project>
