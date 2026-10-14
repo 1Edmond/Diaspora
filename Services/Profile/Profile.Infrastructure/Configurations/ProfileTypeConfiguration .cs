@@ -1,4 +1,4 @@
-﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 using Profile.Domain.Entities;
 using Shared.Messaging.Constants;
@@ -21,6 +21,7 @@ public sealed class InternalProfileTypeConfiguration : IEntityTypeConfiguration<
         builder.Property(x => x.CountryCode).HasMaxLength(2).IsRequired();
         builder.Property(x => x.PhoneIndicatif).HasMaxLength(10).IsRequired();
         builder.Property(x => x.Currency).HasMaxLength(10).IsRequired();
+        builder.Property(x => x.Flag).HasMaxLength(10).IsRequired().HasDefaultValue("");
         builder.Property(x => x.IsActive).IsRequired().HasDefaultValue(true);
         builder.Property(x => x.CreatedAt).HasColumnType("timestamptz").IsRequired();
         builder.Property(x => x.CreatedBy).HasMaxLength(255).IsRequired();
@@ -34,6 +35,7 @@ public sealed class InternalProfileTypeConfiguration : IEntityTypeConfiguration<
             CountryCode = "TG",
             PhoneIndicatif = "+228",
             Currency = "XOF",
+            Flag = "🇹🇬",
             IsActive = true,
             CreatedAt = new DateTime(2024, 1, 1, 0, 0, 0, DateTimeKind.Utc),
             CreatedBy = "System",

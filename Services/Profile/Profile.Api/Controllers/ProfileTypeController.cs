@@ -13,6 +13,14 @@ public class ProfileTypeController(
     IProfileTypeRepository _repository,
     ILogger<ProfileTypeController> _logger) : ControllerBase
 {
+    [Microsoft.AspNetCore.Authorization.AllowAnonymous]
+    [HttpGet("public")]
+    public async Task<IActionResult> GetPublic(CancellationToken cancellationToken)
+    {
+        var types = await _repository.GetAllActiveAsync(cancellationToken);
+        return Ok(types.Select(t => t.ToDto()));
+    }
+
     [Permission(
         resourceKey: "profile.type",
         action: "list",
@@ -46,7 +54,8 @@ public class ProfileTypeController(
             request.CountryName,
             request.CountryCode,
             request.PhoneIndicatif,
-            request.Currency);
+            request.Currency,
+            request.Flag);
 
         await _repository.AddAsync(profileType, cancellationToken);
 
@@ -77,7 +86,8 @@ public class ProfileTypeController(
             request.CountryName,
             request.CountryCode,
             request.PhoneIndicatif,
-            request.Currency);
+            request.Currency,
+            request.Flag);
 
         await _repository.UpdateAsync(profileType, cancellationToken);
 

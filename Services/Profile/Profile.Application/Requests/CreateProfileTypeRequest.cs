@@ -8,5 +8,6 @@ public sealed record CreateProfileTypeRequest(
     string CountryName,
     string CountryCode,
     string PhoneIndicatif,
-    string Currency
+    string Currency,
+    string? Flag = null
 );

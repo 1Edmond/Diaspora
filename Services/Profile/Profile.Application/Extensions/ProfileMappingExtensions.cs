@@ -1,4 +1,4 @@
-﻿using Profile.Application.DTOs;
+using Profile.Application.DTOs;
 using Profile.Domain.Entities;
 using System;
 using System.Collections.Generic;
@@ -29,5 +29,6 @@ public static class ProfileMappingExtensions
             profileType.CountryCode,
             profileType.PhoneIndicatif,
             profileType.Currency,
+            profileType.Flag,
             profileType.IsActive);
 }

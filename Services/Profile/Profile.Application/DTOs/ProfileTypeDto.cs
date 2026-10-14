@@ -10,5 +10,6 @@ public sealed record ProfileTypeDto(
     string CountryCode,
     string PhoneIndicatif,
     string Currency,
+    string Flag,
     bool IsActive
 );
