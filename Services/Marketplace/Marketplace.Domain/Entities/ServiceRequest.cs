@@ -44,6 +44,10 @@ public class ServiceRequest : AggregateRoot
     // Messagerie — référence vers le fil de discussion créé côté Chat Service
     public Guid? ChatThreadId { get; private set; }
 
+    // Litiges (Dispute)
+    public bool IsInDispute { get; private set; }
+    public Guid? ActiveDisputeId { get; private set; }
+
     public ServiceListing Listing { get; private set; } = null!;
 
     private ServiceRequest() { }
@@ -120,6 +124,9 @@ public class ServiceRequest : AggregateRoot
 
     public Result ConfirmHandover(string otp, string? proofPhotoUrl)
     {
+        if (IsInDispute)
+            return Result.Failure("Un litige est actuellement en cours sur cette demande.");
+
         if (Status != ServiceRequestStatus.Accepted)
             return Result.Failure("La remise du colis ne peut être confirmée que pour une demande acceptée.");
 
@@ -165,6 +172,9 @@ public class ServiceRequest : AggregateRoot
 
     public Result ConfirmDelivery(string otp, string? proofPhotoUrl)
     {
+        if (IsInDispute)
+            return Result.Failure("Un litige est actuellement en cours sur cette demande. Impossible de confirmer la livraison ou de libérer les fonds.");
+
         if (Status != ServiceRequestStatus.ArrivedAtDestination && Status != ServiceRequestStatus.InTransit && Status != ServiceRequestStatus.PackageHandedOver)
             return Result.Failure("La livraison ne peut être confirmée que pour un colis en cours d'acheminement.");
 
@@ -232,5 +242,23 @@ public class ServiceRequest : AggregateRoot
     public void LinkChatThread(Guid chatThreadId)
     {
         ChatThreadId = chatThreadId;
+    }
+
+    public Result OpenDispute(Guid disputeId)
+    {
+        if (IsInDispute)
+            return Result.Failure("Un litige est déjà ouvert pour cette demande.");
+        if (Status == ServiceRequestStatus.Cancelled || Status == ServiceRequestStatus.Declined)
+            return Result.Failure("Impossible d'ouvrir un litige sur une demande annulée ou refusée.");
+
+        IsInDispute = true;
+        ActiveDisputeId = disputeId;
+        return Result.Success();
+    }
+
+    public void ResolveDispute()
+    {
+        IsInDispute = false;
+        ActiveDisputeId = null;
     }
 }

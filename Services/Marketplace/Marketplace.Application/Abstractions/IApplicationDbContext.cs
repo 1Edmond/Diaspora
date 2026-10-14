@@ -15,6 +15,7 @@ public interface IApplicationDbContext
     DbSet<Report> Reports { get; }
     DbSet<ProfileDirectoryEntry> ProfileDirectory { get; }
     DbSet<CategoryPolicy> CategoryPolicies { get; }
+    DbSet<Dispute> Disputes { get; }
 
     Task<int> SaveChangesAsync(CancellationToken cancellationToken = default);
 }

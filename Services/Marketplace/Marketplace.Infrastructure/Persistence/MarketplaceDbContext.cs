@@ -28,6 +28,7 @@ public class MarketplaceDbContext(
     public DbSet<Report> Reports => Set<Report>();
     public DbSet<ProfileDirectoryEntry> ProfileDirectory => Set<ProfileDirectoryEntry>();
     public DbSet<CategoryPolicy> CategoryPolicies => Set<CategoryPolicy>();
+    public DbSet<Dispute> Disputes => Set<Dispute>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
