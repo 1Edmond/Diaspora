@@ -1,4 +1,4 @@
-﻿using Marketplace.Domain.Enums;
+using Marketplace.Domain.Enums;
 using Marketplace.Domain.Events;
 using Shared.Domain.Primitives;
 using System;
@@ -87,11 +87,35 @@ public class ServiceRequest : AggregateRoot
         CancellationReason = reason;
     }
 
-    public void MarkPaymentCompleted(Guid transactionId)
+    public void MarkPaymentProcessing()
+    {
+        PaymentStatus = PaymentStatus.Processing;
+    }
+
+    public void MarkPaymentHeld(Guid transactionId)
     {
         WalletTransactionId = transactionId;
-        PaymentStatus = PaymentStatus.Completed;
+        PaymentStatus = PaymentStatus.Held;
     }
+
+    public void MarkPaymentFailed()
+    {
+        PaymentStatus = PaymentStatus.Failed;
+    }
+
+    public void MarkPaymentReleased(Guid transactionId)
+    {
+        WalletTransactionId = transactionId;
+        PaymentStatus = PaymentStatus.Released;
+    }
+
+    public void MarkPaymentRefunded(Guid transactionId)
+    {
+        WalletTransactionId = transactionId;
+        PaymentStatus = PaymentStatus.Refunded;
+    }
+
+    public void MarkPaymentCompleted(Guid transactionId) => MarkPaymentReleased(transactionId);
 
     public void LinkChatThread(Guid chatThreadId)
     {

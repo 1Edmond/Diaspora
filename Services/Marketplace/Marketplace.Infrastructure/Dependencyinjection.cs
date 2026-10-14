@@ -1,6 +1,5 @@
 using Marketplace.Application.Abstractions;
 using Marketplace.Application.Handlers.Commands;
-using Marketplace.Application.Handlers.IntegrationEvents;
 using Marketplace.Application.Interfaces;
 using Marketplace.Application.Mappings;
 using Marketplace.Infrastructure.Consumers;
@@ -53,6 +52,11 @@ public static class DependencyInjection
         services.AddScoped<IProfileDirectoryRepository, ProfileDirectoryRepository>();
         services.AddSingleton<CategorySeeder>();
 
+        services.AddScoped<MarketplacePaymentHeldConsumer>();
+        services.AddScoped<MarketplacePaymentFailedConsumer>();
+        services.AddScoped<MarketplacePaymentReleasedConsumer>();
+        services.AddScoped<MarketplacePaymentRefundedConsumer>();
+
         services.SetCoreInfrastructureServices(configuration, options =>
         {
             options.ConfigureMarketplaceDomainQueues();
@@ -85,10 +89,20 @@ public static class DependencyInjection
                 .ListenerCount(2)
                 .UseDurableInbox();
 
+            // Événements du Wallet Service : notifications de séquestre (Held, Failed, Released, Refunded)
+            options.ConfigureRabbitMq().BindExchange(ExchangesConstants.WalletEventsExchange)
+                .ToQueue("marketplace-service.wallet-events");
+
+            options.ListenToRabbitQueue("marketplace-service.wallet-events")
+                .PreFetchCount(20)
+                .MaximumParallelMessages(3)
+                .ListenerCount(2)
+                .UseDurableInbox();
+
             options.UseEntityFrameworkCoreTransactions();
             options.Policies.AutoApplyTransactions();
             options.Discovery.IncludeAssembly(typeof(CreateCategoryCommandHandler).Assembly);
-            options.Discovery.IncludeAssembly(typeof(WalletPaymentCompletedIntegrationEventHandler).Assembly);
+            options.Discovery.IncludeAssembly(typeof(MarketplacePaymentHeldConsumer).Assembly);
             options.Discovery.IncludeAssembly(typeof(ProfileDirectoryConsumer).Assembly);
             options.Discovery.IncludeAssembly(migrationsAssembly!);
         });

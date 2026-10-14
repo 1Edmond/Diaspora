@@ -1,4 +1,4 @@
-﻿using Marketplace.Application.Commands;
+using Marketplace.Application.Commands;
 using Marketplace.Application.Dtos;
 using Marketplace.Application.Queries;
 using Marketplace.Domain.Enums;
@@ -95,6 +95,28 @@ public class ServiceRequestController(
 
         if (result.IsFailure) return BadRequest(new { error = result.Error });
         return Ok(new { message = "Request accepted" });
+    }
+
+    [Permission(
+        resourceKey: "marketplace.request",
+        action: "pay",
+        description: "Pay for an accepted service request via escrow",
+        recommendedRoles: new[] { "User", "Admin" }
+    )]
+    [HttpPost("{id:guid}/pay")]
+    public async Task<IActionResult> Pay(Guid id)
+    {
+        var result = await _messageBus.InvokeAsync<Result>(
+            new PayServiceRequestCommand(id, GetCurrentUserId()));
+
+        if (result.IsFailure)
+        {
+            if (result.Error == "Access denied.")
+                return StatusCode(StatusCodes.Status403Forbidden, new { error = result.Error });
+            return BadRequest(new { error = result.Error });
+        }
+
+        return Accepted(new { message = "Payment request submitted for processing." });
     }
 
     [Permission(

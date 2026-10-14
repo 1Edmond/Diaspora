@@ -1,6 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
+using System;
 
 namespace Marketplace.Domain.Enums;
 
@@ -8,7 +6,10 @@ public enum PaymentStatus
 {
     NotApplicable = 0,
     Pending = 1,
-    Completed = 2,
-    Refunded = 3,
-    Failed = 4
+    Processing = 2,
+    Held = 3,
+    Released = 4,
+    Refunded = 5,
+    Failed = 6,
+    Completed = Released
 }

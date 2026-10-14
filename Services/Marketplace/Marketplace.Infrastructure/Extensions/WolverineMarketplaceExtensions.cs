@@ -1,4 +1,4 @@
-﻿using Shared.Messaging.Constants;
+using Shared.Messaging.Constants;
 using Shared.Messaging.Events.Marketplace;
 using Shared.Messaging.Events.Wallet;
 using System;
@@ -32,10 +32,13 @@ public static class WolverineMarketplaceExtensions
         options.PublishMessage<ServiceRequestCompletedIntegrationEvent>()
             .ToRabbitExchange(ExchangesConstants.MarketplaceEventsExchange);
 
-        //// ── Subscribe — événements consommés depuis d'autres services ──────────
-        //// Wallet → Marketplace : confirmation de paiement
-        //options.ListenToRabbitQueue(QueuesConstants.MarketplaceServiceQueue)
-        //    .b(ExchangesConstants.WalletEventsExchange,
-        //        routingKey: nameof(MarketplacePaymentCompletedIntegrationEvent));
+        options.PublishMessage<MarketplacePaymentRequestedIntegrationEvent>()
+            .ToRabbitExchange(ExchangesConstants.MarketplaceEventsExchange);
+
+        options.PublishMessage<MarketplacePaymentReleaseRequestedIntegrationEvent>()
+            .ToRabbitExchange(ExchangesConstants.MarketplaceEventsExchange);
+
+        options.PublishMessage<MarketplacePaymentRefundRequestedIntegrationEvent>()
+            .ToRabbitExchange(ExchangesConstants.MarketplaceEventsExchange);
     }
 }
