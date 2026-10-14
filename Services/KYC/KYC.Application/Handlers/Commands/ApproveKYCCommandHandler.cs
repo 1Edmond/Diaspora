@@ -1,15 +1,20 @@
-﻿using KYC.Application.Abstractions;
+using KYC.Application.Abstractions;
 using KYC.Application.Commands;
 using Microsoft.EntityFrameworkCore;
 using Shared.Domain.Commons;
 using Shared.Domain.Enums;
+using Shared.Messaging.Events.Kyc;
 using System;
 using System.Collections.Generic;
 using System.Text;
+using Wolverine;
 
 namespace KYC.Application.Handlers.Commands;
 
-public class ApproveKYCCommandHandler(IKYCDbContext context)
+public class ApproveKYCCommandHandler(
+    IKYCDbContext context,
+    IProfileDirectoryRepository? profileDirectoryRepository = null,
+    IMessageBus? _messageBus = null)
 {
     public async Task<Result> Handle(ApproveKYCCommand command)
     {
@@ -28,6 +33,20 @@ public class ApproveKYCCommandHandler(IKYCDbContext context)
             return result;
 
         await context.SaveChangesAsync();
+
+        if (_messageBus is not null && profileDirectoryRepository is not null)
+        {
+            var profile = await profileDirectoryRepository.GetByUserIdAsync(verification.UserId);
+            if (profile is not null)
+            {
+                await _messageBus.PublishAsync(new KycArrivalProofApprovedIntegrationEvent(
+                    verification.Id,
+                    verification.UserId,
+                    profile.Id,
+                    profile.CountryCode ?? string.Empty,
+                    DateTime.UtcNow));
+            }
+        }
 
         return Result.Success();
     }

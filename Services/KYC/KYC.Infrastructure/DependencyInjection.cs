@@ -1,4 +1,4 @@
-﻿using JasperFx.Resources;
+using JasperFx.Resources;
 using KYC.Application;
 using KYC.Application.Abstractions;
 using KYC.Application.Handlers.IntegrationEvents;
@@ -19,6 +19,8 @@ using Shared.Infrastructure;
 using Shared.Messaging.Constants;
 using Shared.Security;
 using System.Reflection;
+using KYC.Infrastructure.Consumers;
+using KYC.Infrastructure.Repositories;
 using Wolverine;
 using Wolverine.Postgresql;
 using Wolverine.RabbitMQ;
@@ -37,15 +39,63 @@ public static class DependencyInjection
         
         
         services.AddScoped<IFileStorageService, LocalFileStorageService>();
+        services.AddScoped<IProfileDirectoryRepository, ProfileDirectoryRepository>();
+        services.AddScoped<ProfileDirectoryConsumer>();
 
-        services.SetCoreInfrastructureServices(configuration, (options) =>
+        services.SetCoreInfrastructureServices(configuration, options =>
         {
-            //options.PersistMessagesWithPostgresql(connectionString);
-            //options.Discovery.IncludeAssembly(typeof(UserDeletedIntegrationEventHandler).Assembly);
-            //options.Policies.UseDurableInboxOnAllListeners();
-            //options.Policies.UseDurableOutboxOnAllSendingEndpoints();
-            //options.Policies.AutoApplyTransactions();
-            //options.ListenToRabbitQueue(QueuesConstants.DefaultRabbitMqQueue);
+            var optimizedConnectionString = new NpgsqlConnectionStringBuilder(connectionString)
+            {
+                Timeout = 60,
+                CommandTimeout = 60,
+                MaxPoolSize = 15,
+                MinPoolSize = 0,
+                Pooling = true,
+                ConnectionIdleLifetime = 300,
+                ConnectionPruningInterval = 10
+            }.ToString();
+
+            options.PersistMessagesWithPostgresql(optimizedConnectionString, "wolverine_kyc");
+
+            // Outbox : publication des 6 événements KYC + KycArrivalProofApproved vers kyc.events
+            options.PublishMessage<Shared.Messaging.Events.Kyc.KYCVerificationCreatedIntegrationEvent>()
+                .ToRabbitExchange(ExchangesConstants.KycEventsExchange);
+
+            options.PublishMessage<Shared.Messaging.Events.Kyc.KYCDocumentUploadedIntegrationEvent>()
+                .ToRabbitExchange(ExchangesConstants.KycEventsExchange);
+
+            options.PublishMessage<Shared.Messaging.Events.Kyc.KYCVerificationSubmittedIntegrationEvent>()
+                .ToRabbitExchange(ExchangesConstants.KycEventsExchange);
+
+            options.PublishMessage<Shared.Messaging.Events.Kyc.KYCMoreInfoRequestedIntegrationEvent>()
+                .ToRabbitExchange(ExchangesConstants.KycEventsExchange);
+
+            options.PublishMessage<Shared.Messaging.Events.Kyc.KYCVerificationApprovedIntegrationEvent>()
+                .ToRabbitExchange(ExchangesConstants.KycEventsExchange);
+
+            options.PublishMessage<Shared.Messaging.Events.Kyc.KYCVerificationRejectedIntegrationEvent>()
+                .ToRabbitExchange(ExchangesConstants.KycEventsExchange);
+
+            options.PublishMessage<Shared.Messaging.Events.Kyc.KycArrivalProofApprovedIntegrationEvent>()
+                .ToRabbitExchange(ExchangesConstants.KycEventsExchange);
+
+            // Inbound : événements Profile pour alimenter la projection locale ProfileDirectory
+            options.ConfigureRabbitMq().BindExchange(ExchangesConstants.ProfileEventsExchange)
+                .ToQueue("kyc-service.profile-events");
+
+            options.ListenToRabbitQueue("kyc-service.profile-events")
+                .PreFetchCount(20)
+                .MaximumParallelMessages(3)
+                .ListenerCount(2)
+                .UseDurableInbox();
+
+            options.Policies.AutoApplyTransactions();
+            options.Policies.UseDurableOutboxOnAllSendingEndpoints();
+
+            options.Discovery.IncludeAssembly(typeof(KYC.Application.Handlers.Commands.ApproveKYCCommandHandler).Assembly);
+            options.Discovery.IncludeAssembly(typeof(Consumers.ProfileDirectoryConsumer).Assembly);
+            if (migrationsAssembly != null)
+                options.Discovery.IncludeAssembly(migrationsAssembly);
         });
 
         services.AddPostgresDatabase<KYCDbContext>(connectionString, migrationsAssembly);

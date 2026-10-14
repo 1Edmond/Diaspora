@@ -1,4 +1,4 @@
-﻿using KYC.Domain.Events;
+using KYC.Domain.Events;
 using Shared.Domain.Attributes;
 using Shared.Domain.Commons;
 using Shared.Domain.Enums;
@@ -122,7 +122,7 @@ public class KYCVerification : AggregateRoot, IAuditable, ISoftDeletable
         return Result.Success();
     }
 
-    public Result Submit()
+    public Result Submit(IEnumerable<string>? requiredDocumentTypes = null)
     {
         if (Status != KYCStatus.Draft)
             return Result.Failure("Only draft verifications can be submitted");
@@ -130,12 +130,16 @@ public class KYCVerification : AggregateRoot, IAuditable, ISoftDeletable
         if (!_documents.Any())
             return Result.Failure("At least one document is required");
 
-        var requiredDocs = new[] { "IdentityDocument", "ProofOfAddress" };
-        var hasRequired = requiredDocs.All(type =>
-            _documents.Any(d => d.DocumentType == type));
+        var requiredList = requiredDocumentTypes?.ToList();
+        var requiredDocs = (requiredList != null && requiredList.Count > 0)
+            ? requiredList
+            : new List<string> { "IdentityDocument", "ProofOfAddress" };
 
-        if (!hasRequired)
-            return Result.Failure("Identity document and proof of address are required");
+        var missingDocs = requiredDocs.Where(type =>
+            !_documents.Any(d => string.Equals(d.DocumentType, type, StringComparison.OrdinalIgnoreCase))).ToList();
+
+        if (missingDocs.Count > 0)
+            return Result.Failure($"Missing required documents: {string.Join(", ", missingDocs)}");
 
         Status = KYCStatus.Pending;
         SubmittedAt = DateTime.UtcNow;

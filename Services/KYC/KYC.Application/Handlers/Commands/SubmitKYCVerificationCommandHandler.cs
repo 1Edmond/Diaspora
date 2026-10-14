@@ -1,4 +1,4 @@
-﻿using KYC.Application.Abstractions;
+using KYC.Application.Abstractions;
 using KYC.Application.Commands;
 using Microsoft.EntityFrameworkCore;
 using Shared.Domain.Commons;
@@ -8,7 +8,9 @@ using System.Text;
 
 namespace KYC.Application.Handlers.Commands;
 
-public class SubmitKYCVerificationCommandHandler(IKYCDbContext context)
+public class SubmitKYCVerificationCommandHandler(
+    IKYCDbContext context,
+    IProfileDirectoryRepository? profileDirectoryRepository = null)
 {
     public async Task<Result> Handle(SubmitKYCVerificationCommand command)
     {
@@ -19,7 +21,25 @@ public class SubmitKYCVerificationCommandHandler(IKYCDbContext context)
         if (verification == null)
             return Result.Failure("Verification not found");
 
-        var result = verification.Submit();
+        List<string>? requiredDocTypes = null;
+        if (profileDirectoryRepository is not null)
+        {
+            var profile = await profileDirectoryRepository.GetByUserIdAsync(verification.UserId);
+            if (profile is not null)
+            {
+                var requirements = await context.CountryKycRequirements
+                    .Where(r => r.ProfileTypeId == profile.Id && r.IsActive && r.IsRequired)
+                    .Select(r => r.DocumentTypeCode)
+                    .ToListAsync();
+
+                if (requirements.Count > 0)
+                {
+                    requiredDocTypes = requirements;
+                }
+            }
+        }
+
+        var result = verification.Submit(requiredDocTypes);
 
         if (result.IsFailure)
             return result;

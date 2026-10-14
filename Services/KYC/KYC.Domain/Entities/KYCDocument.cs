@@ -1,4 +1,4 @@
-﻿using Shared.Domain.Commons;
+using Shared.Domain.Commons;
 using Shared.Domain.Primitives;
 using System;
 using System.Collections.Generic;
@@ -24,9 +24,8 @@ public class KYCDocument : Entity
         string filePath,
         long fileSize)
     {
-        var validTypes = new[] { "IdentityDocument", "ProofOfAddress", "Selfie", "Other" };
-        if (!validTypes.Contains(documentType))
-            return Result.Failure<KYCDocument>("Invalid document type");
+        if (string.IsNullOrWhiteSpace(documentType))
+            return Result.Failure<KYCDocument>("Document type is required");
 
         if (string.IsNullOrWhiteSpace(fileName))
             return Result.Failure<KYCDocument>("File name is required");
