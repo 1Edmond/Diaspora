@@ -1,4 +1,4 @@
-﻿using FluentValidation;
+using FluentValidation;
 using Microsoft.Extensions.DependencyInjection;
 using System;
 using System.Collections.Generic;
@@ -12,6 +12,7 @@ public static class DependencyInjection
     public static IServiceCollection AddDocumentApplication(this IServiceCollection services)
     {
         services.AddValidatorsFromAssembly(Assembly.GetExecutingAssembly());
+        services.AddScoped<Interfaces.IDocumentAccessService, Services.DocumentAccessService>();
         return services;
     }
 }

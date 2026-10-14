@@ -1,4 +1,4 @@
-﻿using Document.Application;
+using Document.Application;
 using Document.Application.Handlers.Commands;
 using Document.Application.Interfaces;
 using Document.Application.Mappings;
@@ -47,6 +47,7 @@ public static class DependencyInjection
         // ── Repositories ──────────────────────────────────────────────────────
         services.AddScoped<IDocumentRepository, DocumentRepository>();
         services.AddScoped<IDocumentTypeRepository, DocumentTypeRepository>();
+        services.AddScoped<IProfileDirectoryRepository, ProfileDirectoryRepository>();
 
         // ── File Storage — chiffré via Vault + AES-GCM ────────────────────────
         services.AddScoped<IFileStorageService, EncryptedLocalFileStorageService>();
@@ -64,7 +65,8 @@ public static class DependencyInjection
             options.ConfigureRabbitMq().BindExchange(ExchangesConstants.IdentityEventsExchange)
                    .ToQueue("document-service.identity-events");
 
-
+            options.ConfigureRabbitMq().BindExchange(ExchangesConstants.ProfileEventsExchange)
+                   .ToQueue("document-service.profile-events");
 
             var optimizedConnectionString = new NpgsqlConnectionStringBuilder(connectionString)
             {
@@ -86,11 +88,19 @@ public static class DependencyInjection
                  .ListenerCount(2)
                  .UseDurableInbox();
 
+            options.ListenToRabbitQueue("document-service.profile-events")
+                 .PreFetchCount(20)
+                 .MaximumParallelMessages(3)
+                 .ListenerCount(2)
+                 .UseDurableInbox();
+
             options.UseEntityFrameworkCoreTransactions();
             options.Policies.AutoApplyTransactions();
 
             options.Discovery.IncludeAssembly(
                 typeof(UploadDocumentCommandHandler).Assembly);
+            options.Discovery.IncludeAssembly(
+                typeof(Consumers.ProfileDirectoryConsumer).Assembly);
             options.Discovery.IncludeAssembly(migrationsAssembly!);
         });
 

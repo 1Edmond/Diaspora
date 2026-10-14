@@ -1,4 +1,4 @@
-﻿using Document.Domain.Entities;
+using Document.Domain.Entities;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using Shared.Application.Interfaces;
@@ -19,6 +19,7 @@ public sealed class DocumentDbContext(
 {
     public DbSet<Domain.Entities.Document> Documents => Set<Domain.Entities.Document>();
     public DbSet<DocumentType> DocumentTypes => Set<DocumentType>();
+    public DbSet<ProfileDirectoryEntry> ProfileDirectory => Set<ProfileDirectoryEntry>();
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);

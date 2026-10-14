@@ -1,6 +1,7 @@
-﻿using Document.Application.Commands;
+using Document.Application.Commands;
 using Document.Application.DTOs;
 using Document.Application.Handlers.Commands;
+using Document.Application.Interfaces;
 using Document.Application.Queries;
 using Document.Application.Requests;
 using Document.Application.Responses;
@@ -20,6 +21,7 @@ public class DocumentController(
     IMessageBus _messageBus,
     IFileStorageService _fileStorageService,
     ICurrentUserService _currentUserService,
+    IDocumentAccessService _documentAccessService,
     ICacheService cacheService,
     ILogger<DocumentController> _logger) : ControllerBase
 {
@@ -35,6 +37,12 @@ public class DocumentController(
         [FromForm] UploadDocumentRequest request,
         CancellationToken cancellationToken)
     {
+        var currentProfileId = await _documentAccessService.GetCurrentProfileIdAsync(cancellationToken);
+        if (!_documentAccessService.IsAdminOrOfficer() && (!currentProfileId.HasValue || currentProfileId.Value != request.ProfileId))
+        {
+            return Forbid();
+        }
+
         var command = new UploadDocumentCommand(
             request.ProfileId,
             request.DocumentTypeId,
@@ -65,6 +73,12 @@ public class DocumentController(
         [FromForm] UploadDocumentRequest request,
         CancellationToken cancellationToken)
     {
+        var currentProfileId = await _documentAccessService.GetCurrentProfileIdAsync(cancellationToken);
+        if (!_documentAccessService.IsAdminOrOfficer() && (!currentProfileId.HasValue || currentProfileId.Value != request.ProfileId))
+        {
+            return Forbid();
+        }
+
         var command = new UploadDocumentCommand(
             request.ProfileId,
             request.DocumentTypeId,
@@ -132,7 +146,7 @@ public class DocumentController(
             cancellationToken);
 
         if (result.IsFailure)
-            return BadRequest(new { error = result.Error });
+            return NotFound(new { error = result.Error });
 
         return Ok(result.Value);
     }
@@ -219,7 +233,7 @@ public class DocumentController(
             cancellationToken);
 
         if (result.IsFailure)
-            return BadRequest(new { error = result.Error });
+            return NotFound(new { error = result.Error });
 
         return Ok(new { message = "Document deleted successfully" });
     }

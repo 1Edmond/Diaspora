@@ -1,4 +1,4 @@
-﻿using Document.Application.Commands;
+using Document.Application.Commands;
 using Document.Application.Interfaces;
 using Document.Application.Responses;
 using Shared.Application.Interfaces;
@@ -14,6 +14,7 @@ public sealed class UploadDocumentCommandHandler(
     IDocumentRepository documentRepository,
     IDocumentTypeRepository documentTypeRepository,
     IFileStorageService fileStorageService,
+    IDocumentAccessService documentAccessService,
     IUnitOfWork unitOfWork)
 {
 
@@ -23,6 +24,9 @@ public sealed class UploadDocumentCommandHandler(
         UploadDocumentCommand command,
         CancellationToken cancellationToken)
     {
+        if (!await documentAccessService.CanAccessProfileAsync(command.ProfileId, cancellationToken))
+            return Result.Failure<UploadDocumentResponse>("Access denied to this profile.");
+
         var documentType = await documentTypeRepository.GetByIdAsync(
             command.DocumentTypeId, cancellationToken);
 

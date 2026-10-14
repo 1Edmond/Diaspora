@@ -1,4 +1,4 @@
-﻿using Document.Application.Commands;
+using Document.Application.Commands;
 using Document.Application.Interfaces;
 using Shared.Application.Interfaces;
 using Shared.Domain.Commons;
@@ -12,6 +12,7 @@ namespace Document.Application.Handlers.Commands;
 public sealed class DeleteDocumentCommandHandler(
     IDocumentRepository repository,
     IFileStorageService fileStorageService,
+    IDocumentAccessService documentAccessService,
     IUnitOfWork unitOfWork)
 {
     public async Task<Result> Handle(
@@ -19,7 +20,7 @@ public sealed class DeleteDocumentCommandHandler(
         CancellationToken cancellationToken)
     {
         var document = await repository.GetByIdAsync(command.DocumentId, cancellationToken);
-        if (document is null)
+        if (document is null || !await documentAccessService.CanAccessDocumentAsync(document, cancellationToken))
             return Result.Failure("Document not found.");
 
         var result = document.Delete();
