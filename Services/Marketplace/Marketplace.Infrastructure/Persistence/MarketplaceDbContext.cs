@@ -3,6 +3,7 @@ using Marketplace.Domain.Entities;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using Shared.Application.Interfaces;
+using Shared.Infrastructure.Persistence.Translations;
 using Shared.Messaging.Events;
 using System;
 using System.Collections.Generic;
@@ -31,5 +32,6 @@ public class MarketplaceDbContext(
     {
         base.OnModelCreating(modelBuilder);
         modelBuilder.HasDefaultSchema("marketplace");
+        modelBuilder.ApplyTranslatableEntities();
     }
 }

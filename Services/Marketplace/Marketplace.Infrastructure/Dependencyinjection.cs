@@ -48,8 +48,11 @@ public static class DependencyInjection
         services.AddScoped<IReviewRepository, ReviewRepository>();
         services.AddScoped<IServiceRequestRepository, ServiceRequestRepository>();
         services.AddScoped<IFavoriteRepository, FavoriteRepository>();
-        services.AddScoped<IReportRepository, ReportRepository>();
         services.AddScoped<IProfileDirectoryRepository, ProfileDirectoryRepository>();
+        services.AddScoped<Shared.Application.Abstractions.ITranslationRepository<Marketplace.Domain.Entities.Category>>(sp =>
+            new Shared.Infrastructure.Persistence.Translations.TranslationRepository<Marketplace.Domain.Entities.Category>(
+                sp.GetRequiredService<MarketplaceDbContext>(),
+                sp.GetRequiredService<ILogger<Shared.Infrastructure.Persistence.Translations.TranslationRepository<Marketplace.Domain.Entities.Category>>>()));
         services.AddSingleton<CategorySeeder>();
 
         services.AddScoped<MarketplacePaymentHeldConsumer>();

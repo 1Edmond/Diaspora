@@ -27,14 +27,11 @@ public class CreateServiceListingCommandHandler(
 
         // 2. Pays et devise : normalisés et validés, avec repli sur ceux du profil.
         var country = ListingLocaleRules.NormalizeCountry(command.Country) ?? provider.CountryCode;
-        var countryCheck = ListingLocaleRules.ValidateCountry(country);
-        if (countryCheck.IsFailure)
-            return Result.Failure<Guid>(countryCheck.Error);
-
         var currency = ListingLocaleRules.NormalizeCurrency(command.Currency) ?? provider.Currency;
-        var currencyCheck = ListingLocaleRules.ValidateCurrency(currency);
-        if (currencyCheck.IsFailure)
-            return Result.Failure<Guid>(currencyCheck.Error);
+
+        var localeCheck = ListingLocaleRules.ValidateCountryAndCurrency(country, currency);
+        if (localeCheck.IsFailure)
+            return Result.Failure<Guid>(localeCheck.Error);
 
         // 3. Anti-spam.
         var recentCount = await _listingRepository.CountCreatedSinceAsync(

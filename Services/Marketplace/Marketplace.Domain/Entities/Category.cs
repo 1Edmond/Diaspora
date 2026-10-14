@@ -1,11 +1,12 @@
-﻿using Shared.Domain.Primitives;
+using Shared.Domain.Interfaces;
+using Shared.Domain.Primitives;
 using System;
 using System.Collections.Generic;
 using System.Text;
 
 namespace Marketplace.Domain.Entities;
 
-public class Category : AggregateRoot
+public class Category : AggregateRoot, ITranslatable
 {
     public string Name { get; private set; } = string.Empty;
     public string Slug { get; private set; } = string.Empty;

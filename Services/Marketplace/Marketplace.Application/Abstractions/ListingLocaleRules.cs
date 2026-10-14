@@ -19,6 +19,23 @@ public static class ListingLocaleRules
     public static string? NormalizeCurrency(string? value)
         => string.IsNullOrWhiteSpace(value) ? null : value.Trim().ToUpperInvariant();
 
+    public static readonly Dictionary<string, string[]> AllowedCurrenciesByCountry = new(StringComparer.OrdinalIgnoreCase)
+    {
+        ["TG"] = ["XOF", "EUR", "USD"],
+        ["BJ"] = ["XOF", "EUR", "USD"],
+        ["CI"] = ["XOF", "EUR", "USD"],
+        ["SN"] = ["XOF", "EUR", "USD"],
+        ["ML"] = ["XOF", "EUR", "USD"],
+        ["NE"] = ["XOF", "EUR", "USD"],
+        ["BF"] = ["XOF", "EUR", "USD"],
+        ["FR"] = ["EUR", "USD"],
+        ["US"] = ["USD"],
+        ["CA"] = ["CAD", "USD"],
+        ["RU"] = ["RUB", "EUR", "USD"],
+        ["GH"] = ["GHS", "USD", "EUR"],
+        ["NG"] = ["NGN", "USD", "EUR"]
+    };
+
     public static Result ValidateCountry(string? normalizedCountry)
         => normalizedCountry is null || CountryPattern.IsMatch(normalizedCountry)
             ? Result.Success()
@@ -28,4 +45,28 @@ public static class ListingLocaleRules
         => normalizedCurrency is null || CurrencyPattern.IsMatch(normalizedCurrency)
             ? Result.Success()
             : Result.Failure("Currency must be an ISO 4217 code (e.g. XOF, XAF, GHS).");
+
+    public static Result ValidateCountryAndCurrency(string? normalizedCountry, string? normalizedCurrency)
+    {
+        var countryCheck = ValidateCountry(normalizedCountry);
+        if (countryCheck.IsFailure)
+            return countryCheck;
+
+        var currencyCheck = ValidateCurrency(normalizedCurrency);
+        if (currencyCheck.IsFailure)
+            return currencyCheck;
+
+        if (!string.IsNullOrEmpty(normalizedCountry) && !string.IsNullOrEmpty(normalizedCurrency))
+        {
+            if (AllowedCurrenciesByCountry.TryGetValue(normalizedCountry, out var allowed))
+            {
+                if (!allowed.Contains(normalizedCurrency, StringComparer.OrdinalIgnoreCase))
+                {
+                    return Result.Failure($"Currency '{normalizedCurrency}' is not allowed for country '{normalizedCountry}'. Allowed: {string.Join(", ", allowed)}.");
+                }
+            }
+        }
+
+        return Result.Success();
+    }
 }
