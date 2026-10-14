@@ -1,3 +1,4 @@
+using Shared.Domain.Enums;
 using Shared.Domain.Primitives;
 using System;
 
@@ -20,6 +21,9 @@ public class ProfileDirectoryEntry : AggregateRoot
     public string? DisplayName { get; private set; }
     public string? CountryCode { get; private set; }   // ISO 3166-1 alpha-2, majuscules
     public string? Currency { get; private set; }      // ISO 4217, majuscules
+
+    /// <summary>Niveau d'unification de vérification (L0 à L3).</summary>
+    public VerificationLevel Level { get; private set; } = VerificationLevel.L0_Registered;
 
     /// <summary>Profil activé (onboarding terminé, preuve KYC approuvée) : seul état où Wallet/Chat existent.</summary>
     public bool IsActivated { get; private set; }
@@ -47,7 +51,8 @@ public class ProfileDirectoryEntry : AggregateRoot
         return new ProfileDirectoryEntry
         {
             Id = profileId,
-            UserId = userId
+            UserId = userId,
+            Level = VerificationLevel.L0_Registered
         };
     }
 
@@ -64,13 +69,23 @@ public class ProfileDirectoryEntry : AggregateRoot
             Currency = currency.Trim().ToUpperInvariant();
     }
 
-    public void ApplyVerification() => IsVerified = true;
+    public void ApplyVerification()
+    {
+        IsVerified = true;
+        Level = VerificationLevel.L2_IdentityVerified;
+    }
 
     public void ApplyKycApproval()
     {
         IsKycApproved = true;
         IsVerified = true;
+        Level = VerificationLevel.L2_IdentityVerified;
     }
 
     public void ApplySuspension() => IsSuspended = true;
+
+    public void SetVerificationLevel(VerificationLevel level)
+    {
+        Level = level;
+    }
 }

@@ -14,6 +14,7 @@ public interface IApplicationDbContext
     DbSet<Favorite> Favorites { get; }
     DbSet<Report> Reports { get; }
     DbSet<ProfileDirectoryEntry> ProfileDirectory { get; }
+    DbSet<CategoryPolicy> CategoryPolicies { get; }
 
     Task<int> SaveChangesAsync(CancellationToken cancellationToken = default);
 }

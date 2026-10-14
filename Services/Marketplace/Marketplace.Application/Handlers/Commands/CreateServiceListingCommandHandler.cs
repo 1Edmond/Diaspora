@@ -44,6 +44,13 @@ public class CreateServiceListingCommandHandler(
         if (category is null || !category.IsActive)
             return Result.Failure<Guid>("Category not found or inactive.");
 
+        // 4. Contrôle d'éligibilité zéro-confiance basé sur le niveau de vérification requis par la catégorie.
+        if (category.Policy is not null && provider.Level < category.Policy.MinPublishLevel)
+        {
+            return Result.Failure<Guid>(
+                $"Votre niveau de vérification ({provider.Level}) est insuffisant pour publier dans la catégorie '{category.Name}'. Niveau minimum requis : {category.Policy.MinPublishLevel}.");
+        }
+
         var listing = ServiceListing.Create(
             command.ProviderId,
             command.CategoryId,

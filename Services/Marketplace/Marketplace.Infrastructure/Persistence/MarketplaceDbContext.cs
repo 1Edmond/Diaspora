@@ -27,6 +27,7 @@ public class MarketplaceDbContext(
     public DbSet<Favorite> Favorites => Set<Favorite>();
     public DbSet<Report> Reports => Set<Report>();
     public DbSet<ProfileDirectoryEntry> ProfileDirectory => Set<ProfileDirectoryEntry>();
+    public DbSet<CategoryPolicy> CategoryPolicies => Set<CategoryPolicy>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {

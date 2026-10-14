@@ -1,4 +1,5 @@
-﻿using System;
+using Shared.Domain.Enums;
+using System;
 using System.Collections.Generic;
 using System.Text;
 
@@ -11,6 +12,6 @@ public sealed record ProfileActivatedIntegrationEvent(
     string CountryCode,
     string Currency,
     DateTime ActivatedAt,
-    string? DisplayName = null
+    string? DisplayName = null,
+    VerificationLevel Level = VerificationLevel.L0_Registered
 ) : IntegrationEvent;
-

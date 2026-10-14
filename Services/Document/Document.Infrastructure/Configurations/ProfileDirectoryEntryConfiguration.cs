@@ -1,6 +1,7 @@
 using Document.Domain.Entities;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
+using Shared.Domain.Enums;
 using Shared.Infrastructure.Persistence.Configurations;
 
 namespace Document.Infrastructure.Configurations;
@@ -19,6 +20,7 @@ public class ProfileDirectoryEntryConfiguration : BaseEntityConfiguration<Profil
         builder.Property(e => e.DisplayName).HasMaxLength(200);
         builder.Property(e => e.CountryCode).HasMaxLength(2);
         builder.Property(e => e.Currency).HasMaxLength(10);
+        builder.Property(e => e.Level).IsRequired().HasDefaultValue(VerificationLevel.L0_Registered);
         builder.Property(e => e.IsActivated).IsRequired();
         builder.Property(e => e.IsVerified).IsRequired();
         builder.Property(e => e.IsSuspended).IsRequired();

@@ -18,9 +18,12 @@ public class Category : AggregateRoot, ITranslatable
     public string? IconUrl { get; private set; }
     public bool IsActive { get; private set; }
     public int DisplayOrder { get; private set; }
+    public CategoryPolicy? Policy { get; private set; }
 
     private readonly List<ServiceListing> _listings = new();
     public IReadOnlyCollection<ServiceListing> Listings => _listings.AsReadOnly();
+
+    public void SetPolicy(CategoryPolicy policy) => Policy = policy;
 
     private Category() { }
 

@@ -1,4 +1,4 @@
-﻿using Marketplace.Application.Interfaces;
+using Marketplace.Application.Interfaces;
 using Marketplace.Domain.Entities;
 using Marketplace.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
@@ -26,6 +26,11 @@ public class CategoryRepository(MarketplaceDbContext _context,
         cache
         ), ICategoryRepository
 {
+    public override async Task<Category?> GetByIdAsync(Guid id, CancellationToken cancellationToken = default)
+        => await _context.Categories
+            .Include(c => c.Policy)
+            .FirstOrDefaultAsync(c => c.Id == id, cancellationToken);
+
     public async Task<Category?> GetBySlugAsync(string slug, CancellationToken cancellationToken = default)
         => await _context.Categories.FirstOrDefaultAsync(c => c.Slug == slug, cancellationToken);
 

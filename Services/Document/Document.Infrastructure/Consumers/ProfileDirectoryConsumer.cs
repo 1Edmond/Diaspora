@@ -18,14 +18,27 @@ public class ProfileDirectoryConsumer(
     ILogger<ProfileDirectoryConsumer> _logger)
 {
     public Task Handle(ProfileCreatedIntegrationEvent message)
-        => UpsertAsync(message.ProfileId, message.UserId, _ => { });
+        => UpsertAsync(message.ProfileId, message.UserId, entry =>
+        {
+            if (message.Level > entry.Level)
+                entry.SetVerificationLevel(message.Level);
+        });
 
     public Task Handle(ProfileActivatedIntegrationEvent message)
-        => UpsertAsync(message.ProfileId, message.UserId,
-            entry => entry.ApplyActivation(message.DisplayName, message.CountryCode, message.Currency));
+        => UpsertAsync(message.ProfileId, message.UserId, entry =>
+        {
+            entry.ApplyActivation(message.DisplayName, message.CountryCode, message.Currency);
+            if (message.Level > entry.Level)
+                entry.SetVerificationLevel(message.Level);
+        });
 
     public Task Handle(ProfileVerifiedIntegrationEvent message)
-        => UpsertAsync(message.ProfileId, message.UserId, entry => entry.ApplyVerification());
+        => UpsertAsync(message.ProfileId, message.UserId, entry =>
+        {
+            entry.ApplyVerification();
+            if (message.Level > entry.Level)
+                entry.SetVerificationLevel(message.Level);
+        });
 
     public Task Handle(ProfileSuspendedIntegrationEvent message)
         => UpsertAsync(message.ProfileId, message.UserId, entry => entry.ApplySuspension());

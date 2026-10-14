@@ -1,3 +1,4 @@
+using Shared.Domain.Enums;
 using Shared.Domain.Primitives;
 using System;
 
@@ -15,6 +16,10 @@ public class ProfileDirectoryEntry : AggregateRoot
     public string? DisplayName { get; private set; }
     public string? CountryCode { get; private set; }
     public string? Currency { get; private set; }
+
+    /// <summary>Niveau d'unification de vérification (L0 à L3).</summary>
+    public VerificationLevel Level { get; private set; } = VerificationLevel.L0_Registered;
+
     public bool IsActivated { get; private set; }
     public bool IsVerified { get; private set; }
     public bool IsSuspended { get; private set; }
@@ -34,7 +39,8 @@ public class ProfileDirectoryEntry : AggregateRoot
         return new ProfileDirectoryEntry
         {
             Id = profileId,
-            UserId = userId
+            UserId = userId,
+            Level = VerificationLevel.L0_Registered
         };
     }
 
@@ -51,13 +57,23 @@ public class ProfileDirectoryEntry : AggregateRoot
             Currency = currency.Trim().ToUpperInvariant();
     }
 
-    public void ApplyVerification() => IsVerified = true;
+    public void ApplyVerification()
+    {
+        IsVerified = true;
+        Level = VerificationLevel.L2_IdentityVerified;
+    }
 
     public void ApplyKycApproval()
     {
         IsKycApproved = true;
         IsVerified = true;
+        Level = VerificationLevel.L2_IdentityVerified;
     }
 
     public void ApplySuspension() => IsSuspended = true;
+
+    public void SetVerificationLevel(VerificationLevel level)
+    {
+        Level = level;
+    }
 }

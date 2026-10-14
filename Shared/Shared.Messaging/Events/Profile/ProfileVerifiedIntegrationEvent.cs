@@ -1,4 +1,5 @@
-﻿using System;
+using Shared.Domain.Enums;
+using System;
 using System.Collections.Generic;
 using System.Text;
 
@@ -8,5 +9,6 @@ public sealed record ProfileVerifiedIntegrationEvent(
     Guid ProfileId,
     Guid UserId,
     string VerifiedByAdminId,
-    DateTime VerifiedAt
+    DateTime VerifiedAt,
+    VerificationLevel Level = VerificationLevel.L2_IdentityVerified
 ) : IntegrationEvent;
