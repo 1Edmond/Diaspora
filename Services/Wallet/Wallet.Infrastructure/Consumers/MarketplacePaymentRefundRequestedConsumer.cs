@@ -1,4 +1,3 @@
-using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using Shared.Messaging.Events.Marketplace;
 using Shared.Messaging.Events.Wallet;
@@ -6,15 +5,13 @@ using System;
 using System.Threading;
 using System.Threading.Tasks;
 using Wallet.Application.Interfaces;
-using Wallet.Domain.Enums;
-using Wallet.Infrastructure.Persistences;
 using Wolverine;
 
 namespace Wallet.Infrastructure.Consumers;
 
 public sealed class MarketplacePaymentRefundRequestedConsumer(
     IWalletRepository _walletRepository,
-    WalletDbContext _context,
+    ITransactionRepository _transactionRepository,
     IMessageBus _messageBus,
     ILogger<MarketplacePaymentRefundRequestedConsumer> _logger)
 {
@@ -34,17 +31,12 @@ public sealed class MarketplacePaymentRefundRequestedConsumer(
                 @event.BuyerProfileId.Value, cancellationToken);
         }
 
-        var holdTx = await _context.Transactions
-            .FirstOrDefaultAsync(t =>
-                t.ReferenceId == @event.ServiceRequestId &&
-                t.Type == TransactionType.MarketplacePaymentHold,
-                cancellationToken);
+        var holdTx = await _transactionRepository.GetHoldTransactionByReferenceIdAsync(
+            @event.ServiceRequestId, cancellationToken);
 
         if (buyer is null && holdTx is not null)
         {
-            buyer = await _context.Wallets
-                .Include(w => w.Transactions)
-                .FirstOrDefaultAsync(w => w.Id == holdTx.WalletId, cancellationToken);
+            buyer = await _walletRepository.GetByIdAsync(holdTx.WalletId, cancellationToken);
         }
 
         if (buyer is null)

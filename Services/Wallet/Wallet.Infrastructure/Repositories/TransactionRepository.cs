@@ -1,4 +1,4 @@
-﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Caching.Distributed;
 using Microsoft.Extensions.Logging;
 using Shared.Infrastructure.Persistence.Repositories;
@@ -51,4 +51,13 @@ public sealed class TransactionRepository(WalletDbContext context,
             .Where(t => t.WalletId == walletId && t.Type == type)
             .OrderByDescending(t => t.CreatedAt)
             .ToListAsync(cancellationToken);
+
+    public async Task<Transaction?> GetHoldTransactionByReferenceIdAsync(
+        Guid serviceRequestId,
+        CancellationToken cancellationToken = default)
+        => await _context.Transactions
+            .FirstOrDefaultAsync(t =>
+                t.ReferenceId == serviceRequestId &&
+                t.Type == TransactionType.MarketplacePaymentHold,
+                cancellationToken);
 }

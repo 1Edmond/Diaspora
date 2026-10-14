@@ -1,4 +1,4 @@
-﻿
+
 using Shared.Domain.Interfaces;
 using System;
 using System.Collections.Generic;
@@ -23,5 +23,9 @@ public interface ITransactionRepository : IRepository<Transaction>
     Task<IEnumerable<Transaction>> GetByTypeAsync(
         Guid walletId,
         TransactionType type,
+        CancellationToken cancellationToken = default);
+
+    Task<Transaction?> GetHoldTransactionByReferenceIdAsync(
+        Guid serviceRequestId,
         CancellationToken cancellationToken = default);
 }
