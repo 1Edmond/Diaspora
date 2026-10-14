@@ -1,4 +1,4 @@
-﻿using Shared.Domain.Interfaces;
+using Shared.Domain.Interfaces;
 using System;
 using System.Collections.Generic;
 using System.Text;
@@ -17,5 +17,9 @@ public interface IWalletRepository : IRepository<Domain.Entities.Wallet>
 
     Task<bool> ExistsByExternalProfileIdAsync(
         Guid externalProfileId,
+        CancellationToken cancellationToken = default);
+
+    Task<Domain.Entities.Wallet?> GetPlatformRevenueWalletAsync(
+        string currency,
         CancellationToken cancellationToken = default);
 }

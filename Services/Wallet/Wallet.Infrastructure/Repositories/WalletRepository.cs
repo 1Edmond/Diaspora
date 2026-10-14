@@ -45,4 +45,17 @@ public sealed class WalletRepository(WalletDbContext context,
         CancellationToken cancellationToken = default)
         => await _context.Wallets
             .AnyAsync(w => w.ExternalProfileId == externalProfileId, cancellationToken);
+
+    public async Task<Domain.Entities.Wallet?> GetPlatformRevenueWalletAsync(
+        string currency,
+        CancellationToken cancellationToken = default)
+    {
+        var normalized = currency.ToUpperInvariant();
+        return await _context.Wallets
+            .Include(w => w.Transactions)
+            .FirstOrDefaultAsync(w =>
+                w.ExternalProfileId == Domain.Entities.Wallet.PlatformProfileId &&
+                w.Currency == normalized,
+                cancellationToken);
+    }
 }

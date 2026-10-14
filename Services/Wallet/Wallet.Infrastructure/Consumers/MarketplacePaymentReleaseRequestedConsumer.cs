@@ -20,8 +20,8 @@ public sealed class MarketplacePaymentReleaseRequestedConsumer(
         CancellationToken cancellationToken)
     {
         _logger.LogInformation(
-            "[WalletService] Processing MarketplacePaymentReleaseRequested for ServiceRequest {ServiceRequestId}",
-            @event.ServiceRequestId);
+            "[WalletService] Processing MarketplacePaymentReleaseRequested for ServiceRequest {ServiceRequestId} (Commission: {CommissionAmount})",
+            @event.ServiceRequestId, @event.CommissionAmount);
 
         Domain.Entities.Wallet? buyer = null;
         Domain.Entities.Wallet? seller = null;
@@ -70,10 +70,40 @@ public sealed class MarketplacePaymentReleaseRequestedConsumer(
             return;
         }
 
+        Domain.Entities.Wallet? platformWallet = null;
+        if (@event.CommissionAmount > 0m)
+        {
+            platformWallet = await _walletRepository.GetPlatformRevenueWalletAsync(
+                buyer.Currency, cancellationToken);
+
+            if (platformWallet is null)
+            {
+                var platformResult = Domain.Entities.Wallet.Create(
+                    Domain.Entities.Wallet.PlatformProfileId,
+                    Domain.Entities.Wallet.PlatformUserId,
+                    buyer.Currency);
+
+                if (platformResult.IsSuccess)
+                {
+                    platformWallet = platformResult.Value;
+                    await _walletRepository.AddAsync(platformWallet, cancellationToken);
+                }
+                else
+                {
+                    _logger.LogError(
+                        "[WalletService] Failed to create platform revenue wallet for currency {Currency}: {Error}",
+                        buyer.Currency, platformResult.Error);
+                    return;
+                }
+            }
+        }
+
         var releaseResult = buyer.ReleaseMarketplaceHold(
             @event.ServiceRequestId,
             seller,
             holdTx?.Amount ?? 0m,
+            @event.CommissionAmount,
+            platformWallet,
             $"Marketplace escrow release for request {@event.ServiceRequestId}");
 
         if (releaseResult.IsFailure)
@@ -86,6 +116,10 @@ public sealed class MarketplacePaymentReleaseRequestedConsumer(
 
         await _walletRepository.UpdateAsync(buyer, cancellationToken);
         await _walletRepository.UpdateAsync(seller, cancellationToken);
+        if (platformWallet is not null && @event.CommissionAmount > 0m)
+        {
+            await _walletRepository.UpdateAsync(platformWallet, cancellationToken);
+        }
 
         _logger.LogInformation(
             "[WalletService] Escrow released (Tx: {TransactionId}) for ServiceRequest {ServiceRequestId}. Publishing MarketplacePaymentReleased.",

@@ -12,6 +12,9 @@ namespace Wallet.Domain.Entities;
 
 public sealed class Wallet : AggregateRoot
 {
+    public static readonly Guid PlatformProfileId = new("00000000-0000-0000-0000-000000000001");
+    public static readonly Guid PlatformUserId = new("00000000-0000-0000-0000-000000000001");
+
     public Guid ExternalProfileId { get; private set; }
     public Guid UserId { get; private set; }
     public string Currency { get; private set; } = string.Empty;
@@ -275,6 +278,8 @@ public sealed class Wallet : AggregateRoot
         Guid serviceRequestId,
         Wallet sellerWallet,
         decimal amount = 0m,
+        decimal commissionAmount = 0m,
+        Wallet? platformWallet = null,
         string description = "")
     {
         var existingTx = _transactions.FirstOrDefault(t =>
@@ -296,6 +301,25 @@ public sealed class Wallet : AggregateRoot
             amount = holdTx.Amount;
         }
 
+        if (commissionAmount < 0m)
+            return Result.Failure<Transaction>("Commission amount cannot be negative.");
+
+        if (commissionAmount > amount)
+            return Result.Failure<Transaction>("Commission amount cannot exceed the total release amount.");
+
+        if (commissionAmount > 0m && platformWallet is null)
+            return Result.Failure<Transaction>("Platform wallet is required when commission amount is greater than zero.");
+
+        if (commissionAmount > 0m && platformWallet is not null)
+        {
+            if (!platformWallet.IsActive)
+                return Result.Failure<Transaction>("Platform wallet is not active.");
+
+            if (!string.Equals(Currency, platformWallet.Currency, StringComparison.OrdinalIgnoreCase))
+                return Result.Failure<Transaction>(
+                    $"Currency mismatch between buyer ({Currency}) and platform wallet ({platformWallet.Currency}).");
+        }
+
         if (HeldBalance < amount)
             return Result.Failure<Transaction>("Held balance is lower than the amount to release.");
 
@@ -305,6 +329,13 @@ public sealed class Wallet : AggregateRoot
         if (!string.Equals(Currency, sellerWallet.Currency, StringComparison.OrdinalIgnoreCase))
             return Result.Failure<Transaction>(
                 $"Currency mismatch between buyer ({Currency}) and seller ({sellerWallet.Currency}).");
+
+        var netSellerAmount = amount - commissionAmount;
+        if (netSellerAmount < 0m)
+            return Result.Failure<Transaction>("Net seller amount cannot be negative.");
+
+        if (netSellerAmount + commissionAmount != amount)
+            return Result.Failure<Transaction>("Sum of net seller amount and commission amount must equal total amount.");
 
         HeldBalance -= amount;
 
@@ -328,12 +359,12 @@ public sealed class Wallet : AggregateRoot
 
         if (sellerExistingTx is null)
         {
-            sellerWallet.Balance += amount;
+            sellerWallet.Balance += netSellerAmount;
             var sellerTx = new Transaction(
                 sellerWallet.Id,
                 TransactionType.MarketplacePaymentRelease,
                 TransactionDirection.Credit,
-                amount,
+                netSellerAmount,
                 0m,
                 sellerWallet.Balance,
                 sellerWallet.Currency,
@@ -342,6 +373,31 @@ public sealed class Wallet : AggregateRoot
                 "ServiceRequest");
 
             sellerWallet._transactions.Add(sellerTx);
+        }
+
+        if (commissionAmount > 0m && platformWallet is not null)
+        {
+            var platformExistingTx = platformWallet._transactions.FirstOrDefault(t =>
+                t.ReferenceId == serviceRequestId &&
+                t.Type == TransactionType.MarketplacePlatformCommission);
+
+            if (platformExistingTx is null)
+            {
+                platformWallet.Balance += commissionAmount;
+                var platformTx = new Transaction(
+                    platformWallet.Id,
+                    TransactionType.MarketplacePlatformCommission,
+                    TransactionDirection.Credit,
+                    commissionAmount,
+                    0m,
+                    platformWallet.Balance,
+                    platformWallet.Currency,
+                    $"Platform commission for Marketplace service request {serviceRequestId}",
+                    serviceRequestId,
+                    "MarketplaceCommission");
+
+                platformWallet._transactions.Add(platformTx);
+            }
         }
 
         return Result.Success(buyerTx);

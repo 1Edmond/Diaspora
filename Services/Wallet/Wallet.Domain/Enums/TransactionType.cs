@@ -22,5 +22,6 @@ public enum TransactionType
     FreelanceReceipt = 13,
     MarketplacePaymentHold = 14,
     MarketplacePaymentRelease = 15,
-    MarketplacePaymentRefund = 16
+    MarketplacePaymentRefund = 16,
+    MarketplacePlatformCommission = 17
 }
