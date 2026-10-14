@@ -146,4 +146,24 @@ public class ProfileDirectoryConsumerTests
         await _repository.Received(1).UpdateAsync(entry);
         await _unitOfWork.Received(1).SaveChangesAsync();
     }
+
+    [Fact]
+    public async Task Handle_KycArrivalProofApproved_MarksKycApprovedAndVerified()
+    {
+        var profileId = Guid.NewGuid();
+        var userId = Guid.NewGuid();
+        var entry = ProfileDirectoryEntry.Create(profileId, userId);
+        _repository.GetByIdAsync(profileId).Returns(entry);
+
+        var @event = new Shared.Messaging.Events.Kyc.KycArrivalProofApprovedIntegrationEvent(
+            Guid.NewGuid(), userId, profileId, "TG", DateTime.UtcNow);
+
+        await _consumer.Handle(@event);
+
+        entry.IsKycApproved.Should().BeTrue();
+        entry.IsVerified.Should().BeTrue();
+
+        await _repository.Received(1).UpdateAsync(entry);
+        await _unitOfWork.Received(1).SaveChangesAsync();
+    }
 }
