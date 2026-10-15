@@ -211,6 +211,26 @@ public class ProfileController(
 
     [Permission(
         resourceKey: "profile.internal",
+        action: "activate",
+        description: "Reactivate a suspended user profile (admin only)",
+        recommendedRoles: new[] { "Admin" }
+    )]
+    [HttpPost("{profileId:guid}/reactivate")]
+    public async Task<IActionResult> Reactivate(
+        Guid profileId,
+        CancellationToken cancellationToken)
+    {
+        var result = await _messageBus.InvokeAsync<Result>(
+            new ActivateProfileCommand(profileId), cancellationToken);
+
+        if (result.IsFailure)
+            return BadRequest(new { error = result.Error });
+
+        return Ok(new { message = "Profile reactivated successfully" });
+    }
+
+    [Permission(
+        resourceKey: "profile.internal",
         action: "suspend",
         description: "Suspend a user profile (admin only)",
         recommendedRoles: new[] { "Admin" }

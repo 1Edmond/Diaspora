@@ -1,4 +1,4 @@
-﻿using Profile.Application.Commands;
+using Profile.Application.Commands;
 using Profile.Application.Interfaces;
 using Shared.Domain.Commons;
 using Shared.Domain.Interfaces;
@@ -20,7 +20,10 @@ public sealed class ActivateProfileCommandHandler(
         if (profile is null)
             return Result.Failure("Profile not found.");
 
-        var result = profile.Activate();
+        var result = profile.Status == Profile.Domain.Enums.ProfileStatus.Suspended
+            ? profile.Reactivate()
+            : profile.Activate();
+
         if (result.IsFailure)
             return result;
 

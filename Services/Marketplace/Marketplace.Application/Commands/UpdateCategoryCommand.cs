@@ -1,4 +1,4 @@
-﻿using Shared.Application.Abstractions;
+using Shared.Application.Abstractions;
 using Shared.Domain.Commons;
 using System;
 using System.Collections.Generic;
@@ -11,5 +11,6 @@ public record UpdateCategoryCommand(
     string Name,
     string? Description,
     string? IconUrl,
-    int DisplayOrder
+    int DisplayOrder,
+    Dictionary<string, Dictionary<string, string>>? Translations = null
 ) : ICommand<Result>;

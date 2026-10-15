@@ -12,6 +12,7 @@ namespace Marketplace.Application.Handlers.Commands;
 public class CreateServiceRequestCommandHandler(
     IServiceRequestRepository _requestRepository,
     IServiceListingRepository _listingRepository,
+    ICategoryRepository _categoryRepository,
     IProfileDirectoryRepository _profileDirectory,
     IUnitOfWork _unitOfWork)
 {
@@ -31,6 +32,13 @@ public class CreateServiceRequestCommandHandler(
         var provider = await _profileDirectory.GetByUserIdAsync(listing.ProviderId);
         if (provider is null || !provider.IsEligibleProvider)
             return Result.Failure<Guid>("Le profil du prestataire n'est pas actif ou est suspendu.");
+
+        var category = await _categoryRepository.GetByIdAsync(listing.CategoryId);
+        if (category?.Policy is not null && requester.Level < category.Policy.MinBookLevel)
+        {
+            return Result.Failure<Guid>(
+                $"Votre niveau de vérification ({requester.Level}) est insuffisant pour réserver un service dans la catégorie '{category.Name}'. Niveau minimum requis : {category.Policy.MinBookLevel}.");
+        }
 
         var agreedPrice = command.AgreedPrice;
         var agreedCurrency = command.AgreedCurrency ?? listing.Currency;

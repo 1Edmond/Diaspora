@@ -1,5 +1,7 @@
-﻿using Marketplace.Application.Commands;
+using Marketplace.Application.Commands;
 using Marketplace.Application.Interfaces;
+using Marketplace.Domain.Entities;
+using Shared.Application.Abstractions;
 using Shared.Domain.Commons;
 using Shared.Domain.Interfaces;
 using System;
@@ -8,7 +10,10 @@ using System.Text;
 
 namespace Marketplace.Application.Handlers.Commands;
 
-public class UpdateCategoryCommandHandler(ICategoryRepository _categoryRepository, IUnitOfWork _unitOfWork)
+public class UpdateCategoryCommandHandler(
+    ICategoryRepository _categoryRepository,
+    ITranslationRepository<Category> _translationRepo,
+    IUnitOfWork _unitOfWork)
 {
     public async Task<Result> Handle(UpdateCategoryCommand command)
     {
@@ -20,6 +25,19 @@ public class UpdateCategoryCommandHandler(ICategoryRepository _categoryRepositor
         await _categoryRepository.UpdateAsync(category);
         await _unitOfWork.SaveChangesAsync();
 
+        if (command.Translations is not null && command.Translations.Count > 0)
+        {
+            foreach (var (cultureCode, fields) in command.Translations)
+            {
+                if (fields.Count > 0)
+                {
+                    await _translationRepo.UpsertAsync(category.Id, cultureCode, fields);
+                }
+            }
+            await _unitOfWork.SaveChangesAsync();
+        }
+
         return Result.Success();
     }
 }
+

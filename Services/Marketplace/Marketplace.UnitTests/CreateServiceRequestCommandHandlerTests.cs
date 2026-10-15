@@ -16,6 +16,7 @@ public class CreateServiceRequestCommandHandlerTests
 {
     private readonly IServiceRequestRepository _requestRepository = Substitute.For<IServiceRequestRepository>();
     private readonly IServiceListingRepository _listingRepository = Substitute.For<IServiceListingRepository>();
+    private readonly ICategoryRepository _categoryRepository = Substitute.For<ICategoryRepository>();
     private readonly IProfileDirectoryRepository _profileDirectory = Substitute.For<IProfileDirectoryRepository>();
     private readonly IUnitOfWork _unitOfWork = Substitute.For<IUnitOfWork>();
     private readonly CreateServiceRequestCommandHandler _handler;
@@ -25,6 +26,7 @@ public class CreateServiceRequestCommandHandlerTests
         _handler = new CreateServiceRequestCommandHandler(
             _requestRepository,
             _listingRepository,
+            _categoryRepository,
             _profileDirectory,
             _unitOfWork);
     }

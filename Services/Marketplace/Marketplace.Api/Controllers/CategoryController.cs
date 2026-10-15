@@ -48,7 +48,7 @@ public class CategoryController(
     {
         var result = await _messageBus.InvokeAsync<Result<Guid>>(command);
         if (result.IsFailure) return BadRequest(new { error = result.Error });
-        return CreatedAtAction(nameof(GetById), new { id = result.Value }, new { id = result.Value });
+        return Ok(new { id = result.Value });
     }
 
     [Permission(

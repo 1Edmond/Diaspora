@@ -149,6 +149,24 @@ public sealed class Profile : AggregateRoot
 
         return Result.Success();
     }
+
+    public Result Reactivate()
+    {
+        if (Status != ProfileStatus.Suspended)
+            return Result.Failure("Seul un profil suspendu peut être réactivé.");
+
+        Status = ProfileStatus.Activate;
+
+        AddDomainEvent(new ProfileActivatedDomainEvent(
+            Id,
+            ProfileTypeId,
+            UserId,
+            ProfileType?.CountryCode ?? string.Empty,
+            ProfileType?.Currency ?? string.Empty,
+            DateTime.UtcNow));
+
+        return Result.Success();
+    }
   
     public Result ChangeKind(ProfileKind NewKind)
     {

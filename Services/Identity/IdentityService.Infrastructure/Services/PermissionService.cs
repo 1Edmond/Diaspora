@@ -1,4 +1,4 @@
-﻿using IdentityService.Application.Abstractions;
+using IdentityService.Application.Abstractions;
 using IdentityService.Application.Models;
 using IdentityService.Domain.Entities;
 using IdentityService.Infrastructure.Repositories;
@@ -50,6 +50,13 @@ public class PermissionService : IPermissionService
             return false;
 
         var userRoles = user.UserRoles.Select(ur => ur.Role).ToList();
+
+        // 1. Un administrateur dispose de tous les accès par défaut
+        if (userRoles.Any(r => r.Name.Equals(Shared.Domain.Constants.DefaultRole.Admin, StringComparison.OrdinalIgnoreCase) ||
+                               r.Name.Equals("Admin", StringComparison.OrdinalIgnoreCase)))
+        {
+            return true;
+        }
 
         var hasRolePermission = userRoles.Any(role =>
             role.RolePermissions.Any(rp =>
@@ -158,14 +165,16 @@ public class PermissionService : IPermissionService
         var allPermissions = await _resourcePermissionRepository.GetAllActiveAsync(cancellationToken);
 
         var segments = path.Split('/', StringSplitOptions.RemoveEmptyEntries);
-        if (segments.Length < 3) return null;
+        if (segments.Length < 2) return null;
 
         var serviceSegment = segments[1];
-        var resourceSegment = segments[2];
+        var resourceSegment = segments.Length >= 3 ? segments[2] : segments[1];
 
         var matchingPermissions = allPermissions.Where(p =>
             p.ServiceName.Equals(serviceSegment, StringComparison.OrdinalIgnoreCase) ||
-            p.ResourceKey.Contains(serviceSegment, StringComparison.OrdinalIgnoreCase)
+            p.ResourceKey.Contains(serviceSegment, StringComparison.OrdinalIgnoreCase) ||
+            (segments.Length >= 3 && (p.ServiceName.Equals(resourceSegment, StringComparison.OrdinalIgnoreCase) ||
+                                      p.ResourceKey.Contains(resourceSegment, StringComparison.OrdinalIgnoreCase)))
         ).ToList();
 
         if (matchingPermissions.Count == 0) return null;
@@ -195,7 +204,8 @@ public class PermissionService : IPermissionService
         var permission = matchingPermissions.FirstOrDefault(p =>
             p.Permission.Equals(action, StringComparison.OrdinalIgnoreCase) &&
             (p.ResourceKey.Contains(resourceSegment.TrimEnd('s'), StringComparison.OrdinalIgnoreCase) ||
-             resourceSegment.Contains(p.ResourceKey, StringComparison.OrdinalIgnoreCase)));
+             resourceSegment.Contains(p.ResourceKey, StringComparison.OrdinalIgnoreCase) ||
+             p.ResourceKey.Contains(serviceSegment.TrimEnd('s'), StringComparison.OrdinalIgnoreCase)));
 
         _logger.LogDebug(
             "[PermissionService] Resolved: {Method} {Path} → {Permission}",
