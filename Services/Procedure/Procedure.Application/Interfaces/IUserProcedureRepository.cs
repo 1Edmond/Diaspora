@@ -1,4 +1,6 @@
-﻿using Procedure.Domain.Entities;
+using Procedure.Domain.Entities;
+using Shared.Application.Models;
+using Shared.Domain.Enums;
 using Shared.Domain.Interfaces;
 using System;
 using System.Collections.Generic;
@@ -20,5 +22,12 @@ public interface IUserProcedureRepository : IRepository<UserProcedure>
     Task<IEnumerable<UserProcedure>> GetDependencyStatusesAsync(
         Guid profileId,
         IEnumerable<Guid> dependencyProcedureIds,
+        CancellationToken cancellationToken = default);
+
+    Task<PagedList<UserProcedure>> GetAllAdminAsync(
+        UserProcedureStatus? status = null,
+        Guid? procedureId = null,
+        int pageNumber = 1,
+        int pageSize = 20,
         CancellationToken cancellationToken = default);
 }

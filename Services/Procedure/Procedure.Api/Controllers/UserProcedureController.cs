@@ -1,4 +1,4 @@
-﻿using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc;
 using Procedure.Application.Commands;
 using Procedure.Application.DTOs;
 using Procedure.Application.Queries;
@@ -7,6 +7,7 @@ using Procedure.Application.Responses;
 using Shared.Application.Interfaces;
 using Shared.Application.Models;
 using Shared.Domain.Commons;
+using Shared.Domain.Enums;
 using Shared.Security.Attributes;
 using Wolverine;
 
@@ -19,6 +20,29 @@ public class UserProcedureController(
     ICurrentUserService _currentUserService,
     ILogger<UserProcedureController> _logger) : ControllerBase
 {
+    [Permission(
+        resourceKey: "procedure.user",
+        action: "list-admin",
+        description: "Get all user procedures across profiles for administration",
+        recommendedRoles: new[] { "Admin", "Officer" }
+    )]
+    [HttpGet("admin/all")]
+    public async Task<IActionResult> GetAllAdmin(
+        [FromQuery] UserProcedureStatus? status = null,
+        [FromQuery] Guid? procedureId = null,
+        [FromQuery] int pageNumber = 1,
+        [FromQuery] int pageSize = 20,
+        CancellationToken cancellationToken = default)
+    {
+        var result = await _messageBus.InvokeAsync<Result<PagedList<UserProcedureDto>>>(
+            new GetAdminUserProceduresQuery(status, procedureId, pageNumber, pageSize),
+            cancellationToken);
+
+        if (result.IsFailure)
+            return BadRequest(new { error = result.Error });
+
+        return Ok(result.Value);
+    }
     [Permission(
         resourceKey: "procedure.user",
         action: "list",
