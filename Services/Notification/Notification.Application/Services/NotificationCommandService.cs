@@ -1,4 +1,4 @@
-﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore;
 using Notification.Application.Abstractions;
 using Notification.Application.Models;
 using Notification.Domain.Entities;
@@ -33,5 +33,21 @@ public sealed class NotificationCommandService : INotificationCommandService
             .ExecuteUpdateAsync(s => s
                 .SetProperty(n => n.IsRead, true)
                 .SetProperty(n => n.ReadAt, now), ct);
+    }
+
+    public async Task<Guid> BroadcastNotificationAsync(
+        string title,
+        string message,
+        string channel,
+        string? targetRole,
+        Guid? profileTypeId,
+        CancellationToken ct)
+    {
+        var campaignId = Guid.NewGuid();
+        var log = new NotificationLog(campaignId, $"Broadcast:{channel}");
+        _db.NotificationLogs.Add(log);
+        await _db.SaveChangesAsync(ct);
+
+        return campaignId;
     }
 }

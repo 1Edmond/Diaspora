@@ -1,4 +1,4 @@
-﻿using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc;
 using Notification.Application.Abstractions;
 using Notification.Application.DTOs;
 using Shared.Application.Interfaces;
@@ -59,5 +59,39 @@ public sealed class NotificationsController(
     public async Task<IActionResult> MarkAllAsRead(CancellationToken ct) =>
         Ok(new { updatedCount = await _commandService.MarkAllAsReadAsync(GetUserId(), ct) });
 
+    [Permission(
+        resourceKey: "notification",
+        action: "broadcast",
+        description: "Send broadcast campaign notification",
+        recommendedRoles: new[] { "Admin" }
+    )]
+    [HttpPost("broadcast")]
+    public async Task<IActionResult> Broadcast(
+        [FromBody] BroadcastNotificationRequest request,
+        CancellationToken ct)
+    {
+        if (string.IsNullOrWhiteSpace(request.Title) || string.IsNullOrWhiteSpace(request.Message))
+            return BadRequest(new { error = "Title and Message are required." });
+
+        var campaignId = await _commandService.BroadcastNotificationAsync(
+            request.Title,
+            request.Message,
+            request.Channel,
+            request.TargetRole,
+            request.ProfileTypeId,
+            ct);
+
+        return Ok(new { id = campaignId, message = "Broadcast campaign initiated successfully" });
+    }
+
     private Guid GetUserId() => Guid.Parse(_currentUserService.UserId!);
 }
+
+public record BroadcastNotificationRequest(
+    string Title,
+    string Message,
+    string Channel = "InApp",
+    string? TargetRole = null,
+    Guid? ProfileTypeId = null
+);
+
