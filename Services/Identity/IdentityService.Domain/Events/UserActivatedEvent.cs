@@ -1,4 +1,4 @@
-﻿using Shared.Domain.Interfaces;
+using Shared.Domain.Interfaces;
 using Shared.Domain.ValueObjects;
 using System;
 using System.Collections.Generic;
@@ -7,9 +7,9 @@ using System.Text;
 namespace IdentityService.Domain.Events;
 
 public record UserActivatedEvent(Guid UserId, string Email,
-    PhoneNumber PhoneNumber,
-    string FirstName,
-    string LastName,
+    PhoneNumber? PhoneNumber,
+    string? FirstName,
+    string? LastName,
     DateOnly DateOfBirth
     ) : IDomainEvent
 {

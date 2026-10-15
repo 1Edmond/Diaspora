@@ -347,7 +347,7 @@ public class KYCController(
         resourceKey: "kyc.requirements",
         action: "read",
         description: "Get country KYC requirements",
-        recommendedRoles: new[] { "Admin", "Moderator" }
+        recommendedRoles: new[] { "Admin", "Moderator", "User" }
     )]
     [HttpGet("requirements")]
     public async Task<IActionResult> GetRequirements([FromQuery] Guid? profileTypeId)
@@ -365,7 +365,7 @@ public class KYCController(
         resourceKey: "kyc.requirements",
         action: "read",
         description: "Get country KYC requirements by profile type",
-        recommendedRoles: new[] { "Admin", "Moderator" }
+        recommendedRoles: new[] { "Admin", "Moderator", "User" }
     )]
     [HttpGet("requirements/{profileTypeId:guid}")]
     public async Task<IActionResult> GetRequirementsByProfileTypeId(Guid profileTypeId)

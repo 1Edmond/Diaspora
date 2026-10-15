@@ -1,4 +1,4 @@
-﻿using IdentityService.Application.Commands;
+using IdentityService.Application.Commands;
 using IdentityService.Application.Dtos;
 using IdentityService.Application.Models;
 using IdentityService.Domain.Entities;
@@ -70,6 +70,7 @@ public static class LoginCommandHandler
         var refreshToken = jwtService.GenerateRefreshToken();
         var refreshTokenExpiry = DateTime.UtcNow.AddDays(7);
 
+        user.RevokeAllActiveTokens(command.IpAddress, "Single session policy: superseded by new login");
         user.AddRefreshToken(refreshToken, command.IpAddress, refreshTokenExpiry);
         user.RemoveOldRefreshTokens(ttlDays: 30);
 

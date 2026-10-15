@@ -1,4 +1,4 @@
-﻿using IdentityService.Application.Abstractions;
+using IdentityService.Application.Abstractions;
 using IdentityService.Application.Commands;
 using IdentityService.Application.Dtos;
 using IdentityService.Application.Models;
@@ -63,6 +63,7 @@ public class BiometricLoginCommandHandler(
         var refreshToken = _jwtService.GenerateRefreshToken();
         var refreshTokenExpiry = DateTime.UtcNow.AddDays(7);
 
+        user.RevokeAllActiveTokens(command.IpAddress, "Single session policy: superseded by new biometric login");
         user.AddRefreshToken(refreshToken, command.IpAddress, refreshTokenExpiry);
         user.RemoveOldRefreshTokens(ttlDays: 30);
 

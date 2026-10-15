@@ -1,4 +1,4 @@
-﻿using Shared.Domain.Commons;
+using Shared.Domain.Commons;
 using Shared.Domain.Enums;
 using Shared.Domain.Primitives;
 using Shared.Domain.ValueObjects;
@@ -264,11 +264,17 @@ public class User : AggregateRoot, ISoftDeletable, IAuditable
     public Result Activate()
     {
         if (Status == UserStatus.Active)
-            return Result.Failure("User is not suspended");
+            return Result.Failure("User is already active");
 
         Status = UserStatus.Active;
 
-        AddDomainEvent(new UserActivatedEvent(Id, Email.Value, PhoneNumber!, FirstName!, LastName!, DateOfBirth));
+        AddDomainEvent(new UserActivatedEvent(
+            Id,
+            Email.Value,
+            PhoneNumber,
+            FirstName?.ClearValue ?? string.Empty,
+            LastName ?? string.Empty,
+            DateOfBirth));
 
         return Result.Success();
     }
@@ -318,6 +324,14 @@ public class User : AggregateRoot, ISoftDeletable, IAuditable
         refreshToken.Revoke(ipAddress, replacedByToken);
 
         return Result.Success();
+    }
+
+    public void RevokeAllActiveTokens(string ipAddress, string reason = "Revoked")
+    {
+        foreach (var token in _refreshTokens.Where(t => t.IsActive))
+        {
+            token.Revoke(ipAddress, reason);
+        }
     }
 
     public void RemoveOldRefreshTokens(int ttlDays)

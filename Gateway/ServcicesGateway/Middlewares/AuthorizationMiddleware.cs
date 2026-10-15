@@ -17,9 +17,12 @@ public class AuthorizationMiddleware
         "/api/auth/biometric/login",
         "/api/auth/register",
         "/api/auth/refresh",
+        "/api/auth/refresh-token",
         "/api/auth/verify-email",
         "/api/auth/ping",
         "/api/authorization/check",
+        "/api/profile-types/public",
+        "/api/document-types",
         "/health",
         "/alive"
     };

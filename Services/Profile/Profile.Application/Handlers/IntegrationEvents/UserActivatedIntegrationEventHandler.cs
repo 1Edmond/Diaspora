@@ -1,4 +1,4 @@
-﻿using Profile.Application.Commands;
+using Profile.Application.Commands;
 using Profile.Application.Interfaces;
 using Profile.Domain.Entities;
 using Shared.Domain.Interfaces;
@@ -14,6 +14,9 @@ public class UserActivatedIntegrationEventHandler(IProfileTypeRepository interna
 
     public async Task<CreateProfileCommand?> HandleAsync(UserActivatedIntegrationEvent message, CancellationToken cancellationToken)
     {
+        if (message.PhoneNumber == null || string.IsNullOrWhiteSpace(message.PhoneNumber.CountryCode))
+            return null;
+
         var profileType = await internalProfileTypeRepository.GetByPhoneIndicatifAsync(message.PhoneNumber.CountryCode, cancellationToken);
 
         if (profileType == null)
@@ -23,8 +26,8 @@ public class UserActivatedIntegrationEventHandler(IProfileTypeRepository interna
             message.UserId,
             profileType.Id,
             message.PhoneNumber,
-            message.FirstName,
-            message.LastName,
+            message.FirstName ?? string.Empty,
+            message.LastName ?? string.Empty,
             message.DateOfBirth,
             Domain.Enums.ProfileKind.Boursier
             );

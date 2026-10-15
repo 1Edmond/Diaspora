@@ -1,4 +1,4 @@
-﻿using IdentityService.Application.Commands;
+using IdentityService.Application.Commands;
 using IdentityService.Application.Models;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -60,9 +60,10 @@ public partial class AuthController(IMessageBus _messageBus, ILogger<AuthControl
         recommendedRoles: new[] { "Admin", "User", "Moderator" }
     )]
     [HttpPost("refresh")]
-    public async Task<IActionResult> RefreshToken()
+    [HttpPost("refresh-token")]
+    public async Task<IActionResult> RefreshToken([FromBody] RefreshTokenRequest? body = null)
     {
-        var refreshToken = Request.Cookies["refreshToken"];
+        var refreshToken = body?.RefreshToken ?? Request.Cookies["refreshToken"];
         if (string.IsNullOrEmpty(refreshToken))
             return Unauthorized(new { error = "Refresh token is required" });
 
@@ -168,3 +169,5 @@ public partial class AuthController(IMessageBus _messageBus, ILogger<AuthControl
         return Guid.Parse(_currentUserService.UserId!);
     }
 }
+
+public record RefreshTokenRequest(string? RefreshToken);
