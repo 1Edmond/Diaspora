@@ -35,16 +35,6 @@ public class PermissionService : IPermissionService
         string method,
         CancellationToken cancellationToken = default)
     {
-        var permissionKey = await ResolvePermissionKeyAsync(path, method, cancellationToken);
-
-        if (permissionKey == null)
-        {
-            _logger.LogWarning(
-                "[PermissionService] No permission found for {Method} {Path}",
-                method, path);
-            return false;
-        }
-
         var user = await _userRepository.GetByIdAsync(userId, cancellationToken);
         if (user == null)
             return false;
@@ -56,6 +46,16 @@ public class PermissionService : IPermissionService
                                r.Name.Equals("Admin", StringComparison.OrdinalIgnoreCase)))
         {
             return true;
+        }
+
+        var permissionKey = await ResolvePermissionKeyAsync(path, method, cancellationToken);
+
+        if (permissionKey == null)
+        {
+            _logger.LogWarning(
+                "[PermissionService] No permission found for {Method} {Path}",
+                method, path);
+            return false;
         }
 
         var hasRolePermission = userRoles.Any(role =>
@@ -168,44 +168,54 @@ public class PermissionService : IPermissionService
         if (segments.Length < 2) return null;
 
         var serviceSegment = segments[1];
-        var resourceSegment = segments.Length >= 3 ? segments[2] : segments[1];
+        string resourceSegment;
+        string action;
+
+        // Pattern 1: /api/profiles/{guid}/reactivate or /api/profiles/{guid}
+        if (segments.Length >= 3 && Guid.TryParse(segments[2], out _))
+        {
+            resourceSegment = segments[1];
+            action = segments.Length >= 4 ? segments[3].ToLower() : MapMethodToAction(method);
+        }
+        // Pattern 2: /api/service/resource/{guid}/action
+        else if (segments.Length >= 4 && Guid.TryParse(segments[3], out _))
+        {
+            resourceSegment = segments[2];
+            action = segments.Length >= 5 ? segments[4].ToLower() : MapMethodToAction(method);
+        }
+        // Pattern 3: /api/service/resource
+        else if (segments.Length >= 3)
+        {
+            resourceSegment = segments[2];
+            action = segments.Length >= 4 ? segments[3].ToLower() : MapMethodToAction(method);
+        }
+        else
+        {
+            resourceSegment = segments[1];
+            action = MapMethodToAction(method);
+        }
+
+        // Aliases
+        if (action == "reactivate") action = "activate";
+        if (action == "status") action = "update";
 
         var matchingPermissions = allPermissions.Where(p =>
             p.ServiceName.Equals(serviceSegment, StringComparison.OrdinalIgnoreCase) ||
             p.ResourceKey.Contains(serviceSegment, StringComparison.OrdinalIgnoreCase) ||
-            (segments.Length >= 3 && (p.ServiceName.Equals(resourceSegment, StringComparison.OrdinalIgnoreCase) ||
-                                      p.ResourceKey.Contains(resourceSegment, StringComparison.OrdinalIgnoreCase)))
+            p.ServiceName.Equals(resourceSegment, StringComparison.OrdinalIgnoreCase) ||
+            p.ResourceKey.Contains(resourceSegment, StringComparison.OrdinalIgnoreCase)
         ).ToList();
 
         if (matchingPermissions.Count == 0) return null;
-
-        string action;
-
-        if (segments.Length > 3)
-        {
-            var segment3 = segments[3];
-
-            if (Guid.TryParse(segment3, out _))
-            {
-                action = segments.Length > 4
-                    ? segments[4].ToLower()
-                    : MapMethodToAction(method);
-            }
-            else
-            {
-                action = segment3.ToLower();
-            }
-        }
-        else
-        {
-            action = MapMethodToAction(method);
-        }
 
         var permission = matchingPermissions.FirstOrDefault(p =>
             p.Permission.Equals(action, StringComparison.OrdinalIgnoreCase) &&
             (p.ResourceKey.Contains(resourceSegment.TrimEnd('s'), StringComparison.OrdinalIgnoreCase) ||
              resourceSegment.Contains(p.ResourceKey, StringComparison.OrdinalIgnoreCase) ||
              p.ResourceKey.Contains(serviceSegment.TrimEnd('s'), StringComparison.OrdinalIgnoreCase)));
+
+        permission ??= matchingPermissions.FirstOrDefault(p =>
+            p.Permission.Equals(action, StringComparison.OrdinalIgnoreCase));
 
         _logger.LogDebug(
             "[PermissionService] Resolved: {Method} {Path} → {Permission}",

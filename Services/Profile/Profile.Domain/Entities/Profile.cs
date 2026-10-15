@@ -152,10 +152,12 @@ public sealed class Profile : AggregateRoot
 
     public Result Reactivate()
     {
-        if (Status != ProfileStatus.Suspended)
-            return Result.Failure("Seul un profil suspendu peut être réactivé.");
+        if (Status == ProfileStatus.Activate)
+            return Result.Success();
 
         Status = ProfileStatus.Activate;
+        if (Level == Shared.Domain.Enums.VerificationLevel.L0_Registered)
+            Level = Shared.Domain.Enums.VerificationLevel.L1_IdentityDeclared;
 
         AddDomainEvent(new ProfileActivatedDomainEvent(
             Id,
@@ -180,10 +182,10 @@ public sealed class Profile : AggregateRoot
     public Result Activate()
     {
         if (Status == ProfileStatus.Suspended)
-            return Result.Failure("Profil suspendu, impossible d'activer.");
+            return Reactivate();
 
         if (Status == ProfileStatus.Activate)
-            return Result.Failure("Profile is already activated.");
+            return Result.Success();
 
         Status = ProfileStatus.Activate;
         if (Level == Shared.Domain.Enums.VerificationLevel.L0_Registered)
