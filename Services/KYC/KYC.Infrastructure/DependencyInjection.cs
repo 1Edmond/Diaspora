@@ -1,6 +1,7 @@
 using JasperFx.Resources;
 using KYC.Application;
 using KYC.Application.Abstractions;
+using KYC.Application.Interfaces;
 using KYC.Application.Handlers.IntegrationEvents;
 using KYC.Infrastructure.Persistence;
 using KYC.Infrastructure.Services;
@@ -40,6 +41,7 @@ public static class DependencyInjection
         
         services.AddScoped<IFileStorageService, LocalFileStorageService>();
         services.AddScoped<IProfileDirectoryRepository, ProfileDirectoryRepository>();
+        services.AddScoped<ICountryKycRequirementRepository, CountryKycRequirementRepository>();
         services.AddScoped<ProfileDirectoryConsumer>();
 
         services.SetCoreInfrastructureServices(configuration, options =>

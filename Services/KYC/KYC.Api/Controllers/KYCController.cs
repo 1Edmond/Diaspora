@@ -343,6 +343,98 @@ public class KYCController(
         return Ok(BaseResponse.SuccessResponse("Review started"));
     }
 
+    [Permission(
+        resourceKey: "kyc.requirements",
+        action: "read",
+        description: "Get country KYC requirements",
+        recommendedRoles: new[] { "Admin", "Moderator" }
+    )]
+    [HttpGet("requirements")]
+    public async Task<IActionResult> GetRequirements([FromQuery] Guid? profileTypeId)
+    {
+        var query = new GetCountryKycRequirementsQuery(profileTypeId);
+        var result = await messageBus.InvokeAsync<Result<List<CountryKycRequirementDto>>>(query);
+
+        if (result.IsFailure)
+            return BadRequest(new { error = result.Error });
+
+        return Ok(result.Value);
+    }
+
+    [Permission(
+        resourceKey: "kyc.requirements",
+        action: "read",
+        description: "Get country KYC requirements by profile type",
+        recommendedRoles: new[] { "Admin", "Moderator" }
+    )]
+    [HttpGet("requirements/{profileTypeId:guid}")]
+    public async Task<IActionResult> GetRequirementsByProfileTypeId(Guid profileTypeId)
+    {
+        var query = new GetCountryKycRequirementsQuery(profileTypeId);
+        var result = await messageBus.InvokeAsync<Result<List<CountryKycRequirementDto>>>(query);
+
+        if (result.IsFailure)
+            return BadRequest(new { error = result.Error });
+
+        return Ok(result.Value);
+    }
+
+    [Permission(
+        resourceKey: "kyc.requirements",
+        action: "manage",
+        description: "Create country KYC requirement",
+        recommendedRoles: new[] { "Admin" }
+    )]
+    [HttpPost("requirements")]
+    public async Task<IActionResult> CreateRequirement([FromBody] CreateCountryKycRequirementCommand command)
+    {
+        var result = await messageBus.InvokeAsync<Result<CountryKycRequirementDto>>(command);
+
+        if (result.IsFailure)
+            return BadRequest(new { error = result.Error });
+
+        return CreatedAtAction(
+            nameof(GetRequirementsByProfileTypeId),
+            new { profileTypeId = result.Value.ProfileTypeId },
+            result.Value);
+    }
+
+    [Permission(
+        resourceKey: "kyc.requirements",
+        action: "manage",
+        description: "Update country KYC requirement",
+        recommendedRoles: new[] { "Admin" }
+    )]
+    [HttpPut("requirements/{id:guid}")]
+    public async Task<IActionResult> UpdateRequirement(Guid id, [FromBody] UpdateCountryKycRequirementCommand command)
+    {
+        command = command with { Id = id };
+        var result = await messageBus.InvokeAsync<Result<CountryKycRequirementDto>>(command);
+
+        if (result.IsFailure)
+            return BadRequest(new { error = result.Error });
+
+        return Ok(result.Value);
+    }
+
+    [Permission(
+        resourceKey: "kyc.requirements",
+        action: "manage",
+        description: "Delete country KYC requirement",
+        recommendedRoles: new[] { "Admin" }
+    )]
+    [HttpDelete("requirements/{id:guid}")]
+    public async Task<IActionResult> DeleteRequirement(Guid id)
+    {
+        var command = new DeleteCountryKycRequirementCommand(id);
+        var result = await messageBus.InvokeAsync<Result>(command);
+
+        if (result.IsFailure)
+            return BadRequest(new { error = result.Error });
+
+        return NoContent();
+    }
+
     private Guid GetCurrentUserId()
     {
         return Guid.Parse(currentUserService.UserId!);

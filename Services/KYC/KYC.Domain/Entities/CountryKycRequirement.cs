@@ -3,7 +3,7 @@ using System;
 
 namespace KYC.Domain.Entities;
 
-public class CountryKycRequirement : Entity
+public class CountryKycRequirement : AggregateRoot
 {
     public Guid ProfileTypeId { get; private set; }
     public Guid DocumentTypeId { get; private set; }
@@ -30,10 +30,28 @@ public class CountryKycRequirement : Entity
             DocumentTypeCode = documentTypeCode.Trim(),
             Purpose = purpose.Trim(),
             IsRequired = isRequired,
-            IsActive = true
+            IsActive = true,
+            CreatedAt = DateTime.UtcNow
         };
     }
 
-    public void Deactivate() => IsActive = false;
-    public void Activate() => IsActive = true;
+    public void Update(string purpose, bool isRequired, bool isActive)
+    {
+        Purpose = purpose.Trim();
+        IsRequired = isRequired;
+        IsActive = isActive;
+        UpdatedAt = DateTime.UtcNow;
+    }
+
+    public void Deactivate()
+    {
+        IsActive = false;
+        UpdatedAt = DateTime.UtcNow;
+    }
+
+    public void Activate()
+    {
+        IsActive = true;
+        UpdatedAt = DateTime.UtcNow;
+    }
 }
