@@ -41,13 +41,6 @@ public class PermissionService : IPermissionService
 
         var userRoles = user.UserRoles.Select(ur => ur.Role).ToList();
 
-        // 1. Un administrateur dispose de tous les accès par défaut
-        if (userRoles.Any(r => r.Name.Equals(Shared.Domain.Constants.DefaultRole.Admin, StringComparison.OrdinalIgnoreCase) ||
-                               r.Name.Equals("Admin", StringComparison.OrdinalIgnoreCase)))
-        {
-            return true;
-        }
-
         var permissionKey = await ResolvePermissionKeyAsync(path, method, cancellationToken);
 
         if (permissionKey == null)
