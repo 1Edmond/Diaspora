@@ -153,6 +153,28 @@ public class DocumentController(
 
     [Permission(
         resourceKey: "document",
+        action: "list-pending",
+        description: "Get documents pending validation",
+        recommendedRoles: new[] { "Admin", "Officer" }
+    )]
+    [HttpGet("pending")]
+    public async Task<IActionResult> GetPending(
+        [FromQuery] int pageNumber = 1,
+        [FromQuery] int pageSize = 20,
+        CancellationToken cancellationToken = default)
+    {
+        var result = await _messageBus.InvokeAsync<Result<PagedList<DocumentDto>>>(
+            new GetPendingDocumentsQuery(pageNumber, pageSize),
+            cancellationToken);
+
+        if (result.IsFailure)
+            return BadRequest(new { error = result.Error });
+
+        return Ok(result.Value);
+    }
+
+    [Permission(
+        resourceKey: "document",
         action: "read-expiring",
         description: "Get documents expiring soon (admin)",
         recommendedRoles: new[] { "Admin" }
