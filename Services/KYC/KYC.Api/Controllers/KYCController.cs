@@ -1,4 +1,4 @@
-﻿using KYC.Application.Commands;
+using KYC.Application.Commands;
 using KYC.Application.Dtos;
 using KYC.Application.Queries;
 using Microsoft.AspNetCore.Mvc;
@@ -75,6 +75,24 @@ public class KYCController(
     public async Task<IActionResult> GetMyVerification()
     {
         var userId = GetCurrentUserId();
+        var query = new GetKYCVerificationByUserQuery(userId);
+        var result = await messageBus.InvokeAsync<Result<KYCVerificationDto>>(query);
+
+        if (result.IsFailure)
+            return NotFound(new { error = result.Error });
+
+        return Ok(DataResponse<KYCVerificationDto>.SuccessResponse(result.Value));
+    }
+
+    [Permission(
+        resourceKey: "kyc.verifications",
+        action: "read",
+        description: "Get KYC verification by user ID",
+        recommendedRoles: new[] { "Admin", "Moderator" }
+    )]
+    [HttpGet("user/{userId:guid}")]
+    public async Task<IActionResult> GetVerificationByUserId(Guid userId)
+    {
         var query = new GetKYCVerificationByUserQuery(userId);
         var result = await messageBus.InvokeAsync<Result<KYCVerificationDto>>(query);
 
@@ -212,7 +230,8 @@ public class KYCController(
     public async Task<IActionResult> ApproveVerification(Guid id, [FromBody] ApproveKYCCommand command)
     {
         var reviewerId = GetCurrentUserId();
-        command = command with { VerificationId = id, ReviewerId = reviewerId };
+        var level = string.IsNullOrWhiteSpace(command.Level) ? Shared.Domain.Enums.KYCLevel.Intermediate.ToString() : command.Level;
+        command = command with { VerificationId = id, ReviewerId = reviewerId, Level = level };
 
         var result = await messageBus.InvokeAsync<Result>(command);
 

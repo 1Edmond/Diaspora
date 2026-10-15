@@ -1,4 +1,4 @@
-﻿using Profile.Application.DTOs;
+using Profile.Application.DTOs;
 using Profile.Application.Extensions;
 using Profile.Application.Interfaces;
 using Profile.Application.Queries;
@@ -16,7 +16,7 @@ public sealed class GetProfileByIdQueryHandler(
         GetProfileByIdQuery query,
         CancellationToken cancellationToken)
     {
-        var profile = await repository.GetByIdAsync(query.ProfileId, cancellationToken);
+        var profile = await repository.GetByIdWithProfileTypeAsync(query.ProfileId, cancellationToken);
         if (profile is null)
             return Result.Failure<ProfileDto>("Profile not found.");
 

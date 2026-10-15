@@ -148,6 +148,29 @@ public class ProfileController(
 
     [Permission(
         resourceKey: "profile.internal",
+        action: "verify",
+        description: "Set verification level for a profile (admin only)",
+        recommendedRoles: new[] { "Admin" }
+    )]
+    [HttpPost("{profileId:guid}/verification-level")]
+    public async Task<IActionResult> SetVerificationLevel(
+        Guid profileId,
+        [FromBody] SetProfileVerificationLevelRequest request,
+        CancellationToken cancellationToken)
+    {
+        var adminId = _currentUserService.UserId ?? "Admin";
+
+        var result = await _messageBus.InvokeAsync<Result>(
+            new SetProfileVerificationLevelCommand(profileId, request.Level, adminId), cancellationToken);
+
+        if (result.IsFailure)
+            return BadRequest(new { error = result.Error });
+
+        return Ok(new { message = "Verification level updated successfully" });
+    }
+
+    [Permission(
+        resourceKey: "profile.internal",
         action: "read",
         description: "Get a profile by id (admin only)",
         recommendedRoles: new[] { "Admin" }

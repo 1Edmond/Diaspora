@@ -16,7 +16,7 @@ public sealed class ProfileIntegrationEventMapper : IIntegrationEventMapper
             e.ProfileId, e.UserId, e.PhoneNumber),
 
         ProfileVerifiedDomainEvent e => new ProfileVerifiedIntegrationEvent(
-            e.ProfileId, e.UserId, e.VerifiedByAdminId, e.VerifiedAt),
+            e.ProfileId, e.UserId, e.VerifiedByAdminId, e.VerifiedAt, e.Level),
 
         ProfileSuspendedDomainEvent e => new ProfileSuspendedIntegrationEvent(
             e.ProfileId, e.UserId),

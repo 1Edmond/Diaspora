@@ -48,9 +48,24 @@ public sealed class ProfileRepository(
     public async Task<IEnumerable<Domain.Entities.Profile>> GetPendingVerificationAsync(
         CancellationToken cancellationToken = default)
         => await _context.InternalProfiles
+            .Include(x => x.ProfileType)
             .Where(x => x.Status == ProfileStatus.PendingVerification)
             .OrderBy(x => x.CreatedAt)
             .ToListAsync(cancellationToken);
+
+    public async Task<Domain.Entities.Profile?> GetByIdWithProfileTypeAsync(Guid id, CancellationToken cancellationToken = default)
+    {
+        return await _context.InternalProfiles
+            .Include(x => x.ProfileType)
+            .FirstOrDefaultAsync(x => x.Id == id, cancellationToken);
+    }
+
+    public async Task<IEnumerable<Domain.Entities.Profile>> GetAllWithProfileTypeAsync(CancellationToken cancellationToken = default)
+    {
+        return await _context.InternalProfiles
+            .Include(x => x.ProfileType)
+            .ToListAsync(cancellationToken);
+    }
 
     public async Task<List<Domain.Entities.Profile>?> GetByUserIdAsync(Guid userId, CancellationToken cancellationToken)
     {

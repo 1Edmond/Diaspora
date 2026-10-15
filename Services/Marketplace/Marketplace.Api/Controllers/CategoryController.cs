@@ -1,7 +1,9 @@
 using Marketplace.Application.Commands;
 using Marketplace.Application.Queries;
 using Microsoft.AspNetCore.Mvc;
+using Shared.Application.Abstractions;
 using Shared.Domain.Commons;
+using Shared.Domain.Interfaces;
 using Shared.Security.Attributes;
 using Wolverine;
 
@@ -9,7 +11,11 @@ namespace Marketplace.Api.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
-public class CategoryController(IMessageBus _messageBus, ILogger<CategoryController> _logger) : ControllerBase
+public class CategoryController(
+    IMessageBus _messageBus,
+    ILogger<CategoryController> _logger,
+    ITranslationRepository<Marketplace.Domain.Entities.Category> _translationRepo,
+    IUnitOfWork _unitOfWork) : ControllerBase
 {
     [HttpGet]
     public async Task<IActionResult> GetAll([FromQuery] bool activeOnly = true)
@@ -88,4 +94,34 @@ public class CategoryController(IMessageBus _messageBus, ILogger<CategoryControl
         if (result.IsFailure) return BadRequest(new { error = result.Error });
         return NoContent();
     }
+
+    [HttpGet("{id:guid}/translations")]
+    public async Task<IActionResult> GetTranslations(Guid id, CancellationToken cancellationToken)
+    {
+        var translations = await _translationRepo.GetByOwnerIdAsync(id, cancellationToken);
+        var result = translations.ToDictionary(
+            t => t.CultureCode,
+            t => t.Fields
+        );
+        return Ok(result);
+    }
+
+    [Permission(
+        resourceKey: "marketplace.category",
+        action: "update",
+        description: "Update translations for a service category",
+        recommendedRoles: new[] { "Admin" }
+    )]
+    [HttpPut("{id:guid}/translations/{cultureCode}")]
+    public async Task<IActionResult> UpdateTranslation(
+        Guid id,
+        string cultureCode,
+        [FromBody] Dictionary<string, string> fields,
+        CancellationToken cancellationToken)
+    {
+        await _translationRepo.UpsertAsync(id, cultureCode, fields, cancellationToken);
+        await _unitOfWork.SaveChangesAsync(cancellationToken);
+        return NoContent();
+    }
 }
+

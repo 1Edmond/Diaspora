@@ -4,6 +4,7 @@ using Document.Application.Interfaces;
 using Document.Application.Requests;
 using Document.Domain.Entities;
 using Microsoft.AspNetCore.Mvc;
+using Shared.Domain.Interfaces;
 using Shared.Security.Attributes;
 
 namespace Document.API.Controllers;
@@ -14,6 +15,7 @@ public class DocumentTypeController(
     IDocumentTypeRepository _repository,
     Shared.Application.Abstractions.ITranslationRepository<DocumentType> _translationRepo,
     Shared.Application.Interfaces.ICurrentUserService _currentUserService,
+    IUnitOfWork _unitOfWork,
     ILogger<DocumentTypeController> _logger) : ControllerBase
 {
     [Permission(
@@ -107,4 +109,33 @@ public class DocumentTypeController(
 
         return Ok(new { message = "Document type deactivated." });
     }
-}
+
+    [HttpGet("{id:guid}/translations")]
+    public async Task<IActionResult> GetTranslations(Guid id, CancellationToken cancellationToken)
+    {
+        var translations = await _translationRepo.GetByOwnerIdAsync(id, cancellationToken);
+        var result = translations.ToDictionary(
+            t => t.CultureCode,
+            t => t.Fields
+        );
+        return Ok(result);
+    }
+
+    [Permission(
+        resourceKey: "document.type",
+        action: "update",
+        description: "Update translations for a document type",
+        recommendedRoles: new[] { "Admin" }
+    )]
+    [HttpPut("{id:guid}/translations/{cultureCode}")]
+    public async Task<IActionResult> UpdateTranslation(
+        Guid id,
+        string cultureCode,
+        [FromBody] Dictionary<string, string> fields,
+        CancellationToken cancellationToken)
+    {
+        await _translationRepo.UpsertAsync(id, cultureCode, fields, cancellationToken);
+        await _unitOfWork.SaveChangesAsync(cancellationToken);
+        return NoContent();
+    }
+}

@@ -20,7 +20,7 @@ public sealed class GetProfilesQueryHandler(
         GetProfilesQuery query,
         CancellationToken cancellationToken)
     {
-        var allProfiles = await repository.GetAllAsync(cancellationToken);
+        var allProfiles = await repository.GetAllWithProfileTypeAsync(cancellationToken);
         
         var dtos = allProfiles.Select(p => p.ToDto()).ToList();
         

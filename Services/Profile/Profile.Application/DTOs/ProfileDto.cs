@@ -1,4 +1,4 @@
-﻿using Profile.Domain.Enums;
+using Profile.Domain.Enums;
 using System;
 using System.Collections.Generic;
 using System.Text;
@@ -16,5 +16,9 @@ public sealed record ProfileDto(
     ProfileStatus Status,
     DateTime? VerifiedAt,
     string? VerifiedByAdminId,
-    DateTime CreatedAt
+    DateTime CreatedAt,
+    string? ProfileTypeName = null,
+    string? CountryCode = null,
+    string? Flag = null,
+    Shared.Domain.Enums.VerificationLevel VerificationLevel = Shared.Domain.Enums.VerificationLevel.L0_Registered
 );

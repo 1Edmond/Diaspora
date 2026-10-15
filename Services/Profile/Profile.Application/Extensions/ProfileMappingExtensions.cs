@@ -13,14 +13,18 @@ public static class ProfileMappingExtensions
             profile.Id,
             profile.UserId,
             profile.ProfileTypeId,
-            profile.PhoneNumber.Value,
+            profile.PhoneNumber?.Value ?? string.Empty,
             profile.FirstName,
             profile.LastName,
             profile.DateOfBirth,
             profile.Status,
             profile.VerifiedAt,
             profile.VerifiedByAdminId,
-            profile.CreatedAt);
+            profile.CreatedAt,
+            profile.ProfileType?.CountryName,
+            profile.ProfileType?.CountryCode,
+            profile.ProfileType?.Flag,
+            profile.Level);
 
     public static ProfileTypeDto ToDto(this ProfileType profileType) =>
         new(
