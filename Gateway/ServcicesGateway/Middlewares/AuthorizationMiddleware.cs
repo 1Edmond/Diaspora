@@ -1,4 +1,4 @@
-﻿using ServcicesGateway.Interfaces;
+using ServcicesGateway.Interfaces;
 using System.Security.Claims;
 using System.Security.Cryptography;
 using System.Text;
@@ -110,7 +110,11 @@ public class AuthorizationMiddleware
         context.Request.Headers["X-Gateway-Secret"] = configuration["Gateway:Secret"];
         context.Request.Headers["X-User-Id"] = userId.ToString();
 
-        var roles = context.User.FindAll(ClaimTypes.Role).Select(c => c.Value);
+        var roles = context.User.FindAll(ClaimTypes.Role)
+            .Concat(context.User.FindAll("role"))
+            .Concat(context.User.FindAll("roles"))
+            .Select(c => c.Value)
+            .Distinct();
         context.Request.Headers["X-User-Roles"] = string.Join(",", roles);
 
         context.Request.Headers["X-Granted-Permission"] = string.Join(",", permissions);

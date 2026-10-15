@@ -28,7 +28,7 @@ if (app.Environment.IsDevelopment())
 }
 
 await app.UseInfrastructure();
-await app.PublishMarketplaceResources<Program>();
+_ = app.PublishMarketplaceResources<Program>();
 
 app.MapControllers();
 
