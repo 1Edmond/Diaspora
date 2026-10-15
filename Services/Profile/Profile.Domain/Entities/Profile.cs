@@ -182,10 +182,10 @@ public sealed class Profile : AggregateRoot
     public Result Activate()
     {
         if (Status == ProfileStatus.Suspended)
-            return Reactivate();
+            return Result.Failure("Profil suspendu, impossible d'activer.");
 
         if (Status == ProfileStatus.Activate)
-            return Result.Success();
+            return Result.Failure("Profile is already activated.");
 
         Status = ProfileStatus.Activate;
         if (Level == Shared.Domain.Enums.VerificationLevel.L0_Registered)

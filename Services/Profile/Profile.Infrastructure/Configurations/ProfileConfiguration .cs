@@ -1,4 +1,4 @@
-﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 using Profile.Domain.Entities;
 using Profile.Domain.Enums;
@@ -59,11 +59,16 @@ public sealed class InternalProfileConfiguration : BaseEntityConfiguration<Domai
         });
         builder.Property(x => x.ProfileTypeId).IsRequired();
 
+        builder.Property(x => x.Level)
+            .HasConversion<byte>()
+            .IsRequired()
+            .HasDefaultValue(Shared.Domain.Enums.VerificationLevel.L0_Registered);
+
+        builder.HasIndex(x => x.Level);
+
         builder.HasOne(x => x.ProfileType)
             .WithMany()
             .HasForeignKey(x => x.ProfileTypeId)
             .OnDelete(DeleteBehavior.Restrict);
-
-        
     }
 }

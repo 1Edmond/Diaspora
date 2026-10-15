@@ -8,6 +8,7 @@ using Microsoft.Extensions.Logging;
 using NSubstitute;
 using Shared.Application.Abstractions;
 using Shared.Application.Interfaces;
+using Shared.Domain.Interfaces;
 using Shared.Domain.Translations;
 using Xunit;
 
@@ -56,6 +57,7 @@ public class DocumentTypeMultiCountryTests
         var repo = Substitute.For<IDocumentTypeRepository>();
         var transRepo = Substitute.For<ITranslationRepository<DocumentType>>();
         var currentUser = Substitute.For<ICurrentUserService>();
+        var unitOfWork = Substitute.For<IUnitOfWork>();
         var logger = Substitute.For<ILogger<DocumentTypeController>>();
 
         currentUser.DataLanguage.Returns("en");
@@ -90,7 +92,7 @@ public class DocumentTypeMultiCountryTests
 
         transRepo.GetByOwnerIdsAsync(Arg.Any<IEnumerable<Guid>>(), Arg.Any<CancellationToken>()).Returns(translations);
 
-        var controller = new DocumentTypeController(repo, transRepo, currentUser, logger);
+        var controller = new DocumentTypeController(repo, transRepo, currentUser, unitOfWork, logger);
         var actionResult = await controller.GetAll(countryId, CancellationToken.None);
 
         var okResult = actionResult.Should().BeOfType<OkObjectResult>().Subject;

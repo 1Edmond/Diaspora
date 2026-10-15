@@ -1,4 +1,4 @@
-﻿using Marketplace.Domain.Entities;
+using Marketplace.Domain.Entities;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 using Shared.Infrastructure.Persistence.Configurations;
@@ -20,8 +20,11 @@ public class CategoryConfiguration : BaseEntityConfiguration<Category>
         builder.Property(c => c.Slug).HasMaxLength(120).IsRequired();
         builder.Property(c => c.Description).HasMaxLength(500);
         builder.Property(c => c.IconUrl).HasMaxLength(500);
+        builder.Property(c => c.IsActive).IsRequired().HasDefaultValue(true);
+        builder.Property(c => c.DisplayOrder).IsRequired().HasDefaultValue(0);
 
         builder.HasIndex(c => c.Slug).IsUnique();
         builder.HasIndex(c => c.Name).IsUnique();
+        builder.HasIndex(c => c.IsActive);
     }
 }

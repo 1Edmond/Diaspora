@@ -1,4 +1,4 @@
-﻿using Document.Domain.Entities;
+using Document.Domain.Entities;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 using Shared.Messaging.Constants;
@@ -21,6 +21,8 @@ public sealed class DocumentTypeConfiguration : IEntityTypeConfiguration<Documen
         builder.Property(x => x.Description).HasMaxLength(500);
         builder.Property(x => x.IsRenewable).IsRequired();
         builder.Property(x => x.RenewalAlertDays).IsRequired().HasDefaultValue(30);
+        builder.Property(x => x.ProfileTypeId).IsRequired();
+        builder.HasIndex(x => x.ProfileTypeId);
         builder.Property(x => x.IsRequired).IsRequired();
         builder.Property(x => x.IsActive).IsRequired().HasDefaultValue(true);
         builder.Property(x => x.CreatedAt).HasColumnType("timestamptz").IsRequired();

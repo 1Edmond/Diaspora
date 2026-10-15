@@ -25,11 +25,14 @@ public class ProfileDirectoryEntryConfiguration : BaseEntityConfiguration<Profil
         builder.Property(e => e.IsActivated).IsRequired();
         builder.Property(e => e.IsVerified).IsRequired();
         builder.Property(e => e.IsSuspended).IsRequired();
+        builder.Property(e => e.IsKycApproved).IsRequired().HasDefaultValue(false);
 
         // Propriété calculée : non persistée.
         builder.Ignore(e => e.IsEligibleProvider);
 
         // Un utilisateur = un profil dans cette projection.
         builder.HasIndex(e => e.UserId).IsUnique();
+        builder.HasIndex(e => e.Level);
+        builder.HasIndex(e => e.IsKycApproved);
     }
 }

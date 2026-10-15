@@ -17,5 +17,12 @@ public class ProfileDirectoryEntryConfiguration : IEntityTypeConfiguration<Profi
         builder.Property(x => x.DisplayName).HasMaxLength(255);
         builder.Property(x => x.CountryCode).HasMaxLength(2);
         builder.Property(x => x.Currency).HasMaxLength(3);
+        builder.Property(x => x.IsActivated).IsRequired().HasDefaultValue(false);
+        builder.Property(x => x.IsVerified).IsRequired().HasDefaultValue(false);
+        builder.Property(x => x.IsSuspended).IsRequired().HasDefaultValue(false);
+
+        builder.HasIndex(x => x.IsActivated);
+        builder.HasIndex(x => x.IsVerified);
+        builder.HasIndex(x => x.IsSuspended);
     }
 }

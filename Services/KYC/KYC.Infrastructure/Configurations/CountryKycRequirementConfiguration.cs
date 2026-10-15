@@ -15,7 +15,10 @@ public class CountryKycRequirementConfiguration : IEntityTypeConfiguration<Count
         builder.Property(x => x.DocumentTypeId).IsRequired();
         builder.Property(x => x.DocumentTypeCode).HasMaxLength(100).IsRequired();
         builder.Property(x => x.Purpose).HasMaxLength(100).IsRequired();
+        builder.Property(x => x.IsRequired).IsRequired().HasDefaultValue(true);
+        builder.Property(x => x.IsActive).IsRequired().HasDefaultValue(true);
 
         builder.HasIndex(x => new { x.ProfileTypeId, x.DocumentTypeCode }).IsUnique();
+        builder.HasIndex(x => x.IsActive);
     }
 }
