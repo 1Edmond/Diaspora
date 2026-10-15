@@ -28,4 +28,15 @@ public interface ITransactionRepository : IRepository<Transaction>
     Task<Transaction?> GetHoldTransactionByReferenceIdAsync(
         Guid serviceRequestId,
         CancellationToken cancellationToken = default);
+
+    Task<Shared.Application.Models.PagedList<Transaction>> GetTransactionsAdminAsync(
+        Guid? walletId = null,
+        TransactionType? type = null,
+        TransactionStatus? status = null,
+        string? currency = null,
+        DateTime? fromDate = null,
+        DateTime? toDate = null,
+        int pageNumber = 1,
+        int pageSize = 20,
+        CancellationToken cancellationToken = default);
 }

@@ -135,4 +135,54 @@ public class AdminWalletQueriesTests
         result.Value.Currencies.Should().BeEmpty();
         result.Value.PlatformWallets.Should().BeEmpty();
     }
+
+    [Fact]
+    public async Task GetTransactionsAdminQueryHandler_WhenTransactionsExist_ShouldReturnPagedList()
+    {
+        // Arrange
+        var transactionRepository = Substitute.For<ITransactionRepository>();
+        var walletId = Guid.NewGuid();
+        var tx = new Wallet.Domain.Entities.Transaction(
+            walletId,
+            Wallet.Domain.Enums.TransactionType.Deposit,
+            Wallet.Domain.Enums.TransactionDirection.Credit,
+            150m,
+            0m,
+            150m,
+            "EUR",
+            "Test deposit",
+            null,
+            null);
+
+        var pagedList = new PagedList<Wallet.Domain.Entities.Transaction>(
+            new List<Wallet.Domain.Entities.Transaction> { tx },
+            count: 1,
+            pageNumber: 1,
+            pageSize: 20);
+
+        transactionRepository.GetTransactionsAdminAsync(
+            Arg.Any<Guid?>(),
+            Arg.Any<Wallet.Domain.Enums.TransactionType?>(),
+            Arg.Any<Wallet.Domain.Enums.TransactionStatus?>(),
+            Arg.Any<string?>(),
+            Arg.Any<DateTime?>(),
+            Arg.Any<DateTime?>(),
+            1,
+            20,
+            Arg.Any<CancellationToken>())
+            .Returns(pagedList);
+
+        var handler = new GetTransactionsAdminQueryHandler(transactionRepository);
+        var query = new GetTransactionsAdminQuery(PageNumber: 1, PageSize: 20);
+
+        // Act
+        var result = await handler.Handle(query, CancellationToken.None);
+
+        // Assert
+        result.IsSuccess.Should().BeTrue();
+        result.Value.TotalCount.Should().Be(1);
+        result.Value.Items.Should().HaveCount(1);
+        result.Value.Items[0].Amount.Should().Be(150m);
+        result.Value.Items[0].Currency.Should().Be("EUR");
+    }
 }

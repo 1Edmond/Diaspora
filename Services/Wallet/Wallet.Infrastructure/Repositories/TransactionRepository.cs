@@ -60,4 +60,49 @@ public sealed class TransactionRepository(WalletDbContext context,
                 t.ReferenceId == serviceRequestId &&
                 t.Type == TransactionType.MarketplacePaymentHold,
                 cancellationToken);
+
+    public async Task<Shared.Application.Models.PagedList<Transaction>> GetTransactionsAdminAsync(
+        Guid? walletId = null,
+        TransactionType? type = null,
+        TransactionStatus? status = null,
+        string? currency = null,
+        DateTime? fromDate = null,
+        DateTime? toDate = null,
+        int pageNumber = 1,
+        int pageSize = 20,
+        CancellationToken cancellationToken = default)
+    {
+        var query = _context.Transactions.AsNoTracking();
+
+        if (walletId.HasValue)
+            query = query.Where(t => t.WalletId == walletId.Value);
+
+        if (type.HasValue)
+            query = query.Where(t => t.Type == type.Value);
+
+        if (status.HasValue)
+            query = query.Where(t => t.Status == status.Value);
+
+        if (!string.IsNullOrWhiteSpace(currency))
+        {
+            var normalizedCurrency = currency.ToUpperInvariant();
+            query = query.Where(t => t.Currency == normalizedCurrency);
+        }
+
+        if (fromDate.HasValue)
+            query = query.Where(t => t.CreatedAt >= fromDate.Value);
+
+        if (toDate.HasValue)
+            query = query.Where(t => t.CreatedAt <= toDate.Value);
+
+        query = query.OrderByDescending(t => t.CreatedAt);
+
+        var totalCount = await query.CountAsync(cancellationToken);
+        var items = await query
+            .Skip((pageNumber - 1) * pageSize)
+            .Take(pageSize)
+            .ToListAsync(cancellationToken);
+
+        return new Shared.Application.Models.PagedList<Transaction>(items, totalCount, pageNumber, pageSize);
+    }
 }

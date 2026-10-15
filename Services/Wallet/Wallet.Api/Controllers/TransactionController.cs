@@ -24,6 +24,33 @@ public sealed class TransactionController(
     IWalletRepository _walletRepository,
     ICurrentUserService _currentUserService) : ControllerBase
 {
+    [Permission("wallet", "read-all-transactions", "Get global transactions ledger",
+        recommendedRoles: new[] { "Admin" })]
+    [HttpGet]
+    public async Task<IActionResult> GetAllTransactions(
+        [FromQuery] Guid? walletId = null,
+        [FromQuery] Wallet.Domain.Enums.TransactionType? type = null,
+        [FromQuery] Wallet.Domain.Enums.TransactionStatus? status = null,
+        [FromQuery] string? currency = null,
+        [FromQuery] DateTime? fromDate = null,
+        [FromQuery] DateTime? toDate = null,
+        [FromQuery] int pageNumber = 1,
+        [FromQuery] int pageSize = 20,
+        CancellationToken cancellationToken = default)
+    {
+        if (!_currentUserService.IsInRole("Admin"))
+            return AccessDenied();
+
+        var result = await _messageBus.InvokeAsync<Result<PagedList<TransactionDto>>>(
+            new GetTransactionsAdminQuery(walletId, type, status, currency, fromDate, toDate, pageNumber, pageSize),
+            cancellationToken);
+
+        if (result.IsFailure)
+            return BadRequest(new { error = result.Error });
+
+        return Ok(result.Value);
+    }
+
     [Permission("wallet", "read-transactions", "Get transaction history",
         recommendedRoles: new[] { "User", "Admin" })]
     [HttpGet("profile/{externalProfileId:guid}")]
