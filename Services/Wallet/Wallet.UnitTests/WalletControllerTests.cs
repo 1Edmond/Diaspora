@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using NSubstitute;
 using Shared.Application.Interfaces;
+using Shared.Application.Models;
 using Shared.Domain.Commons;
 using Wallet.Api.Controllers;
 using Wallet.Application.Commands;
@@ -231,5 +232,78 @@ public class WalletControllerTests
         // Assert
         var okResult = result.Should().BeOfType<OkObjectResult>().Subject;
         okResult.StatusCode.Should().Be(StatusCodes.Status200OK);
+    }
+
+    [Fact]
+    public async Task GetWalletsAdmin_WhenUserIsNotAdmin_ShouldReturn403()
+    {
+        // Arrange
+        _currentUserService.IsInRole("Admin").Returns(false);
+
+        // Act
+        var result = await _controller.GetWalletsAdmin(null, null, 1, 20, CancellationToken.None);
+
+        // Assert
+        var forbiddenResult = result.Should().BeOfType<ObjectResult>().Subject;
+        forbiddenResult.StatusCode.Should().Be(StatusCodes.Status403Forbidden);
+    }
+
+    [Fact]
+    public async Task GetWalletsAdmin_WhenUserIsAdmin_ShouldReturn200()
+    {
+        // Arrange
+        _currentUserService.IsInRole("Admin").Returns(true);
+
+        var pagedList = new PagedList<WalletDto>(
+            new List<WalletDto>(), 0, 1, 20);
+
+        _messageBus.InvokeAsync<Result<PagedList<WalletDto>>>(
+            Arg.Any<GetWalletsAdminQuery>(), Arg.Any<CancellationToken>())
+            .Returns(Result.Success(pagedList));
+
+        // Act
+        var result = await _controller.GetWalletsAdmin("EUR", true, 1, 20, CancellationToken.None);
+
+        // Assert
+        var okResult = result.Should().BeOfType<OkObjectResult>().Subject;
+        okResult.StatusCode.Should().Be(StatusCodes.Status200OK);
+        okResult.Value.Should().Be(pagedList);
+    }
+
+    [Fact]
+    public async Task GetPlatformRevenue_WhenUserIsNotAdmin_ShouldReturn403()
+    {
+        // Arrange
+        _currentUserService.IsInRole("Admin").Returns(false);
+
+        // Act
+        var result = await _controller.GetPlatformRevenue(CancellationToken.None);
+
+        // Assert
+        var forbiddenResult = result.Should().BeOfType<ObjectResult>().Subject;
+        forbiddenResult.StatusCode.Should().Be(StatusCodes.Status403Forbidden);
+    }
+
+    [Fact]
+    public async Task GetPlatformRevenue_WhenUserIsAdmin_ShouldReturn200()
+    {
+        // Arrange
+        _currentUserService.IsInRole("Admin").Returns(true);
+
+        var dto = new PlatformRevenueDto(
+            new List<PlatformRevenueCurrencySummary>(),
+            new List<WalletDto>());
+
+        _messageBus.InvokeAsync<Result<PlatformRevenueDto>>(
+            Arg.Any<GetPlatformRevenueQuery>(), Arg.Any<CancellationToken>())
+            .Returns(Result.Success(dto));
+
+        // Act
+        var result = await _controller.GetPlatformRevenue(CancellationToken.None);
+
+        // Assert
+        var okResult = result.Should().BeOfType<OkObjectResult>().Subject;
+        okResult.StatusCode.Should().Be(StatusCodes.Status200OK);
+        okResult.Value.Should().Be(dto);
     }
 }

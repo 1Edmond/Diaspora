@@ -1,3 +1,4 @@
+using Shared.Application.Models;
 using Shared.Domain.Interfaces;
 using System;
 using System.Collections.Generic;
@@ -21,5 +22,18 @@ public interface IWalletRepository : IRepository<Domain.Entities.Wallet>
 
     Task<Domain.Entities.Wallet?> GetPlatformRevenueWalletAsync(
         string currency,
+        CancellationToken cancellationToken = default);
+
+    Task<PagedList<Domain.Entities.Wallet>> GetWalletsAdminAsync(
+        string? currency = null,
+        bool? isActive = null,
+        int pageNumber = 1,
+        int pageSize = 20,
+        CancellationToken cancellationToken = default);
+
+    Task<IEnumerable<Domain.Entities.Wallet>> GetPlatformWalletsAsync(
+        CancellationToken cancellationToken = default);
+
+    Task<Dictionary<string, decimal>> GetTotalHeldBalanceByCurrencyAsync(
         CancellationToken cancellationToken = default);
 }

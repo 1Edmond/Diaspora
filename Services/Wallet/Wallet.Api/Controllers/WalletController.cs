@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Shared.Application.Interfaces;
+using Shared.Application.Models;
 using Shared.Domain.Commons;
 using Shared.Security.Attributes;
 using Wallet.Api.Security;
@@ -85,6 +86,45 @@ public sealed class WalletController(
             externalProfileId, request.Amount, request.Description);
 
         var result = await _messageBus.InvokeAsync<Result<WithdrawResponse>>(command, cancellationToken);
+
+        if (result.IsFailure)
+            return BadRequest(new { error = result.Error });
+
+        return Ok(result.Value);
+    }
+
+    [Permission("wallet", "admin-list", "List all wallets for administration",
+        recommendedRoles: new[] { "Admin" })]
+    [HttpGet("admin")]
+    public async Task<IActionResult> GetWalletsAdmin(
+        [FromQuery] string? currency = null,
+        [FromQuery] bool? isActive = null,
+        [FromQuery] int pageNumber = 1,
+        [FromQuery] int pageSize = 20,
+        CancellationToken cancellationToken = default)
+    {
+        if (!_currentUserService.IsInRole("Admin"))
+            return AccessDenied();
+
+        var result = await _messageBus.InvokeAsync<Result<PagedList<WalletDto>>>(
+            new GetWalletsAdminQuery(currency, isActive, pageNumber, pageSize), cancellationToken);
+
+        if (result.IsFailure)
+            return BadRequest(new { error = result.Error });
+
+        return Ok(result.Value);
+    }
+
+    [Permission("wallet", "admin-revenue", "Get platform revenue and treasury summaries",
+        recommendedRoles: new[] { "Admin" })]
+    [HttpGet("platform-revenue")]
+    public async Task<IActionResult> GetPlatformRevenue(CancellationToken cancellationToken = default)
+    {
+        if (!_currentUserService.IsInRole("Admin"))
+            return AccessDenied();
+
+        var result = await _messageBus.InvokeAsync<Result<PlatformRevenueDto>>(
+            new GetPlatformRevenueQuery(), cancellationToken);
 
         if (result.IsFailure)
             return BadRequest(new { error = result.Error });
