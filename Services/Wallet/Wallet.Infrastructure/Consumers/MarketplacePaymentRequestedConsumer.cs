@@ -7,12 +7,15 @@ using System.Threading.Tasks;
 using Wallet.Application.Interfaces;
 using Wolverine;
 
+using Shared.Domain.Interfaces;
+
 namespace Wallet.Infrastructure.Consumers;
 
 public sealed class MarketplacePaymentRequestedConsumer(
     IWalletRepository _walletRepository,
     IMessageBus _messageBus,
-    ILogger<MarketplacePaymentRequestedConsumer> _logger)
+    ILogger<MarketplacePaymentRequestedConsumer> _logger,
+    IUnitOfWork? _unitOfWork = null)
 {
     public async Task Handle(
         MarketplacePaymentRequestedIntegrationEvent @event,
@@ -84,6 +87,10 @@ public sealed class MarketplacePaymentRequestedConsumer(
         }
 
         await _walletRepository.UpdateAsync(buyer, cancellationToken);
+        if (_unitOfWork is not null)
+        {
+            await _unitOfWork.SaveChangesAsync(cancellationToken);
+        }
 
         _logger.LogInformation(
             "[WalletService] Escrow hold created (Tx: {TransactionId}) for ServiceRequest {ServiceRequestId}. Publishing MarketplacePaymentHeld.",

@@ -42,7 +42,12 @@ public class ApproveKYCCommandHandler(
         if (profileDirectoryRepository is not null)
         {
             profile = await profileDirectoryRepository.GetByUserIdAsync(verification.UserId);
-            if (profile is not null && profile.ProfileTypeId != Guid.Empty)
+            if (profile is null)
+            {
+                return Result.Failure("Le profil citoyen associé à cet utilisateur est introuvable dans l'annuaire KYC. Impossible d'approuver le KYC sans profil synchronisé.");
+            }
+
+            if (profile.ProfileTypeId != Guid.Empty)
             {
                 var activeRequirements = await context.CountryKycRequirements
                     .Where(r => r.ProfileTypeId == profile.ProfileTypeId && r.IsActive && r.TargetLevel <= approvedVerificationLevel)

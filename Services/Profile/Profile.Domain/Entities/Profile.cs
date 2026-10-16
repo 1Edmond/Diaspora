@@ -123,11 +123,12 @@ public sealed class Profile : AggregateRoot
         if (Status == ProfileStatus.Suspended)
             return Result.Failure("Cannot change verification level of a suspended profile.");
 
+        if (level >= Shared.Domain.Enums.VerificationLevel.L2_IdentityVerified && Status == ProfileStatus.PendingVerification)
+            return Result.Failure("Le profil doit d'abord être vérifié (L1 - Identité déclarée) avant de pouvoir atteindre le niveau L2 ou L3.");
+
         Level = level;
         if (level >= Shared.Domain.Enums.VerificationLevel.L2_IdentityVerified)
         {
-            if (Status == ProfileStatus.PendingVerification)
-                Status = ProfileStatus.Verified;
             VerifiedAt ??= DateTime.UtcNow;
             if (!string.IsNullOrWhiteSpace(adminId))
                 VerifiedByAdminId = adminId;

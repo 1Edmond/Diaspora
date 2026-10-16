@@ -7,13 +7,16 @@ using System.Threading.Tasks;
 using Wallet.Application.Interfaces;
 using Wolverine;
 
+using Shared.Domain.Interfaces;
+
 namespace Wallet.Infrastructure.Consumers;
 
 public sealed class MarketplacePaymentRefundRequestedConsumer(
     IWalletRepository _walletRepository,
     ITransactionRepository _transactionRepository,
     IMessageBus _messageBus,
-    ILogger<MarketplacePaymentRefundRequestedConsumer> _logger)
+    ILogger<MarketplacePaymentRefundRequestedConsumer> _logger,
+    IUnitOfWork? _unitOfWork = null)
 {
     public async Task Handle(
         MarketplacePaymentRefundRequestedIntegrationEvent @event,
@@ -61,6 +64,10 @@ public sealed class MarketplacePaymentRefundRequestedConsumer(
         }
 
         await _walletRepository.UpdateAsync(buyer, cancellationToken);
+        if (_unitOfWork is not null)
+        {
+            await _unitOfWork.SaveChangesAsync(cancellationToken);
+        }
 
         _logger.LogInformation(
             "[WalletService] Escrow refunded (Tx: {TransactionId}) for ServiceRequest {ServiceRequestId}. Publishing MarketplacePaymentRefunded.",

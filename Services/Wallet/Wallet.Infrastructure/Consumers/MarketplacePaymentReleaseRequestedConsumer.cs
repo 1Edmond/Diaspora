@@ -7,13 +7,16 @@ using System.Threading.Tasks;
 using Wallet.Application.Interfaces;
 using Wolverine;
 
+using Shared.Domain.Interfaces;
+
 namespace Wallet.Infrastructure.Consumers;
 
 public sealed class MarketplacePaymentReleaseRequestedConsumer(
     IWalletRepository _walletRepository,
     ITransactionRepository _transactionRepository,
     IMessageBus _messageBus,
-    ILogger<MarketplacePaymentReleaseRequestedConsumer> _logger)
+    ILogger<MarketplacePaymentReleaseRequestedConsumer> _logger,
+    IUnitOfWork? _unitOfWork = null)
 {
     public async Task Handle(
         MarketplacePaymentReleaseRequestedIntegrationEvent @event,
@@ -119,6 +122,11 @@ public sealed class MarketplacePaymentReleaseRequestedConsumer(
         if (platformWallet is not null && @event.CommissionAmount > 0m)
         {
             await _walletRepository.UpdateAsync(platformWallet, cancellationToken);
+        }
+
+        if (_unitOfWork is not null)
+        {
+            await _unitOfWork.SaveChangesAsync(cancellationToken);
         }
 
         _logger.LogInformation(
