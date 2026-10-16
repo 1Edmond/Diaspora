@@ -11,6 +11,7 @@ namespace IdentityService.Application.Handlers.Commands;
 public class RegisterUserCommandHandler(
     IRepository<User> repository,
     IRepository<Role> roleRepository,
+    IUnitOfWork unitOfWork,
     IHashingService hashingService,
     ILogger<RegisterUserCommandHandler> logger)
 {
@@ -75,6 +76,7 @@ public class RegisterUserCommandHandler(
         user.UserRoles.Add(userRole);
 
         await repository.AddAsync(user, cancellationToken);
+        await unitOfWork.SaveChangesAsync(cancellationToken);
 
         if(logger.IsEnabled(LogLevel.Information))
         logger.LogInformation(

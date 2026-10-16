@@ -60,7 +60,8 @@ public class AdminSeederAndRegistrationSecurityTests
         roleRepo.FirstOrDefaultAsync(Arg.Any<Expression<Func<Role, bool>>>(), Arg.Any<CancellationToken>())
             .Returns(userRoleEntity);
 
-        var handler = new RegisterUserCommandHandler(userRepo, roleRepo, hashingService, logger);
+        var unitOfWork = Substitute.For<IUnitOfWork>();
+        var handler = new RegisterUserCommandHandler(userRepo, roleRepo, unitOfWork, hashingService, logger);
 
         // Attempt privilege escalation by specifying Role = ["Admin"]
         var maliciousCommand = new RegisterUserCommand(
@@ -82,6 +83,7 @@ public class AdminSeederAndRegistrationSecurityTests
             u.Email.Value == "hacker@diaspora.org" &&
             u.UserRoles.Any(ur => ur.RoleId == userRoleEntity.Id)),
             Arg.Any<CancellationToken>());
+        await unitOfWork.Received(1).SaveChangesAsync(Arg.Any<CancellationToken>());
     }
 
     [Fact]
