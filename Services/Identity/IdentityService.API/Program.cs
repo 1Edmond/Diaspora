@@ -28,7 +28,7 @@ if (app.Environment.IsDevelopment())
 }
 
 await app.UseInfrastructure();
-await app.PublishIdentityResources<Program>();
+_ = app.PublishIdentityResources<Program>();
 
 app.MapControllers();
 

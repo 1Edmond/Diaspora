@@ -24,7 +24,7 @@ if (app.Environment.IsDevelopment())
 }
 
 await app.UseInfrastructure();
-await app.PublishFreelanceResources<Program>();
+_ = app.PublishFreelanceResources<Program>();
 
 app.MapControllers();
 
