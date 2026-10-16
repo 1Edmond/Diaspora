@@ -59,9 +59,20 @@ public partial class AuthController(IMessageBus _messageBus, ILogger<AuthControl
         description: "Refresh access token",
         recommendedRoles: new[] { "Admin", "User", "Moderator" }
     )]
-    [HttpPost("refresh")]
     [HttpPost("refresh-token")]
     public async Task<IActionResult> RefreshToken([FromBody] RefreshTokenRequest? body = null)
+    {
+        return await HandleRefreshTokenAsync(body);
+    }
+
+    [AllowAnonymous]
+    [HttpPost("refresh")]
+    public async Task<IActionResult> Refresh([FromBody] RefreshTokenRequest? body = null)
+    {
+        return await HandleRefreshTokenAsync(body);
+    }
+
+    private async Task<IActionResult> HandleRefreshTokenAsync(RefreshTokenRequest? body)
     {
         var refreshToken = body?.RefreshToken ?? Request.Cookies["refreshToken"];
         if (string.IsNullOrEmpty(refreshToken))
