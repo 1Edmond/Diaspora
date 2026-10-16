@@ -94,11 +94,7 @@ public static class DependencyInjection
               .ListenerCount(2)
               .UseDurableInbox();
 
-            // Transactions EF Core automatiques
-            options.UseEntityFrameworkCoreTransactions();
-            options.Policies.AutoApplyTransactions();
-
-            // Scan des handlers Application + Infrastructure + migrations
+            // Handlers gèrent leur propre persistance via IUnitOfWork.
             options.Discovery.IncludeAssembly(
                 typeof(ActivateProfileCommandHandler).Assembly);
             options.Discovery.IncludeAssembly(

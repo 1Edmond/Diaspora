@@ -1,4 +1,4 @@
-﻿using Microsoft.AspNetCore.Builder;
+using Microsoft.AspNetCore.Builder;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -99,9 +99,7 @@ public static class DependencyInjection
               .ListenerCount(2)
               .UseDurableInbox();
 
-            options.UseEntityFrameworkCoreTransactions();
-            options.Policies.AutoApplyTransactions();
-
+            // Handlers gèrent leur propre persistance via IUnitOfWork.
             options.Discovery.IncludeAssembly(
                 typeof(CreateProcedureCommandHandler).Assembly);
             options.Discovery.IncludeAssembly(migrationsAssembly!);

@@ -83,8 +83,7 @@ public static class DependencyInjection
               .ListenerCount(2)
               .UseDurableInbox();
 
-            options.UseEntityFrameworkCoreTransactions();
-            options.Policies.AutoApplyTransactions();
+            // Handlers gèrent leur propre persistance via IUnitOfWork.
             options.Discovery.IncludeAssembly(typeof(CreateJobPostingCommandHandler).Assembly);
             options.Discovery.IncludeAssembly(typeof(ExternalProfileActivatedConsumer).Assembly);
             options.Discovery.IncludeAssembly(migrationsAssembly!);

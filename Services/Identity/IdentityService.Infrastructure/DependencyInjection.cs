@@ -77,9 +77,8 @@ public static class DependencyInjection
               .MaximumParallelMessages(5)
               .ListenerCount(6)
               .UseDurableInbox();
-            
-            options.UseEntityFrameworkCoreTransactions();
-            options.Policies.AutoApplyTransactions();
+            // Note : AutoApplyTransactions et UseEntityFrameworkCoreTransactions créent une ambiguïté Wolverine
+            // car AddPostgresDatabase enregistre à la fois IdentityDbContext et DbContext. Les handlers gèrent leur propre persistance.
             options.Discovery.IncludeAssembly(typeof(RegisterUserCommandHandler).Assembly);
             options.Discovery.IncludeAssembly(typeof(KYCVerificationApprovedIntegrationEventHandler).Assembly);
             options.Discovery.IncludeAssembly(migrationsAssembly!);

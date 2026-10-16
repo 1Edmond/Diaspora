@@ -91,7 +91,7 @@ public static class DependencyInjection
                 .ListenerCount(2)
                 .UseDurableInbox();
 
-            options.Policies.AutoApplyTransactions();
+            // Handlers gèrent leur propre persistance via IUnitOfWork.
             options.Policies.UseDurableOutboxOnAllSendingEndpoints();
 
             options.Discovery.IncludeAssembly(typeof(KYC.Application.Handlers.Commands.ApproveKYCCommandHandler).Assembly);
