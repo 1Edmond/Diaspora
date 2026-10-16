@@ -1,4 +1,4 @@
-﻿using IdentityService.Application.Commands;
+using IdentityService.Application.Commands;
 using IdentityService.Domain.Entities;
 using Microsoft.Extensions.Logging;
 using Shared.Domain.Commons;
@@ -14,15 +14,18 @@ public class ChangePasswordCommandHandler
 {
     private readonly IRepository<User> _userRepository;
     private readonly IHashingService _passwordHasher;
+    private readonly IUnitOfWork _unitOfWork;
     private readonly ILogger<ChangePasswordCommandHandler> _logger;
 
     public ChangePasswordCommandHandler(
         IRepository<User> userRepository,
         IHashingService passwordHasher,
+        IUnitOfWork unitOfWork,
         ILogger<ChangePasswordCommandHandler> logger)
     {
         _userRepository = userRepository;
         _passwordHasher = passwordHasher;
+        _unitOfWork = unitOfWork;
         _logger = logger;
     }
 
@@ -43,6 +46,7 @@ public class ChangePasswordCommandHandler
             return result;
 
         await _userRepository.UpdateAsync(user);
+        await _unitOfWork.SaveChangesAsync();
 
         _logger.LogInformation("Password changed for user {UserId}", user.Id);
         return Result.Success();

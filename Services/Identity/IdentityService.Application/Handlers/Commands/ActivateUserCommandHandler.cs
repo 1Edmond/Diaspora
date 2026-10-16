@@ -1,4 +1,4 @@
-﻿using IdentityService.Application.Commands;
+using IdentityService.Application.Commands;
 using IdentityService.Domain.Entities;
 using Microsoft.Extensions.Logging;
 using Shared.Domain.Commons;
@@ -12,13 +12,16 @@ namespace IdentityService.Application.Handlers.Commands;
 public class ActivateUserCommandHandler
 {
     private readonly IRepository<User> _userRepository;
+    private readonly IUnitOfWork _unitOfWork;
     private readonly ILogger<ActivateUserCommandHandler> _logger;
 
     public ActivateUserCommandHandler(
         IRepository<User> userRepository,
+        IUnitOfWork unitOfWork,
         ILogger<ActivateUserCommandHandler> logger)
     {
         _userRepository = userRepository;
+        _unitOfWork = unitOfWork;
         _logger = logger;
     }
 
@@ -33,6 +36,7 @@ public class ActivateUserCommandHandler
             return result;
 
         await _userRepository.UpdateAsync(user);
+        await _unitOfWork.SaveChangesAsync();
 
         _logger.LogInformation("User {UserId} activated", user.Id);
         return Result.Success();

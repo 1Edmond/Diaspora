@@ -1,4 +1,4 @@
-﻿using IdentityService.Application.Commands;
+using IdentityService.Application.Commands;
 using IdentityService.Domain.Entities;
 using Microsoft.Extensions.Logging;
 using Shared.Domain.Commons;
@@ -12,13 +12,16 @@ namespace IdentityService.Application.Handlers.Commands;
 public class SuspendUserCommandHandler
 {
     private readonly IRepository<User> _userRepository;
+    private readonly IUnitOfWork _unitOfWork;
     private readonly ILogger<SuspendUserCommandHandler> _logger;
 
     public SuspendUserCommandHandler(
         IRepository<User> userRepository,
+        IUnitOfWork unitOfWork,
         ILogger<SuspendUserCommandHandler> logger)
     {
         _userRepository = userRepository;
+        _unitOfWork = unitOfWork;
         _logger = logger;
     }
 
@@ -33,6 +36,7 @@ public class SuspendUserCommandHandler
             return result;
 
         await _userRepository.UpdateAsync(user);
+        await _unitOfWork.SaveChangesAsync();
 
         _logger.LogWarning("User {UserId} suspended. Reason: {Reason}", user.Id, command.Reason);
         return Result.Success();
