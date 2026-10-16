@@ -52,8 +52,12 @@ public sealed class PayServiceRequestCommandHandler(
         if (string.IsNullOrWhiteSpace(request.AgreedCurrency))
             return Result.Failure("Agreed currency is required.");
 
-        if (request.PaymentStatus != PaymentStatus.Pending && request.PaymentStatus != PaymentStatus.Failed)
+        if (request.PaymentStatus == PaymentStatus.Held ||
+            request.PaymentStatus == PaymentStatus.Released ||
+            request.PaymentStatus == PaymentStatus.Refunded)
+        {
             return Result.Failure($"Payment cannot be initiated when payment status is {request.PaymentStatus}.");
+        }
 
         var buyerProfile = await _profileDirectoryRepository.GetByUserIdAsync(
             request.RequesterId, cancellationToken);

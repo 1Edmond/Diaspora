@@ -139,6 +139,15 @@ builder.Services.AddCors(options =>
 
 var app = builder.Build();
 
+app.Use(async (context, next) =>
+{
+    context.Response.Headers["X-Content-Type-Options"] = "nosniff";
+    context.Response.Headers["X-Frame-Options"] = "DENY";
+    context.Response.Headers["Cache-Control"] = "no-store, no-cache, must-revalidate, max-age=0";
+    context.Response.Headers["Pragma"] = "no-cache";
+    await next();
+});
+
 app.UseCors("DiasporaBackOffice");
 
 app.UseAuthentication();
