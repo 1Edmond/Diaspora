@@ -27,6 +27,7 @@ using Shared.Messaging.Constants;
 using Shared.Messaging.Events;
 using Shared.Messaging.Events.Identity;
 using Shared.Security;
+using Shared.Security.Abstractions;
 using System.Reflection;
 using Wolverine.Attributes;
 using Wolverine.EntityFrameworkCore;
@@ -114,6 +115,13 @@ public static class DependencyInjection
             scope.ServiceProvider.GetRequiredService<ILogger<RoleSeeder>>()
         );
         await roleSeeder.SeedAsync();
+
+        var adminSeeder = new AdminUserSeeder(
+            context,
+            scope.ServiceProvider.GetRequiredService<IHashingService>(),
+            scope.ServiceProvider.GetRequiredService<ILogger<AdminUserSeeder>>()
+        );
+        await adminSeeder.SeedAsync();
     }
 
     public static async Task PublishIdentityResources<T>(this WebApplication app)

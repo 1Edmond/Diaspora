@@ -1,4 +1,4 @@
-﻿using IdentityService.Application.Commands;
+using IdentityService.Application.Commands;
 using IdentityService.Domain.Entities;
 using Microsoft.Extensions.Logging;
 using Shared.Domain.Commons;
@@ -41,15 +41,19 @@ public class RegisterUserCommandHandler(
 
         var user = userResult.Value;
 
-        var roleName = command.Role?.FirstOrDefault() ?? DefaultRole.User;
-        var role = await roleRepository.FirstOrDefaultAsync(r => r.Name == roleName, cancellationToken);
-
-        if (role == null)
+        // STRICT SECURITY: Public registration is strictly locked to DefaultRole.User.
+        // Any role requested by the caller is ignored to prevent privilege escalation.
+        if (command.Role != null && command.Role.Any(r => !string.Equals(r, DefaultRole.User, StringComparison.OrdinalIgnoreCase)))
         {
             logger.LogWarning(
-                "[RegisterUser] Role '{RoleName}' not found, falling back to 'User'",
-                roleName);
+                "[RegisterUser] Public registration attempt specified unauthorized role(s): {Roles}. Overridden to User.",
+                string.Join(", ", command.Role));
+        }
 
+        var roleName = DefaultRole.User;
+        var role = await roleRepository.FirstOrDefaultAsync(r => r.Name == roleName, cancellationToken);
+        if (role == null)
+        {
             role = await roleRepository.GetByIdAsync(
                 Guid.Parse(DefaultRole.GetRoleId(DefaultRole.User).ToString()),
                 cancellationToken);
