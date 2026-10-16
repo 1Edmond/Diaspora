@@ -1,4 +1,5 @@
 using ServcicesGateway.Interfaces;
+using ServcicesGateway.Models;
 using System.Security.Claims;
 using System.Security.Cryptography;
 using System.Text;
@@ -77,7 +78,7 @@ public class AuthorizationMiddleware
         if (_logger.IsEnabled(LogLevel.Information))
             _logger.LogInformation("[Gateway] ✅ Granted: User={UserId}, Path={Path}", userId, path);
 
-        AddUserHeaders(configuration, context, userId, userPermissions.Permissions);
+        AddUserHeaders(configuration, context, userId, userPermissions);
         await _next(context);
     }
 
@@ -108,19 +109,19 @@ public class AuthorizationMiddleware
     private static bool IsPublicRoute(string path)
         => PublicPrefixes.Any(p => path.StartsWith(p, StringComparison.OrdinalIgnoreCase));
 
-    private static void AddUserHeaders(IConfiguration configuration, HttpContext context, Guid userId, string[] permissions)
+    private static void AddUserHeaders(IConfiguration configuration, HttpContext context, Guid userId, AuthorizationCheckResponse userPermissions)
     {
         context.Request.Headers["X-Gateway-Secret"] = configuration["Gateway:Secret"];
         context.Request.Headers["X-User-Id"] = userId.ToString();
 
-        var roles = context.User.FindAll(ClaimTypes.Role)
-            .Concat(context.User.FindAll("role"))
-            .Concat(context.User.FindAll("roles"))
-            .Select(c => c.Value)
+        var roles = (userPermissions.Roles ?? Array.Empty<string>())
+            .Concat(context.User.FindAll(ClaimTypes.Role).Select(c => c.Value))
+            .Concat(context.User.FindAll("role").Select(c => c.Value))
+            .Concat(context.User.FindAll("roles").Select(c => c.Value))
             .Distinct();
         context.Request.Headers["X-User-Roles"] = string.Join(",", roles);
 
-        context.Request.Headers["X-Granted-Permission"] = string.Join(",", permissions);
+        context.Request.Headers["X-Granted-Permission"] = string.Join(",", userPermissions.Permissions ?? Array.Empty<string>());
     }
 
     private static bool FixedTimeEquals(string a, string b)

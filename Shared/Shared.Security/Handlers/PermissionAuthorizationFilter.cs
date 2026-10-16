@@ -59,14 +59,12 @@ public class PermissionAuthorizationFilter : IAuthorizationFilter
         if (grantedPermissions.Length == 0)
         {
             _logger.LogWarning(
-                "[PermissionFilter] ⛔ No X-Granted-Permission header found. Required: {Permission}",
+                "[PermissionFilter] ⛔ No granted permissions found for user {UserId}. Required: {Permission}",
+                userId,
                 requiredPermission
             );
 
-            context.Result = new UnauthorizedObjectResult(new
-            {
-                Error = "No permission header. Request must go through API Gateway."
-            });
+            context.Result = new ForbidResult();
             return;
         }
 

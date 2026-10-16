@@ -164,7 +164,7 @@ public static class DependencyInjection
 
     public static async Task PublishNotificationResources<T>(this WebApplication app)
     {
-        await Task.Delay(TimeSpan.FromMinutes(2));
+        await Task.Delay(TimeSpan.FromSeconds(2));
         using var scope = app.Services.CreateScope();
         var resourceService = scope.ServiceProvider.GetRequiredService<IResourceDeclarationService>();
         var messageBus = scope.ServiceProvider.GetRequiredService<IMessageBus>();
