@@ -27,11 +27,11 @@ public class Category : AggregateRoot, ITranslatable
 
     private Category() { }
 
-    public static Category Create(string name, string? description, string? iconUrl, int displayOrder)
+    public static Category Create(string name, string? description, string? iconUrl, int displayOrder, Guid? id = null)
     {
         var category = new Category
         {
-            Id = Guid.NewGuid(),
+            Id = id ?? Guid.NewGuid(),
             Name = name,
             Slug = GenerateSlug(name),
             Description = description,

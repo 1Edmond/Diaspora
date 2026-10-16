@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Text;
 
@@ -17,4 +17,5 @@ public static class ServiceDataConstants
     public static Guid MedicalInsurranceDocumentTypeId = Guid.Parse("0f9f2625-e01c-4c52-b439-2e77dd2925ca");
     public static Guid MedicalCertificateDocumentTypeId = Guid.Parse("b3aa1bb3-a906-44de-b156-3fc5ee650792");
 
+    public static readonly Guid ParcelTransportCategoryId = Guid.Parse("019248a0-6b3a-7182-9a84-7c6d9e0f1234");
 }
