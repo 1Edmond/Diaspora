@@ -24,6 +24,7 @@ public class AuthorizationMiddleware
         "/api/authorization/check",
         "/api/profile-types/public",
         "/api/document-types",
+        "/api/config/mobile",
         "/health",
         "/alive"
     };
