@@ -23,7 +23,7 @@ public class AuthorizationMiddleware
         "/api/auth/ping",
         "/api/authorization/check",
         "/api/profile-types/public",
-        "/api/document-types",
+        "/api/document-types/public",
         "/api/config/mobile",
         "/health",
         "/alive"
@@ -42,45 +42,36 @@ public class AuthorizationMiddleware
     {
         var path = context.Request.Path.Value ?? "";
 
+        // 1. Si l'utilisateur est authentifié avec un jeton valide, propager son identité et ses permissions
+        if (context.User.Identity is { IsAuthenticated: true })
+        {
+            var userIdClaim = context.User.FindFirst(ClaimTypes.NameIdentifier)?.Value
+                           ?? context.User.FindFirst("sub")?.Value;
+
+            if (!string.IsNullOrEmpty(userIdClaim) && Guid.TryParse(userIdClaim, out var userId))
+            {
+                var userPermissions = await authorizationService.GetPermissionAsync(userId);
+                if (userPermissions != null)
+                {
+                    if (_logger.IsEnabled(LogLevel.Information))
+                        _logger.LogInformation("[Gateway] ✅ Granted: User={UserId}, Path={Path}", userId, path);
+
+                    AddUserHeaders(configuration, context, userId, userPermissions);
+                    await _next(context);
+                    return;
+                }
+            }
+        }
+
+        // 2. Si non authentifié mais route explicitement publique
         if (IsPublicRoute(path))
         {
             await HandlePublicRouteAsync(context, configuration);
             return;
         }
 
-        if (context.User.Identity is not { IsAuthenticated: true })
-        {
-            await WriteError(context, StatusCodes.Status401Unauthorized, "Unauthorized");
-            return;
-        }
-
-        var userIdClaim = context.User.FindFirst(ClaimTypes.NameIdentifier)?.Value
-                       ?? context.User.FindFirst("sub")?.Value;
-
-        if (string.IsNullOrEmpty(userIdClaim) || !Guid.TryParse(userIdClaim, out var userId))
-        {
-            await WriteError(context, StatusCodes.Status401Unauthorized, "Invalid token");
-            return;
-        }
-
-        if (_logger.IsEnabled(LogLevel.Debug))
-            _logger.LogDebug("[Gateway] 🔍 Checking: User={UserId}, Path={Path}", userId, path);
-
-        var userPermissions = await authorizationService.GetPermissionAsync(userId);
-
-        if (userPermissions is null)
-        {
-            _logger.LogWarning("[Gateway] ⛔ Forbidden: User={UserId}, Path={Path}", userId, path);
-            await WriteError(context, StatusCodes.Status403Forbidden,
-                "You do not have permission to access this resource");
-            return;
-        }
-
-        if (_logger.IsEnabled(LogLevel.Information))
-            _logger.LogInformation("[Gateway] ✅ Granted: User={UserId}, Path={Path}", userId, path);
-
-        AddUserHeaders(configuration, context, userId, userPermissions);
-        await _next(context);
+        // 3. Rejet 401 si non authentifié sur route protégée
+        await WriteError(context, StatusCodes.Status401Unauthorized, "Unauthorized");
     }
 
     private async Task HandlePublicRouteAsync(HttpContext context, IConfiguration configuration)

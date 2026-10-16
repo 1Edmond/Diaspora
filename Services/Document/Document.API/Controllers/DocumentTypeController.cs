@@ -18,6 +18,15 @@ public class DocumentTypeController(
     IUnitOfWork _unitOfWork,
     ILogger<DocumentTypeController> _logger) : ControllerBase
 {
+    [Microsoft.AspNetCore.Authorization.AllowAnonymous]
+    [HttpGet("public")]
+    public async Task<IActionResult> GetPublic(
+        [FromQuery] Guid? profileTypeId,
+        CancellationToken cancellationToken)
+    {
+        return await GetAll(profileTypeId, cancellationToken);
+    }
+
     [Permission(
         resourceKey: "document.type",
         action: "list",
