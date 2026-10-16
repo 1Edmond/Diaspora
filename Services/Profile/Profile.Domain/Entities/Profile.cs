@@ -86,14 +86,15 @@ public sealed class Profile : AggregateRoot
         profile.AddDomainEvent(new ProfileCreatedDomainEvent(
             profile.Id,
             userId,
-            phoneNumber.GetFullNumber()));
+            phoneNumber.GetFullNumber(),
+            ProfileTypeId));
 
         return Result.Success(profile);
     }
 
     /// <summary>
-    /// Called by an admin to validate the user's identity.
-    /// Transitions status to Verified with VerificationLevel L2.
+    /// Called by an admin to validate the user's declared identity (L1).
+    /// Transitions status to Verified with VerificationLevel L1_IdentityDeclared.
     /// </summary>
     public Result Verify(string adminId)
     {
@@ -104,12 +105,15 @@ public sealed class Profile : AggregateRoot
             return Result.Failure("Admin ID is required.");
 
         Status = ProfileStatus.Verified;
-        Level = Shared.Domain.Enums.VerificationLevel.L2_IdentityVerified;
+        if (Level < Shared.Domain.Enums.VerificationLevel.L1_IdentityDeclared)
+            Level = Shared.Domain.Enums.VerificationLevel.L1_IdentityDeclared;
+
         VerifiedAt = DateTime.UtcNow;
         VerifiedByAdminId = adminId;
+        UpdatedAt = DateTime.UtcNow;
 
         AddDomainEvent(new ProfileVerifiedDomainEvent(
-            Id, UserId, adminId, VerifiedAt.Value, Level));
+            Id, UserId, adminId, VerifiedAt.Value, Shared.Domain.Enums.VerificationLevel.L1_IdentityDeclared));
 
         return Result.Success();
     }
@@ -133,9 +137,13 @@ public sealed class Profile : AggregateRoot
         }
         else if (level == Shared.Domain.Enums.VerificationLevel.L1_IdentityDeclared && Status == ProfileStatus.PendingVerification)
         {
-            Status = ProfileStatus.Activate;
+            Status = ProfileStatus.Verified;
+            VerifiedAt ??= DateTime.UtcNow;
+            if (!string.IsNullOrWhiteSpace(adminId))
+                VerifiedByAdminId = adminId;
         }
 
+        UpdatedAt = DateTime.UtcNow;
         return Result.Success();
     }
 
@@ -145,6 +153,7 @@ public sealed class Profile : AggregateRoot
             return Result.Failure("Profile is already suspended.");
 
         Status = ProfileStatus.Suspended;
+        UpdatedAt = DateTime.UtcNow;
         AddDomainEvent(new ProfileSuspendedDomainEvent(Id, UserId));
 
         return Result.Success();
@@ -152,20 +161,31 @@ public sealed class Profile : AggregateRoot
 
     public Result Reactivate()
     {
-        if (Status == ProfileStatus.Activate)
-            return Result.Success();
+        if (Status != ProfileStatus.Suspended)
+            return Result.Failure("Seul un profil suspendu peut être réactivé.");
 
-        Status = ProfileStatus.Activate;
-        if (Level == Shared.Domain.Enums.VerificationLevel.L0_Registered)
-            Level = Shared.Domain.Enums.VerificationLevel.L1_IdentityDeclared;
+        UpdatedAt = DateTime.UtcNow;
 
-        AddDomainEvent(new ProfileActivatedDomainEvent(
-            Id,
-            ProfileTypeId,
-            UserId,
-            ProfileType?.CountryCode ?? string.Empty,
-            ProfileType?.Currency ?? string.Empty,
-            DateTime.UtcNow));
+        if (Level >= Shared.Domain.Enums.VerificationLevel.L2_IdentityVerified)
+        {
+            Status = ProfileStatus.Activate;
+            AddDomainEvent(new ProfileActivatedDomainEvent(
+                Id,
+                ProfileTypeId,
+                UserId,
+                ProfileType?.CountryCode ?? string.Empty,
+                ProfileType?.Currency ?? string.Empty,
+                DateTime.UtcNow,
+                Level));
+        }
+        else if (VerifiedAt.HasValue)
+        {
+            Status = ProfileStatus.Verified;
+        }
+        else
+        {
+            Status = ProfileStatus.PendingVerification;
+        }
 
         return Result.Success();
     }
@@ -182,14 +202,19 @@ public sealed class Profile : AggregateRoot
     public Result Activate()
     {
         if (Status == ProfileStatus.Suspended)
-            return Result.Failure("Profil suspendu, impossible d'activer.");
+            return Result.Failure("Ce profil est suspendu et ne peut pas être activé.");
 
         if (Status == ProfileStatus.Activate)
-            return Result.Failure("Profile is already activated.");
+            return Result.Failure("Ce profil est déjà actif.");
+
+        if (Status != ProfileStatus.Verified)
+            return Result.Failure("Le profil doit d'abord être vérifié (L1 - Identité déclarée) avant de pouvoir être activé.");
+
+        if (Level < Shared.Domain.Enums.VerificationLevel.L2_IdentityVerified)
+            return Result.Failure("Le KYC du profil doit être validé (L2 - Identité vérifiée minimum) conformément aux exigences du type de profil avant l'activation.");
 
         Status = ProfileStatus.Activate;
-        if (Level == Shared.Domain.Enums.VerificationLevel.L0_Registered)
-            Level = Shared.Domain.Enums.VerificationLevel.L1_IdentityDeclared;
+        UpdatedAt = DateTime.UtcNow;
 
         AddDomainEvent(new ProfileActivatedDomainEvent(
             Id,
@@ -197,10 +222,40 @@ public sealed class Profile : AggregateRoot
             UserId,
             ProfileType?.CountryCode ?? string.Empty,
             ProfileType?.Currency ?? string.Empty,
-            DateTime.UtcNow));
+            DateTime.UtcNow,
+            Level));
 
         return Result.Success();
     }
 
-    public bool IsVerified => Status == ProfileStatus.Verified;
+    public Result ApplyKycApproval(Shared.Domain.Enums.VerificationLevel approvedLevel = Shared.Domain.Enums.VerificationLevel.L2_IdentityVerified)
+    {
+        var targetLevel = approvedLevel >= Shared.Domain.Enums.VerificationLevel.L2_IdentityVerified
+            ? approvedLevel
+            : Shared.Domain.Enums.VerificationLevel.L2_IdentityVerified;
+
+        if (targetLevel > Level)
+            Level = targetLevel;
+
+        VerifiedAt ??= DateTime.UtcNow;
+        UpdatedAt = DateTime.UtcNow;
+
+        if (Status != ProfileStatus.Suspended)
+        {
+            Status = ProfileStatus.Activate;
+
+            AddDomainEvent(new ProfileActivatedDomainEvent(
+                Id,
+                ProfileTypeId,
+                UserId,
+                ProfileType?.CountryCode ?? string.Empty,
+                ProfileType?.Currency ?? string.Empty,
+                DateTime.UtcNow,
+                Level));
+        }
+
+        return Result.Success();
+    }
+
+    public bool IsVerified => Status == ProfileStatus.Verified || Status == ProfileStatus.Activate;
 }

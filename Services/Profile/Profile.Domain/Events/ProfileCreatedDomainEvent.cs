@@ -1,4 +1,4 @@
-﻿using Shared.Domain.Interfaces;
+using Shared.Domain.Interfaces;
 using System;
 using System.Collections.Generic;
 using System.Text;
@@ -8,7 +8,8 @@ namespace Profile.Domain.Events;
 public sealed record ProfileCreatedDomainEvent(
     Guid ProfileId,
     Guid UserId,
-    string PhoneNumber
+    string PhoneNumber,
+    Guid ProfileTypeId = default
 ) : IDomainEvent
 {
     public Guid EventId { get; } = Guid.NewGuid();

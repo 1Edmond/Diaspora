@@ -104,6 +104,24 @@ public class KYCController(
 
     [Permission(
         resourceKey: "kyc.verifications",
+        action: "read",
+        description: "Get KYC compliance status for a user",
+        recommendedRoles: new[] { "Admin", "Moderator", "User" }
+    )]
+    [HttpGet("user/{userId:guid}/compliance")]
+    public async Task<IActionResult> GetUserCompliance(Guid userId, [FromQuery] Guid? profileTypeId = null)
+    {
+        var query = new GetKycComplianceQuery(userId, profileTypeId);
+        var result = await messageBus.InvokeAsync<Result<KycComplianceDto>>(query);
+
+        if (result.IsFailure)
+            return BadRequest(new { error = result.Error });
+
+        return Ok(DataResponse<KycComplianceDto>.SuccessResponse(result.Value));
+    }
+
+    [Permission(
+        resourceKey: "kyc.verifications",
         action: "list",
         description: "Get paginated list of all KYC verifications",
         recommendedRoles: new[] { "Admin", "Moderator" }

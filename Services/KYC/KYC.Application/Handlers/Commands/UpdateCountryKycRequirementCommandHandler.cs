@@ -23,11 +23,19 @@ public class UpdateCountryKycRequirementCommandHandler(
         if (string.IsNullOrWhiteSpace(command.Purpose))
             return Result.Failure<CountryKycRequirementDto>("Purpose is required.");
 
+        if (command.RequiredDistinctDocumentsCount < 1)
+            return Result.Failure<CountryKycRequirementDto>("RequiredDistinctDocumentsCount must be at least 1.");
+
         var requirement = await repository.GetByIdAsync(command.Id, cancellationToken);
         if (requirement is null)
             return Result.Failure<CountryKycRequirementDto>("Country KYC requirement not found.");
 
-        requirement.Update(command.Purpose, command.IsRequired, command.IsActive);
+        requirement.Update(
+            command.Purpose,
+            command.IsRequired,
+            command.IsActive,
+            command.TargetLevel,
+            command.RequiredDistinctDocumentsCount);
 
         await repository.UpdateAsync(requirement, cancellationToken);
         await unitOfWork.SaveChangesAsync(cancellationToken);
@@ -40,6 +48,8 @@ public class UpdateCountryKycRequirementCommandHandler(
             requirement.Purpose,
             requirement.IsRequired,
             requirement.IsActive,
-            requirement.CreatedAt));
+            requirement.CreatedAt,
+            requirement.TargetLevel,
+            requirement.RequiredDistinctDocumentsCount));
     }
 }

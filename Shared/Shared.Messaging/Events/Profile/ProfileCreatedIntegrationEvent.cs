@@ -9,5 +9,6 @@ public sealed record ProfileCreatedIntegrationEvent(
     Guid ProfileId,
     Guid UserId,
     string PhoneNumber,
-    VerificationLevel Level = VerificationLevel.L0_Registered
+    VerificationLevel Level = VerificationLevel.L0_Registered,
+    Guid ProfileTypeId = default
 ) : IntegrationEvent;

@@ -1,4 +1,5 @@
-﻿using System;
+using Shared.Domain.Enums;
+using System;
 using System.Collections.Generic;
 using System.Text;
 
@@ -9,5 +10,6 @@ public sealed record KycArrivalProofApprovedIntegrationEvent(
     Guid UserId,
     Guid ProfileId,
     string CountryCode,
-    DateTime ApprovedAt
+    DateTime ApprovedAt,
+    VerificationLevel ApprovedLevel = VerificationLevel.L2_IdentityVerified
 ) : IntegrationEvent;

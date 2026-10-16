@@ -38,7 +38,7 @@ public sealed class RepublishProfileDirectoryCommandHandler(
                     // 1. ProfileCreatedIntegrationEvent (systématique pour tout profil)
                     var phone = profile.PhoneNumber?.GetFullNumber() ?? string.Empty;
                     await messageBus.PublishAsync(new ProfileCreatedIntegrationEvent(
-                        profile.Id, profile.UserId, phone));
+                        profile.Id, profile.UserId, phone, profile.Level, profile.ProfileTypeId));
                     totalEventsPublished++;
 
                     // 2. ProfileVerifiedIntegrationEvent (si vérifié ou actif ayant une trace de vérification)
@@ -48,7 +48,8 @@ public sealed class RepublishProfileDirectoryCommandHandler(
                             profile.Id,
                             profile.UserId,
                             profile.VerifiedByAdminId ?? "Admin",
-                            profile.VerifiedAt ?? DateTime.UtcNow));
+                            profile.VerifiedAt ?? DateTime.UtcNow,
+                            Shared.Domain.Enums.VerificationLevel.L1_IdentityDeclared));
                         totalEventsPublished++;
                     }
 
@@ -67,7 +68,8 @@ public sealed class RepublishProfileDirectoryCommandHandler(
                             countryCode,
                             currency,
                             activatedAt,
-                            displayName));
+                            displayName,
+                            profile.Level));
                         totalEventsPublished++;
                     }
                     // 4. ProfileSuspendedIntegrationEvent (si suspendu)

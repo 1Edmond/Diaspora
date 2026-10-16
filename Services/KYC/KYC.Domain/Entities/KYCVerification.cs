@@ -130,9 +130,8 @@ public class KYCVerification : AggregateRoot, IAuditable, ISoftDeletable
         if (!_documents.Any())
             return Result.Failure("At least one document is required");
 
-        var requiredList = requiredDocumentTypes?.ToList();
-        var requiredDocs = (requiredList != null && requiredList.Count > 0)
-            ? requiredList
+        var requiredDocs = requiredDocumentTypes is not null
+            ? requiredDocumentTypes.ToList()
             : new List<string> { "IdentityDocument", "ProofOfAddress" };
 
         var missingDocs = requiredDocs.Where(type =>

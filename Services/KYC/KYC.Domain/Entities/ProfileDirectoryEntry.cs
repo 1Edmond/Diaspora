@@ -10,6 +10,7 @@ namespace KYC.Domain.Entities;
 public class ProfileDirectoryEntry : AggregateRoot
 {
     public Guid UserId { get; private set; }
+    public Guid ProfileTypeId { get; private set; }
     public string? DisplayName { get; private set; }
     public string? CountryCode { get; private set; }
     public string? Currency { get; private set; }
@@ -19,7 +20,7 @@ public class ProfileDirectoryEntry : AggregateRoot
 
     private ProfileDirectoryEntry() { }
 
-    public static ProfileDirectoryEntry Create(Guid profileId, Guid userId)
+    public static ProfileDirectoryEntry Create(Guid profileId, Guid userId, Guid profileTypeId = default)
     {
         if (profileId == Guid.Empty)
             throw new ArgumentException("ProfileId is required.", nameof(profileId));
@@ -29,8 +30,15 @@ public class ProfileDirectoryEntry : AggregateRoot
         return new ProfileDirectoryEntry
         {
             Id = profileId,
-            UserId = userId
+            UserId = userId,
+            ProfileTypeId = profileTypeId
         };
+    }
+
+    public void SetProfileType(Guid profileTypeId)
+    {
+        if (profileTypeId != Guid.Empty)
+            ProfileTypeId = profileTypeId;
     }
 
     public void ApplyActivation(string? displayName, string? countryCode, string? currency)

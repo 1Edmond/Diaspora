@@ -28,7 +28,9 @@ public class GetCountryKycRequirementsQueryHandler(ICountryKycRequirementReposit
             r.Purpose,
             r.IsRequired,
             r.IsActive,
-            r.CreatedAt
+            r.CreatedAt,
+            r.TargetLevel,
+            r.RequiredDistinctDocumentsCount
         )).ToList();
 
         return Result.Success(dtos);

@@ -36,16 +36,14 @@ public class ProfileDirectoryConsumer(
     public Task Handle(ProfileVerifiedIntegrationEvent message)
         => UpsertAsync(message.ProfileId, message.UserId, entry =>
         {
-            entry.ApplyVerification();
-            if (message.Level > entry.Level)
-                entry.SetVerificationLevel(message.Level);
+            entry.ApplyVerification(message.VerifiedAt, message.Level);
         });
 
     public Task Handle(ProfileSuspendedIntegrationEvent message)
         => UpsertAsync(message.ProfileId, message.UserId, entry => entry.ApplySuspension());
 
     public Task Handle(Shared.Messaging.Events.Kyc.KycArrivalProofApprovedIntegrationEvent message)
-        => UpsertAsync(message.ProfileId, message.UserId, entry => entry.ApplyKycApproval());
+        => UpsertAsync(message.ProfileId, message.UserId, entry => entry.ApplyKycApproval(message.ApprovedLevel));
 
     public async Task Handle(Shared.Messaging.Events.Kyc.KYCVerificationApprovedIntegrationEvent message)
     {

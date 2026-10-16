@@ -20,9 +20,11 @@ public sealed class ActivateProfileCommandHandler(
         if (profile is null)
             return Result.Failure("Profile not found.");
 
-        var result = profile.Status == Profile.Domain.Enums.ProfileStatus.Suspended
-            ? profile.Reactivate()
-            : profile.Activate();
+        var result = command.ApprovedLevel.HasValue
+            ? profile.ApplyKycApproval(command.ApprovedLevel.Value)
+            : (profile.Status == Profile.Domain.Enums.ProfileStatus.Suspended
+                ? profile.Reactivate()
+                : profile.Activate());
 
         if (result.IsFailure)
             return result;

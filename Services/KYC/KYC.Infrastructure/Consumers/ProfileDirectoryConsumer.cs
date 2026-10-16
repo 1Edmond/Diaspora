@@ -13,11 +13,15 @@ public class ProfileDirectoryConsumer(
     ILogger<ProfileDirectoryConsumer> _logger)
 {
     public Task Handle(ProfileCreatedIntegrationEvent message)
-        => UpsertAsync(message.ProfileId, message.UserId, _ => { });
+        => UpsertAsync(message.ProfileId, message.UserId, entry => entry.SetProfileType(message.ProfileTypeId));
 
     public Task Handle(ProfileActivatedIntegrationEvent message)
         => UpsertAsync(message.ProfileId, message.UserId,
-            entry => entry.ApplyActivation(message.DisplayName, message.CountryCode, message.Currency));
+            entry =>
+            {
+                entry.SetProfileType(message.ProfileTypeId);
+                entry.ApplyActivation(message.DisplayName, message.CountryCode, message.Currency);
+            });
 
     public Task Handle(ProfileVerifiedIntegrationEvent message)
         => UpsertAsync(message.ProfileId, message.UserId, entry => entry.ApplyVerification());

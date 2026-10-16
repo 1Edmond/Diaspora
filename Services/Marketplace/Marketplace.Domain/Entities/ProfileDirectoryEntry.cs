@@ -69,17 +69,29 @@ public class ProfileDirectoryEntry : AggregateRoot
             Currency = currency.Trim().ToUpperInvariant();
     }
 
-    public void ApplyVerification()
+    public void ApplyVerification(VerificationLevel level = VerificationLevel.L1_IdentityDeclared)
     {
         IsVerified = true;
-        Level = VerificationLevel.L2_IdentityVerified;
+        if (level > Level)
+            Level = level;
     }
 
-    public void ApplyKycApproval()
+    public void ApplyVerification(DateTime verifiedAt, VerificationLevel level = VerificationLevel.L1_IdentityDeclared)
+    {
+        IsVerified = true;
+        if (level > Level)
+            Level = level;
+    }
+
+    public void ApplyKycApproval(VerificationLevel approvedLevel = VerificationLevel.L2_IdentityVerified)
     {
         IsKycApproved = true;
         IsVerified = true;
-        Level = VerificationLevel.L2_IdentityVerified;
+        var targetLevel = approvedLevel >= VerificationLevel.L2_IdentityVerified
+            ? approvedLevel
+            : VerificationLevel.L2_IdentityVerified;
+        if (targetLevel > Level)
+            Level = targetLevel;
     }
 
     public void ApplySuspension() => IsSuspended = true;

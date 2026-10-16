@@ -1,3 +1,4 @@
+using Shared.Domain.Enums;
 using Shared.Domain.Primitives;
 using System;
 
@@ -11,6 +12,8 @@ public class CountryKycRequirement : AggregateRoot
     public string Purpose { get; private set; } = string.Empty;
     public bool IsRequired { get; private set; }
     public bool IsActive { get; private set; }
+    public VerificationLevel TargetLevel { get; private set; } = VerificationLevel.L2_IdentityVerified;
+    public int RequiredDistinctDocumentsCount { get; private set; } = 1;
 
     private CountryKycRequirement() { }
 
@@ -20,8 +23,13 @@ public class CountryKycRequirement : AggregateRoot
         Guid documentTypeId,
         string documentTypeCode,
         string purpose,
-        bool isRequired = true)
+        bool isRequired = true,
+        VerificationLevel targetLevel = VerificationLevel.L2_IdentityVerified,
+        int requiredDistinctDocumentsCount = 1)
     {
+        if (requiredDistinctDocumentsCount < 1)
+            throw new ArgumentException("RequiredDistinctDocumentsCount must be at least 1.", nameof(requiredDistinctDocumentsCount));
+
         return new CountryKycRequirement
         {
             Id = id,
@@ -31,15 +39,27 @@ public class CountryKycRequirement : AggregateRoot
             Purpose = purpose.Trim(),
             IsRequired = isRequired,
             IsActive = true,
+            TargetLevel = targetLevel,
+            RequiredDistinctDocumentsCount = requiredDistinctDocumentsCount,
             CreatedAt = DateTime.UtcNow
         };
     }
 
-    public void Update(string purpose, bool isRequired, bool isActive)
+    public void Update(
+        string purpose,
+        bool isRequired,
+        bool isActive,
+        VerificationLevel targetLevel = VerificationLevel.L2_IdentityVerified,
+        int requiredDistinctDocumentsCount = 1)
     {
+        if (requiredDistinctDocumentsCount < 1)
+            throw new ArgumentException("RequiredDistinctDocumentsCount must be at least 1.", nameof(requiredDistinctDocumentsCount));
+
         Purpose = purpose.Trim();
         IsRequired = isRequired;
         IsActive = isActive;
+        TargetLevel = targetLevel;
+        RequiredDistinctDocumentsCount = requiredDistinctDocumentsCount;
         UpdatedAt = DateTime.UtcNow;
     }
 

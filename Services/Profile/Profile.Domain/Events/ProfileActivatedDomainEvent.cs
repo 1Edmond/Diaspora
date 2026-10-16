@@ -1,4 +1,4 @@
-﻿using Shared.Domain.Interfaces;
+using Shared.Domain.Interfaces;
 using System;
 using System.Collections.Generic;
 using System.Text;
@@ -11,7 +11,8 @@ public sealed record ProfileActivatedDomainEvent(
     Guid UserId,
     string CountryCode,
     string Currency,
-    DateTime ActivatedAt
+    DateTime ActivatedAt,
+    Shared.Domain.Enums.VerificationLevel Level = Shared.Domain.Enums.VerificationLevel.L2_IdentityVerified
 ) : IDomainEvent
 {
     public Guid EventId { get; } = Guid.NewGuid();

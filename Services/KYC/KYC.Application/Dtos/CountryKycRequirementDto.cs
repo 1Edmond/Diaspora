@@ -1,3 +1,4 @@
+using Shared.Domain.Enums;
 using System;
 
 namespace KYC.Application.Dtos;
@@ -10,5 +11,7 @@ public sealed record CountryKycRequirementDto(
     string Purpose,
     bool IsRequired,
     bool IsActive,
-    DateTime CreatedAt
+    DateTime CreatedAt,
+    VerificationLevel TargetLevel = VerificationLevel.L2_IdentityVerified,
+    int RequiredDistinctDocumentsCount = 1
 );

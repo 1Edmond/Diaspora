@@ -30,6 +30,9 @@ public class CreateCountryKycRequirementCommandHandler(
         if (string.IsNullOrWhiteSpace(command.Purpose))
             return Result.Failure<CountryKycRequirementDto>("Purpose is required.");
 
+        if (command.RequiredDistinctDocumentsCount < 1)
+            return Result.Failure<CountryKycRequirementDto>("RequiredDistinctDocumentsCount must be at least 1.");
+
         var existing = await repository.FirstOrDefaultAsync(
             r => r.ProfileTypeId == command.ProfileTypeId && r.DocumentTypeCode == command.DocumentTypeCode.Trim(),
             cancellationToken);
@@ -43,7 +46,9 @@ public class CreateCountryKycRequirementCommandHandler(
             command.DocumentTypeId,
             command.DocumentTypeCode,
             command.Purpose,
-            command.IsRequired);
+            command.IsRequired,
+            command.TargetLevel,
+            command.RequiredDistinctDocumentsCount);
 
         await repository.AddAsync(requirement, cancellationToken);
         await unitOfWork.SaveChangesAsync(cancellationToken);
@@ -56,6 +61,8 @@ public class CreateCountryKycRequirementCommandHandler(
             requirement.Purpose,
             requirement.IsRequired,
             requirement.IsActive,
-            requirement.CreatedAt));
+            requirement.CreatedAt,
+            requirement.TargetLevel,
+            requirement.RequiredDistinctDocumentsCount));
     }
 }

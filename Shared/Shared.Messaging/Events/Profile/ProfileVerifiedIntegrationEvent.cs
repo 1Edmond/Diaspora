@@ -10,5 +10,5 @@ public sealed record ProfileVerifiedIntegrationEvent(
     Guid UserId,
     string VerifiedByAdminId,
     DateTime VerifiedAt,
-    VerificationLevel Level = VerificationLevel.L2_IdentityVerified
+    VerificationLevel Level = VerificationLevel.L1_IdentityDeclared
 ) : IntegrationEvent;

@@ -14,6 +14,9 @@ public class ProfileDirectoryEntryConfiguration : IEntityTypeConfiguration<Profi
         builder.Property(x => x.UserId).IsRequired();
         builder.HasIndex(x => x.UserId).IsUnique();
 
+        builder.Property(x => x.ProfileTypeId);
+        builder.HasIndex(x => x.ProfileTypeId);
+
         builder.Property(x => x.DisplayName).HasMaxLength(255);
         builder.Property(x => x.CountryCode).HasMaxLength(2);
         builder.Property(x => x.Currency).HasMaxLength(3);

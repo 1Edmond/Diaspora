@@ -10,7 +10,7 @@ public sealed record ProfileVerifiedDomainEvent(
     Guid UserId,
     string VerifiedByAdminId,
     DateTime VerifiedAt,
-    Shared.Domain.Enums.VerificationLevel Level = Shared.Domain.Enums.VerificationLevel.L2_IdentityVerified
+    Shared.Domain.Enums.VerificationLevel Level = Shared.Domain.Enums.VerificationLevel.L1_IdentityDeclared
 ) : IDomainEvent
 {
     public Guid EventId { get; } = Guid.NewGuid();
