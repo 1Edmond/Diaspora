@@ -53,12 +53,6 @@ public partial class AuthController(IMessageBus _messageBus, ILogger<AuthControl
     }
 
     [AllowAnonymous]
-    [Permission(
-        resourceKey: "identity.auth",
-        action: "refresh-token",
-        description: "Refresh access token",
-        recommendedRoles: new[] { "Admin", "User", "Moderator" }
-    )]
     [HttpPost("refresh-token")]
     public async Task<IActionResult> RefreshToken([FromBody] RefreshTokenRequest? body = null)
     {
