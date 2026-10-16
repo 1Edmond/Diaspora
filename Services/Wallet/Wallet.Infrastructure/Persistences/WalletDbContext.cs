@@ -1,4 +1,4 @@
-﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using Shared.Application.Interfaces;
 using Shared.Messaging.Events;
@@ -26,5 +26,11 @@ public sealed class WalletDbContext(
         base.OnModelCreating(modelBuilder);
         modelBuilder.ApplyConfigurationsFromAssembly(typeof(WalletDbContext).Assembly);
         modelBuilder.HasDefaultSchema("wallet");
+
+        modelBuilder.Entity<Domain.Entities.Wallet>(b =>
+        {
+            b.Property(w => w.Balance).IsConcurrencyToken();
+            b.Property(w => w.HeldBalance).IsConcurrencyToken();
+        });
     }
 }

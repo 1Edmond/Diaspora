@@ -27,8 +27,8 @@ public static class LoginCommandHandler
 
         if (user == null)
         {
-            var delay = TimeSpan.FromSeconds(new Random().Next(1, 5));
-            await Task.Delay(delay);
+            // Égalisation temporelle contre l'énumération d'adresses email (timing attack mitigation)
+            hashingService.VerifyPassword(command.Password, "$argon2id$v=19$m=65536,t=3,p=1$c29tZXNhbHQ$DummyHashToPreventTimingAttack1234567890123456");
             return Result.Failure<LoginResponse>("Invalid email or password");
         }
 

@@ -38,8 +38,8 @@ public class PermissionAuthorizationFilter : IAuthorizationFilter
             var hasMatchingRole = userRoles.Any(r =>
                 _permission.RecommendedRoles.Contains(r, StringComparer.OrdinalIgnoreCase));
 
-            // Authenticated user with standard User role or explicitly matched role
-            if (hasMatchingRole || (!string.IsNullOrEmpty(userId) && _permission.RecommendedRoles.Contains("User", StringComparer.OrdinalIgnoreCase)))
+            // Authenticated user with explicitly matched role
+            if (hasMatchingRole)
             {
                 if (_logger.IsEnabled(LogLevel.Debug))
                     _logger.LogDebug(

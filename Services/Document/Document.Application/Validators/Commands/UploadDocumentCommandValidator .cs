@@ -1,4 +1,4 @@
-﻿using Document.Application.Commands;
+using Document.Application.Commands;
 using FluentValidation;
 using System;
 using System.Collections.Generic;
@@ -13,6 +13,9 @@ public sealed class UploadDocumentCommandValidator : AbstractValidator<UploadDoc
 
     private const long MaxFileSizeBytes = 10 * 1024 * 1024;
 
+    private static readonly string[] AllowedExtensions =
+        [".pdf", ".jpg", ".jpeg", ".png", ".webp"];
+
     public UploadDocumentCommandValidator()
     {
         RuleFor(x => x.ProfileId).NotEmpty();
@@ -23,8 +26,10 @@ public sealed class UploadDocumentCommandValidator : AbstractValidator<UploadDoc
             .Must(f => f.Length > 0).WithMessage("File cannot be empty.")
             .Must(f => f.Length <= MaxFileSizeBytes)
                 .WithMessage("File size must not exceed 10 MB.")
-            .Must(f => AllowedMimeTypes.Contains(f.ContentType))
-                .WithMessage("Only PDF, JPEG, PNG and WebP files are allowed.");
+            .Must(f => AllowedMimeTypes.Contains(f.ContentType, StringComparer.OrdinalIgnoreCase))
+                .WithMessage("Only PDF, JPEG, PNG and WebP files are allowed.")
+            .Must(f => AllowedExtensions.Contains(System.IO.Path.GetExtension(f.FileName), StringComparer.OrdinalIgnoreCase))
+                .WithMessage("File extension must be .pdf, .jpg, .jpeg, .png, or .webp.");
 
         RuleFor(x => x.ExpiresAt)
             .GreaterThan(DateTime.UtcNow)

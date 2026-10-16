@@ -1,4 +1,4 @@
-﻿using Microsoft.AspNetCore.Authentication;
+using Microsoft.AspNetCore.Authentication;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
@@ -30,10 +30,12 @@ public class GatewayAuthenticationHandler : AuthenticationHandler<Authentication
             return Task.FromResult(AuthenticateResult.NoResult());
 
         var gatewaySecret = Request.Headers["X-Gateway-Secret"].ToString();
-        var configuredSecret = _configuration["Gateway:Secret"] ?? "";
+        var configuredSecret = _configuration["Gateway:Secret"];
 
-        // Comparaison en temps constant : évite les attaques par timing sur le secret partagé
-        if (!FixedTimeEquals(configuredSecret, gatewaySecret))
+        // Comparaison en temps constant : évite les attaques par timing et interdit les secrets vides
+        if (string.IsNullOrWhiteSpace(configuredSecret) ||
+            string.IsNullOrWhiteSpace(gatewaySecret) ||
+            !FixedTimeEquals(configuredSecret, gatewaySecret))
         {
             Logger.LogWarning("[GatewayAuth] ⛔ Secret Gateway invalide ou absent sur {Path}", path);
             return Task.FromResult(AuthenticateResult.Fail("Invalid gateway secret"));
