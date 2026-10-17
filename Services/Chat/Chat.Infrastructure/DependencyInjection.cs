@@ -121,7 +121,7 @@ public static class DependencyInjection
 
         using var scope = app.ApplicationServices.CreateScope();
         var context = scope.ServiceProvider.GetRequiredService<ChatDbContext>();
-        await context.Database.MigrateAsync();
+        await context.Database.EnsureCreatedAsync();
     }
 
     public static async Task PublishChatResources<T>(this WebApplication app)

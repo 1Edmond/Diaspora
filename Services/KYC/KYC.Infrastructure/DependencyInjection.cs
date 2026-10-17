@@ -112,15 +112,14 @@ public static class DependencyInjection
         hostBuilder.UseResourceSetupOnStartup();
     }
 
-    public static async void UseInfrastructure(this IApplicationBuilder app)
+    public static async Task UseInfrastructure(this IApplicationBuilder app)
     {
-        
         app.UseCoreInfrastructure();
 
-         using var scope = app.ApplicationServices.CreateScope();
+        using var scope = app.ApplicationServices.CreateScope();
         var db = scope.ServiceProvider.GetRequiredService<KYCDbContext>();
 
-        await db.Database.MigrateAsync();
+        await db.Database.EnsureCreatedAsync();
     }
 
     public static async Task PublishKYCResources<T>(this WebApplication app)

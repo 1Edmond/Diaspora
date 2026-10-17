@@ -1,4 +1,4 @@
-﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
@@ -17,6 +17,7 @@ public static class DatabaseSeederExtensions
         try
         {
             var context = services.GetRequiredService<NotificationDbContext>();
+            await context.Database.EnsureCreatedAsync();
             
             var seeder = new NotificationRuleSeeder(context, logger);
             await seeder.SeedAsync();

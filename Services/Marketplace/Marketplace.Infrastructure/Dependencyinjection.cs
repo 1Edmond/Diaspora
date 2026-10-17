@@ -139,7 +139,7 @@ public static class DependencyInjection
         using var scope = app.ApplicationServices.CreateScope();
         var context = scope.ServiceProvider.GetRequiredService<MarketplaceDbContext>();
 
-        await context.Database.MigrateAsync();
+        await context.Database.EnsureCreatedAsync();
 
         var seeder = new CategorySeeder(
             context,

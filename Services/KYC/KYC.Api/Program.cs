@@ -27,7 +27,7 @@ if (app.Environment.IsDevelopment())
     app.MapOpenApi();
 }
 
-app.UseInfrastructure();
+await app.UseInfrastructure();
 
 //app.UseHttpsRedirection();
 //app.WarmUp();
