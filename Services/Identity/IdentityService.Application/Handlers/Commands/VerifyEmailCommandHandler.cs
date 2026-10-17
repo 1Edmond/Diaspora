@@ -1,4 +1,4 @@
-﻿using IdentityService.Application.Commands;
+using IdentityService.Application.Commands;
 using IdentityService.Domain.Entities;
 using Microsoft.Extensions.Logging;
 using Shared.Domain.Commons;
@@ -19,7 +19,7 @@ public static class VerifyEmailHandler
     {
         var user = 
             (await repository.FindAsync(e => e.Email.Value.Equals(command.Email))
-            ).First();
+            ).FirstOrDefault();
 
         if (user == null)
         {

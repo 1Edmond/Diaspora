@@ -12,19 +12,10 @@ namespace Marketplace.Application.Handlers.Commands;
 
 public class DeclineServiceRequestCommandHandler(
     IServiceRequestRepository _requestRepository,
-    IServiceListingRepository _listingRepository,
     IUnitOfWork _unitOfWork,
-    IMessageBus _messageBus)
+    IMessageBus _messageBus,
+    IServiceListingRepository? _listingRepository = null)
 {
-    // Constructeur de compatibilité pour les tests unitaires existants
-    public DeclineServiceRequestCommandHandler(
-        IServiceRequestRepository requestRepository,
-        IUnitOfWork unitOfWork,
-        IMessageBus messageBus)
-        : this(requestRepository, null!, unitOfWork, messageBus)
-    {
-    }
-
     public async Task<Result> Handle(DeclineServiceRequestCommand command)
     {
         var request = await _requestRepository.GetByIdAsync(command.Id);

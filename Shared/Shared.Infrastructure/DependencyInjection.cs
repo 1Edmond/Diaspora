@@ -1,4 +1,4 @@
-﻿using Elasticsearch.Net.Specification.IndicesApi;
+using Elasticsearch.Net.Specification.IndicesApi;
 using JasperFx.Core;
 using JasperFx.MultiTenancy;
 using Microsoft.AspNetCore.Builder;
@@ -129,9 +129,6 @@ public static class DependencyInjection
         services.AddScoped<DbContext>(sp =>
             sp.GetRequiredService<TContext>());
 
-        var context = services.BuildServiceProvider().GetRequiredService<TContext>();
-        context.Database.EnsureCreated();
-
         return services;
     }
 
@@ -145,24 +142,9 @@ public static class DependencyInjection
     {
         WolverineOptions options = null!;
 
-        //if(connectionString != null)
-        //{
-        //    services.AddDbContextWithWolverineIntegration<WolverineDbContext>(options =>
-        //    {
-        //        options.UseNpgsql(connectionString, npgsqlOptions =>
-        //        {
-        //            npgsqlOptions.EnableRetryOnFailure(0);
-        //        });
-        //    });
-        //}
-
-
         services.AddWolverine(context =>
         {
-           // context.Discovery.IncludeAssembly(typeof(WarmupCommandHandler).Assembly);
-            //context.UseFluentValidation();
-           
-            
+            context.UseFluentValidation();
 
             options = ConfigureWolverineMessaging(
                 context,

@@ -20,8 +20,14 @@ public class JobApplicationRepository(
     IDistributedCache cache)
     : Repository<JobApplication>(_context, encryptionService, keyManagement, metadataRepository, logger, cache), IJobApplicationRepository
 {
+    public override async Task<JobApplication?> GetByIdAsync(Guid id, CancellationToken cancellationToken = default)
+        => await _context.JobApplications
+            .Include(a => a.Posting)
+            .FirstOrDefaultAsync(a => a.Id == id, cancellationToken);
+
     public async Task<IEnumerable<JobApplication>> GetByWorkerAsync(Guid workerId, CancellationToken cancellationToken = default)
         => await _context.JobApplications
+            .Include(a => a.Posting)
             .Where(a => a.WorkerId == workerId)
             .OrderByDescending(a => a.CreatedAt)
             .ToListAsync(cancellationToken);

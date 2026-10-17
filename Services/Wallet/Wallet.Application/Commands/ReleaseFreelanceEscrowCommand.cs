@@ -8,5 +8,6 @@ public sealed record ReleaseFreelanceEscrowCommand(
     Guid EmployerExternalProfileId,
     Guid JobApplicationId,
     decimal Amount,
-    string Description
+    string Description,
+    Guid? WorkerExternalProfileId = null
 ) : ICommand<Result>;

@@ -1,4 +1,4 @@
-﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore;
 using Profile.Application.Interfaces;
 using Profile.Domain.Entities;
 using Profile.Infrastructure.Persistence;
@@ -28,6 +28,13 @@ public class ProfileTypeRepository : IProfileTypeRepository
     {
         return await profileDbContext.ProfileTypes
             .Where(x => x.IsActive)
+            .OrderBy(x => x.CountryName)
+            .ToListAsync(cancellationToken);
+    }
+
+    public async Task<IEnumerable<ProfileType>> GetAllAsync(CancellationToken cancellationToken = default)
+    {
+        return await profileDbContext.ProfileTypes
             .OrderBy(x => x.CountryName)
             .ToListAsync(cancellationToken);
     }

@@ -71,7 +71,7 @@ public class User : AggregateRoot, ISoftDeletable, IAuditable
             phone = phoneResult.Value;
         }
 
-        if (dateOfBirth >= DateOnly.FromDateTime(DateTime.UtcNow.AddYears(10)))
+        if (dateOfBirth > DateOnly.FromDateTime(DateTime.UtcNow.AddYears(-15)))
             return Result.Failure<User>("Bad date of birth");
 
         var user = new User
@@ -163,6 +163,9 @@ public class User : AggregateRoot, ISoftDeletable, IAuditable
         EmailVerified = true;
         EmailVerificationCode = null;
         EmailVerificationCodeExpiry = null;
+
+        if (Status == UserStatus.Inactive)
+            Status = UserStatus.Active;
 
         AddDomainEvent(new EmailVerifiedEvent(Id, Email.Value));
 
@@ -343,7 +346,7 @@ public class User : AggregateRoot, ISoftDeletable, IAuditable
 
     private static string GenerateVerificationCode()
     {
-        return new Random().Next(100000, 999999).ToString();
+        return System.Security.Cryptography.RandomNumberGenerator.GetInt32(100000, 1000000).ToString();
     }
 
 

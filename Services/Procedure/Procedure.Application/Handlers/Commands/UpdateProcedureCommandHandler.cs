@@ -1,4 +1,4 @@
-﻿using Procedure.Application.Commands;
+using Procedure.Application.Commands;
 using Procedure.Application.Extensions;
 using Procedure.Application.Interfaces;
 using Shared.Domain.Commons;
@@ -12,7 +12,8 @@ namespace Procedure.Application.Handlers.Commands;
 
 public sealed class UpdateProcedureCommandHandler(
     IProcedureRepository repository,
-    ILocationRepository locationRepository)
+    ILocationRepository locationRepository,
+    IUnitOfWork unitOfWork)
 {
     public async Task<Result> Handle(
         UpdateProcedureCommand command,
@@ -69,6 +70,7 @@ public sealed class UpdateProcedureCommandHandler(
             procedure.AddRequiredDocument(docTypeId);
 
         await repository.UpdateAsync(procedure, cancellationToken);
+        await unitOfWork.SaveChangesAsync(cancellationToken);
         return Result.Success();
     }
 }

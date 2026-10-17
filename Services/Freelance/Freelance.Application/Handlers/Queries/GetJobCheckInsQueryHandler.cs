@@ -13,9 +13,13 @@ public class GetJobCheckInsQueryHandler(IApplicationDbContext _context)
 {
     public async Task<Result<PagedList<JobCheckInDto>>> Handle(GetJobCheckInsQuery query)
     {
-        var q = _context.JobCheckIns
-            .Include(c => c.JobApplication)
-            .Where(c => c.JobApplication.WorkerId == query.WorkerId);
+        IQueryable<Freelance.Domain.Entities.JobCheckIn> q = _context.JobCheckIns
+            .Include(c => c.JobApplication);
+
+        if (!query.IsAdmin && query.WorkerId != Guid.Empty)
+        {
+            q = q.Where(c => c.JobApplication.WorkerId == query.WorkerId);
+        }
 
         var totalCount = await q.CountAsync();
 

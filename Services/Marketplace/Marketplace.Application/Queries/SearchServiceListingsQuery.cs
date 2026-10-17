@@ -28,7 +28,8 @@ public record SearchServiceListingsQuery(
     string? ArrivalCountry = null,
     string? ArrivalCity = null,
     decimal? MinRemainingKg = null,
-    DateTime? TravelDate = null
+    DateTime? TravelDate = null,
+    Guid? ProviderId = null
 ) : GetServiceListingsQuery(
     PageNumber,
     PageSize,
@@ -51,5 +52,6 @@ public record SearchServiceListingsQuery(
     ArrivalCountry,
     ArrivalCity,
     MinRemainingKg,
-    TravelDate
+    TravelDate,
+    ProviderId
 );

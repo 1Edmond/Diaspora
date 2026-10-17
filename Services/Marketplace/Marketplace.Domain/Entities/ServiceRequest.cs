@@ -30,6 +30,8 @@ public class ServiceRequest : AggregateRoot
     public decimal? DeclaredValue { get; private set; }
     public string? HandoverOtpHash { get; private set; }
     public string? DeliveryOtpHash { get; private set; }
+    public string? HandoverOtpCode { get; private set; }
+    public string? DeliveryOtpCode { get; private set; }
     public DateTime? HandoverConfirmedAt { get; private set; }
     public string? HandoverProofUrl { get; private set; }
     public DateTime? DeliveryConfirmedAt { get; private set; }
@@ -99,18 +101,39 @@ public class ServiceRequest : AggregateRoot
         CancellationReason = reason;
     }
 
-    public void Complete()
+    public Result Complete()
     {
+        if (IsInDispute)
+            return Result.Failure("Impossible de compléter une demande faisant l'objet d'un litige en cours.");
+
+        if (WeightKg.HasValue && Status != ServiceRequestStatus.Delivered)
+            return Result.Failure("Une expédition de colis doit être validée via le code OTP de livraison (ConfirmDelivery).");
+
+        if (Status != ServiceRequestStatus.Accepted && Status != ServiceRequestStatus.Delivered)
+            return Result.Failure("La demande doit être à l'état Accepted ou Delivered pour être complétée.");
+
         Status = ServiceRequestStatus.Completed;
         CompletedAt = DateTime.UtcNow;
         AddDomainEvent(new ServiceRequestCompletedEvent(Id, ListingId, RequesterId, ProviderId, AgreedPrice, AgreedCurrency));
+        return Result.Success();
     }
 
-    public void Cancel(string reason)
+    public Result Cancel(string reason)
     {
+        if (IsInDispute)
+            return Result.Failure("Impossible d'annuler une demande en cours de litige.");
+
+        if (Status is ServiceRequestStatus.PackageHandedOver
+            or ServiceRequestStatus.InTransit
+            or ServiceRequestStatus.ArrivedAtDestination
+            or ServiceRequestStatus.Delivered
+            or ServiceRequestStatus.Completed)
+            return Result.Failure("Impossible d'annuler la demande après la remise physique du colis ou la livraison.");
+
         Status = ServiceRequestStatus.Cancelled;
         CancelledAt = DateTime.UtcNow;
         CancellationReason = reason;
+        return Result.Success();
     }
 
     public void GenerateOtps(out string rawHandoverOtp, out string rawDeliveryOtp)
@@ -120,6 +143,8 @@ public class ServiceRequest : AggregateRoot
 
         HandoverOtpHash = handoverSecret.ToStorageString();
         DeliveryOtpHash = deliverySecret.ToStorageString();
+        HandoverOtpCode = rawHandoverOtp;
+        DeliveryOtpCode = rawDeliveryOtp;
     }
 
     public Result ConfirmHandover(string otp, string? proofPhotoUrl)
@@ -148,6 +173,7 @@ public class ServiceRequest : AggregateRoot
         Status = ServiceRequestStatus.PackageHandedOver;
         HandoverConfirmedAt = DateTime.UtcNow;
         HandoverProofUrl = proofPhotoUrl;
+        HandoverOtpCode = null;
 
         return Result.Success();
     }
@@ -197,6 +223,7 @@ public class ServiceRequest : AggregateRoot
         DeliveryConfirmedAt = DateTime.UtcNow;
         DeliveryProofUrl = proofPhotoUrl;
         CompletedAt = DateTime.UtcNow;
+        DeliveryOtpCode = null;
 
         AddDomainEvent(new ServiceRequestCompletedEvent(
             Id, ListingId, RequesterId, ProviderId, AgreedPrice, AgreedCurrency));

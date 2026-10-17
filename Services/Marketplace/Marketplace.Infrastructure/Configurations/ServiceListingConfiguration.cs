@@ -61,7 +61,7 @@ public class ServiceListingConfiguration : BaseEntityConfiguration<ServiceListin
         builder.Property(l => l.ArrivalCountryCode).HasMaxLength(10);
         builder.Property(l => l.ArrivalCity).HasMaxLength(150);
         builder.Property(l => l.CapacityKg).HasPrecision(18, 2);
-        builder.Property(l => l.RemainingKg).HasPrecision(18, 2);
+        builder.Property(l => l.RemainingKg).HasPrecision(18, 2).IsConcurrencyToken();
         builder.Property(l => l.PricePerKg).HasPrecision(18, 2);
         builder.Property(l => l.TransportMode).HasMaxLength(50);
         builder.Property(l => l.FlightOrTransportNumber).HasMaxLength(50);

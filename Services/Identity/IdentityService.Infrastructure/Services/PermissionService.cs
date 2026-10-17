@@ -3,6 +3,8 @@ using IdentityService.Application.Models;
 using IdentityService.Domain.Entities;
 using IdentityService.Infrastructure.Repositories;
 using Microsoft.Extensions.Logging;
+using Shared.Domain.Constants;
+using Shared.Domain.Enums;
 using Shared.Domain.Interfaces;
 
 namespace IdentityService.Infrastructure.Services;
@@ -36,10 +38,24 @@ public class PermissionService : IPermissionService
         CancellationToken cancellationToken = default)
     {
         var user = await _userRepository.GetByIdAsync(userId, cancellationToken);
-        if (user == null)
+        if (user == null || user.Status != UserStatus.Active || user.IsLockedOut())
             return false;
 
-        var userRoles = user.UserRoles.Select(ur => ur.Role).ToList();
+        var userRoles = new List<Role>();
+        foreach (var roleId in user.UserRoles.Select(ur => ur.RoleId).Distinct())
+        {
+            var role = user.UserRoles.FirstOrDefault(ur => ur.RoleId == roleId)?.Role
+                       ?? await _roleRepository.GetByIdAsync(roleId, cancellationToken);
+            if (role != null)
+                userRoles.Add(role);
+        }
+
+        if (userRoles.Any(r =>
+                r.Name.Equals(DefaultRole.Admin, StringComparison.OrdinalIgnoreCase) ||
+                r.Name.Equals("SuperAdmin", StringComparison.OrdinalIgnoreCase)))
+        {
+            return true;
+        }
 
         var permissionKey = await ResolvePermissionKeyAsync(path, method, cancellationToken);
 
@@ -51,18 +67,18 @@ public class PermissionService : IPermissionService
             return false;
         }
 
+        var userPermission = await _userPermissionRepository.GetUserPermissionAsync(
+            userId, permissionKey, cancellationToken);
+
+        if (userPermission != null && userPermission.IsValid())
+            return userPermission.IsGranted;
+
         var hasRolePermission = userRoles.Any(role =>
             role.RolePermissions.Any(rp =>
                 rp.PermissionKey.Equals(permissionKey, StringComparison.OrdinalIgnoreCase)));
 
         if (hasRolePermission)
             return true;
-
-        var userPermission = await _userPermissionRepository.GetUserPermissionAsync(
-            userId, permissionKey, cancellationToken);
-
-        if (userPermission != null && userPermission.IsValid())
-            return userPermission.IsGranted;
 
         _logger.LogDebug(
             "[PermissionService] User {UserId} does not have permission {PermissionKey}",
@@ -76,21 +92,60 @@ public class PermissionService : IPermissionService
         CancellationToken cancellationToken = default)
     {
         var user = await _userRepository.GetByIdAsync(userId, cancellationToken);
-        if (user == null)
+        if (user == null || user.Status != UserStatus.Active || user.IsLockedOut())
             return null;
 
-        var userRoles = user.UserRoles.Select(ur => ur.Role).ToList();
+        var userRoles = new List<Role>();
+        foreach (var roleId in user.UserRoles.Select(ur => ur.RoleId).Distinct())
+        {
+            var role = user.UserRoles.FirstOrDefault(ur => ur.RoleId == roleId)?.Role
+                       ?? await _roleRepository.GetByIdAsync(roleId, cancellationToken);
+            if (role != null)
+                userRoles.Add(role);
+        }
 
         var allPermissions = await _resourcePermissionRepository.GetAllActiveAsync(cancellationToken);
+
+        var isAdmin = userRoles.Any(r =>
+            r.Name.Equals(DefaultRole.Admin, StringComparison.OrdinalIgnoreCase) ||
+            r.Name.Equals("SuperAdmin", StringComparison.OrdinalIgnoreCase));
+
+        if (isAdmin)
+        {
+            return new UserAuthorisationResponse
+            {
+                Roles = [.. userRoles.Select(r => r.Name)],
+                Permissions = [.. allPermissions
+                    .Select(p => p.PermissionKey)
+                    .Distinct(StringComparer.OrdinalIgnoreCase)]
+            };
+        }
+
+        var directPermissions = await _userPermissionRepository.GetUserPermissionsAsync(userId, cancellationToken);
+        var grantedDirectKeys = directPermissions
+            .Where(up => up.IsValid() && up.IsGranted)
+            .Select(up => up.PermissionKey);
+        var deniedDirectKeys = directPermissions
+            .Where(up => up.IsValid() && !up.IsGranted)
+            .Select(up => up.PermissionKey)
+            .ToHashSet(StringComparer.OrdinalIgnoreCase);
+
+        var rolePermissionKeys = allPermissions
+            .Where(p => userRoles.Any(role =>
+                role.RolePermissions.Any(rp =>
+                    rp.PermissionKey.Equals(p.PermissionKey, StringComparison.OrdinalIgnoreCase))))
+            .Select(p => p.PermissionKey);
+
+        var effectivePermissions = rolePermissionKeys
+            .Concat(grantedDirectKeys)
+            .Where(k => !deniedDirectKeys.Contains(k))
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .ToList();
 
         var response = new UserAuthorisationResponse
         {
             Roles = [.. userRoles.Select(r => r.Name)],
-            Permissions = [.. allPermissions
-                .Where(p => userRoles.Any(role =>
-                    role.RolePermissions.Any(rp =>
-                        rp.PermissionKey.Equals(p.PermissionKey, StringComparison.OrdinalIgnoreCase))))
-                .Select(p => p.PermissionKey)]
+            Permissions = effectivePermissions
         };
 
         return response;
@@ -125,10 +180,10 @@ public class PermissionService : IPermissionService
         Guid? grantedBy = null,
         CancellationToken cancellationToken = default)
     {
-        var tasks = permissionKeys.Select(key =>
-            AssignPermissionToRoleAsync(roleId, key, grantedBy, cancellationToken));
-
-        await Task.WhenAll(tasks);
+        foreach (var key in permissionKeys)
+        {
+            await AssignPermissionToRoleAsync(roleId, key, grantedBy, cancellationToken);
+        }
 
         _logger.LogInformation(
             "[PermissionService] Permissions assigned to role: Role={RoleId}, Count={Count}",

@@ -1,4 +1,4 @@
-﻿using Procedure.Application.Commands;
+using Procedure.Application.Commands;
 using Procedure.Application.Interfaces;
 using Procedure.Domain.Entities;
 using Shared.Application.Interfaces;
@@ -51,20 +51,22 @@ public sealed class CompleteUserProcedureCommandHandler(
             dependencyStatuses = depUserProcedures.Select(up => up.Status);
         }
 
-        if (procedure!.IssuedDocuments.Any())
+        var isAdmin = string.Equals(command.CompletedByRole, "Admin", StringComparison.OrdinalIgnoreCase)
+                   || string.Equals(command.CompletedByRole, "SuperAdmin", StringComparison.OrdinalIgnoreCase)
+                   || string.Equals(command.CompletedByRole, "Officer", StringComparison.OrdinalIgnoreCase);
+
+        if (!isAdmin && procedure!.IssuedDocuments.Any())
         {
-            var key = Guid.Parse(command.CompletedByUserId); 
             var values = await cacheService.GetAsync<Dictionary<Guid, List<Guid>>>(
                 CachedKeyConstants.UpdloadDocumentIdForAwaitingTaskCompletedForKey,
                 cancellationToken: cancellationToken);
 
-            if(values is null)
+            if (values is null || !values.TryGetValue(userProcedure.ProfileId, out var userDocs) || userDocs is null)
                 return Result.Failure("Output document not found.");
-            var userDocs = values[key];
 
-            foreach (var proc in procedure!.IssuedDocuments)
+            foreach (var proc in procedure.IssuedDocuments)
             {
-                if(userDocs.Any(d => d == proc.Id))
+                if (!userDocs.Any(d => d == proc.DocumentTypeId || d == proc.Id))
                     return Result.Failure("Output document not found.");
             }
         }

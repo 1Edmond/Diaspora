@@ -1,4 +1,4 @@
-﻿using Microsoft.Extensions.Caching.Distributed;
+using Microsoft.Extensions.Caching.Distributed;
 using ServcicesGateway.Interfaces;
 using ServcicesGateway.Models;
 using System.Text.Json;
@@ -54,16 +54,18 @@ public class CachedAuthorizationService : IAuthorizationService
             response.EnsureSuccessStatusCode();
 
             var result = await response.Content.ReadFromJsonAsync<AuthorizationCheckResponse>(cancellationToken);
-           
-            await _cache.SetStringAsync(
-                cacheKey,
-                result!.ToJson(),
-                new DistributedCacheEntryOptions
-                {
-                    AbsoluteExpirationRelativeToNow = _cacheExpiration
-                },
-                cancellationToken
-            );
+            if (result != null)
+            {
+                await _cache.SetStringAsync(
+                    cacheKey,
+                    result.ToJson(),
+                    new DistributedCacheEntryOptions
+                    {
+                        AbsoluteExpirationRelativeToNow = _cacheExpiration
+                    },
+                    cancellationToken
+                );
+            }
 
             return result;
         }
@@ -100,16 +102,18 @@ public class CachedAuthorizationService : IAuthorizationService
             response.EnsureSuccessStatusCode();
 
             var result = await response.Content.ReadFromJsonAsync<AuthorizationCheckResponse>(cancellationToken);
-           
-            await _cache.SetStringAsync(
-                cacheKey,
-                result!.ToJson(),
-                new DistributedCacheEntryOptions
-                {
-                    AbsoluteExpirationRelativeToNow = _cacheExpiration
-                },
-                cancellationToken
-            );
+            if (result != null)
+            {
+                await _cache.SetStringAsync(
+                    cacheKey,
+                    result.ToJson(),
+                    new DistributedCacheEntryOptions
+                    {
+                        AbsoluteExpirationRelativeToNow = _cacheExpiration
+                    },
+                    cancellationToken
+                );
+            }
 
             return result;
         }
@@ -121,8 +125,10 @@ public class CachedAuthorizationService : IAuthorizationService
     }
     
     
-    public async Task InvalidateCacheAsync(Guid userId, string? path = null, string? method = null)
+    public async Task InvalidateCacheAsync(Guid userId, string? path = null, string? method = null, CancellationToken cancellationToken = default)
     {
+        await _cache.RemoveAsync(GetUserPermissionCacheKey(userId), cancellationToken);
+
         if (string.IsNullOrEmpty(path))
         {
            if(_logger.IsEnabled(LogLevel.Information))
@@ -131,7 +137,7 @@ public class CachedAuthorizationService : IAuthorizationService
                 userId
             );
             var userKeysSetKey = $"perm:keys:{userId}";
-            var userKeysValue = await _cache.GetStringAsync(userKeysSetKey);
+            var userKeysValue = await _cache.GetStringAsync(userKeysSetKey, cancellationToken);
 
             if (!string.IsNullOrEmpty(userKeysValue))
             {
@@ -139,10 +145,10 @@ public class CachedAuthorizationService : IAuthorizationService
 
                 foreach (var key in keys)
                 {
-                    await _cache.RemoveAsync(key);
+                    await _cache.RemoveAsync(key, cancellationToken);
                     _logger.LogDebug("[Gateway] 🗑️ Removed cache key: {Key}", key);
                 }
-                await _cache.RemoveAsync(userKeysSetKey);
+                await _cache.RemoveAsync(userKeysSetKey, cancellationToken);
             }
 
             _logger.LogInformation(
@@ -159,7 +165,7 @@ public class CachedAuthorizationService : IAuthorizationService
                 foreach (var m in methods)
                 {
                     var cacheKey = GetCacheKey(userId, path, m);
-                    await _cache.RemoveAsync(cacheKey);
+                    await _cache.RemoveAsync(cacheKey, cancellationToken);
                     _logger.LogDebug(
                         "[Gateway] 🗑️ Removed cache key: User={UserId}, {Method} {Path}",
                         userId, m, path
@@ -169,7 +175,7 @@ public class CachedAuthorizationService : IAuthorizationService
             else
             {
                 var cacheKey = GetCacheKey(userId, path, method);
-                await _cache.RemoveAsync(cacheKey);
+                await _cache.RemoveAsync(cacheKey, cancellationToken);
 
                 _logger.LogInformation(
                     "[Gateway] 🔄 Cache invalidated: User={UserId}, {Method} {Path}",

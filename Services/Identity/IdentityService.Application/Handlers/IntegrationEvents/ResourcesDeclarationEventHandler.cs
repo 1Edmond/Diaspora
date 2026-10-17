@@ -1,4 +1,4 @@
-﻿using IdentityService.Application.Abstractions;
+using IdentityService.Application.Abstractions;
 using IdentityService.Domain.Entities;
 using Microsoft.Extensions.Logging;
 using Serilog;
@@ -15,7 +15,7 @@ public class ResourcesDeclarationEventHandler
     private readonly IRoleRepository _roleRepository;
     private readonly ILogger<ResourcesDeclarationEventHandler> _logger;
 
-    private static readonly Dictionary<string, Guid> RoleIds = new()
+    private static readonly Dictionary<string, Guid> RoleIds = new(StringComparer.OrdinalIgnoreCase)
     {
         { DefaultRole.Admin, DefaultRole.GetRoleId(DefaultRole.Admin) },
         { DefaultRole.User, DefaultRole.GetRoleId(DefaultRole.User) },
@@ -70,12 +70,19 @@ public class ResourcesDeclarationEventHandler
                         "✅ Registered permission: {PermissionKey}",
                         permissionKey
                     );
-
-                    await AssignToRecommendedRoles(permissionKey, permission.RecommendedRoles);
                 }
             }
 
             await _resourcePermissionRepository.UpsertBatchAsync(resourcePermissions);
+
+            foreach (var resource in message.Resources)
+            {
+                foreach (var permission in resource.Permissions)
+                {
+                    var permissionKey = $"{resource.ResourceKey}.{permission.Permission}";
+                    await AssignToRecommendedRoles(permissionKey, permission.RecommendedRoles);
+                }
+            }
 
             if(_logger.IsEnabled(LogLevel.Information))
                 _logger.LogInformation(
@@ -97,17 +104,12 @@ public class ResourcesDeclarationEventHandler
 
     private async Task AssignToRecommendedRoles(string permissionKey, List<string> recommendedRoles)
     {
-        if (recommendedRoles.Count == 0)
-        {
-            if(_logger.IsEnabled(LogLevel.Debug))
-                _logger.LogDebug(
-                "No recommended roles for permission: {Permission}",
-                permissionKey
-            );
-            return;
-        }
+        var rolesToAssign = (recommendedRoles ?? new List<string>())
+            .Append(DefaultRole.Admin)
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .ToList();
 
-        foreach (var roleName in recommendedRoles)
+        foreach (var roleName in rolesToAssign)
         {
             if (!RoleIds.TryGetValue(roleName, out var roleId))
             {

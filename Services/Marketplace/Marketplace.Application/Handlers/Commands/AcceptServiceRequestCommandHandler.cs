@@ -11,17 +11,9 @@ namespace Marketplace.Application.Handlers.Commands;
 
 public class AcceptServiceRequestCommandHandler(
     IServiceRequestRepository _requestRepository,
-    IServiceListingRepository _listingRepository,
+    IServiceListingRepository? _listingRepository,
     IUnitOfWork _unitOfWork)
 {
-    // Constructeur de compatibilité pour les tests unitaires existants
-    public AcceptServiceRequestCommandHandler(
-        IServiceRequestRepository requestRepository,
-        IUnitOfWork unitOfWork)
-        : this(requestRepository, null!, unitOfWork)
-    {
-    }
-
     public async Task<Result> Handle(AcceptServiceRequestCommand command)
     {
         var request = await _requestRepository.GetByIdAsync(command.Id);

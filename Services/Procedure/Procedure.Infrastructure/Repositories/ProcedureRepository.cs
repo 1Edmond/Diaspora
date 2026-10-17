@@ -1,4 +1,4 @@
-﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Caching.Distributed;
 using Microsoft.Extensions.Logging;
 using Procedure.Application.Interfaces;
@@ -40,11 +40,24 @@ public sealed class ProcedureRepository(
             .OrderBy(x => x.Title)
             .ToListAsync(cancellationToken);
 
+    public override async Task<Domain.Entities.Procedure?> GetByIdAsync(
+        Guid id,
+        CancellationToken cancellationToken = default) =>
+        await _context.Procedures
+            .Include(x => x.Locations)
+                .ThenInclude(pl => pl.Location)
+            .Include(x => x.Dependencies)
+            .Include(x => x.Documents)
+            .FirstOrDefaultAsync(x => x.Id == id, cancellationToken);
+
     public async Task<Domain.Entities.Procedure?> GetWithDependenciesAsync(
         Guid procedureId,
         CancellationToken cancellationToken = default) =>
         await _context.Procedures
+            .Include(x => x.Locations)
+                .ThenInclude(pl => pl.Location)
             .Include(x => x.Dependencies)
                 .ThenInclude(d => d.DependsOnProcedure)
+            .Include(x => x.Documents)
             .FirstOrDefaultAsync(x => x.Id == procedureId, cancellationToken);
 }

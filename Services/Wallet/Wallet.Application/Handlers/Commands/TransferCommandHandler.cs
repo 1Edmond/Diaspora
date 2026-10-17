@@ -1,4 +1,4 @@
-﻿using Shared.Domain.Commons;
+using Shared.Domain.Commons;
 using Shared.Domain.Enums;
 using Shared.Domain.Interfaces;
 using Shared.Domain.ValueObjects;
@@ -72,6 +72,24 @@ public sealed class TransferCommandHandler(
 
         await walletRepository.UpdateAsync(sender, cancellationToken);
         await walletRepository.UpdateAsync(receiver, cancellationToken);
+
+        if (fee.FeeAmount > 0)
+        {
+            var platformWallet = await walletRepository.GetPlatformRevenueWalletAsync(
+                sender.Currency, cancellationToken);
+            if (platformWallet is not null)
+            {
+                var feeCreditResult = platformWallet.CreditPlatformTransferFee(
+                    fee.FeeAmount,
+                    debitResult.Value.transferTx.Id,
+                    $"Transfer fee for {command.Amount} {sender.Currency}");
+                if (feeCreditResult.IsSuccess)
+                {
+                    await walletRepository.UpdateAsync(platformWallet, cancellationToken);
+                }
+            }
+        }
+
         await unitOfWork.SaveChangesAsync(cancellationToken);
 
         return Result.Success(new TransferResponse(

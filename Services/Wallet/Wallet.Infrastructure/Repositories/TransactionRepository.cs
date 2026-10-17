@@ -30,19 +30,41 @@ public sealed class TransactionRepository(WalletDbContext context,
 
     public async Task<IEnumerable<Transaction>> GetByWalletIdAsync(
         Guid walletId, int page, int pageSize,
-        CancellationToken cancellationToken = default)
-        => await _context.Transactions
-            .Where(t => t.WalletId == walletId)
+        CancellationToken cancellationToken = default,
+        TransactionType? type = null,
+        TransactionStatus? status = null)
+    {
+        var query = _context.Transactions.Where(t => t.WalletId == walletId);
+
+        if (type.HasValue)
+            query = query.Where(t => t.Type == type.Value);
+
+        if (status.HasValue)
+            query = query.Where(t => t.Status == status.Value);
+
+        return await query
             .OrderByDescending(t => t.CreatedAt)
             .Skip((page - 1) * pageSize)
             .Take(pageSize)
             .ToListAsync(cancellationToken);
+    }
 
     public async Task<int> CountByWalletIdAsync(
         Guid walletId,
-        CancellationToken cancellationToken = default)
-        => await _context.Transactions
-            .CountAsync(t => t.WalletId == walletId, cancellationToken);
+        CancellationToken cancellationToken = default,
+        TransactionType? type = null,
+        TransactionStatus? status = null)
+    {
+        var query = _context.Transactions.Where(t => t.WalletId == walletId);
+
+        if (type.HasValue)
+            query = query.Where(t => t.Type == type.Value);
+
+        if (status.HasValue)
+            query = query.Where(t => t.Status == status.Value);
+
+        return await query.CountAsync(cancellationToken);
+    }
 
     public async Task<IEnumerable<Transaction>> GetByTypeAsync(
         Guid walletId, TransactionType type,

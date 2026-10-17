@@ -41,8 +41,9 @@ public class JobApplicationController(
     [HttpGet("received")]
     public async Task<IActionResult> GetReceived([FromQuery] int page = 1, [FromQuery] int pageSize = 10)
     {
+        var isAdmin = _currentUserService.IsInRole("Admin") || _currentUserService.IsInRole("SuperAdmin") || _currentUserService.IsInRole("Moderator");
         var result = await _messageBus.InvokeAsync<Result<PagedList<JobApplicationDto>>>(
-            new GetReceivedJobApplicationsQuery(GetCurrentUserId(), page, pageSize));
+            new GetReceivedJobApplicationsQuery(GetCurrentUserId(), page, pageSize, isAdmin));
 
         if (result.IsFailure) return BadRequest(new { error = result.Error });
         return Ok(result.Value);
@@ -137,8 +138,9 @@ public class JobApplicationController(
     [HttpPost("{id:guid}/complete")]
     public async Task<IActionResult> Complete(Guid id)
     {
+        var isAdmin = _currentUserService.IsInRole("Admin") || _currentUserService.IsInRole("SuperAdmin") || _currentUserService.IsInRole("Moderator");
         var result = await _messageBus.InvokeAsync<Result>(
-            new CompleteApplicationCommand(id, GetCurrentUserId()));
+            new CompleteApplicationCommand(id, GetCurrentUserId(), isAdmin));
 
         if (result.IsFailure) return BadRequest(new { error = result.Error });
         return Ok(new { message = "Application completed" });

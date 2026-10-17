@@ -108,11 +108,18 @@ builder.Services.AddRateLimiter(options =>
 });
 
 
-builder.Services.AddHttpClient("IdentityService", client =>
+builder.Services.AddHttpClient("IdentityService", (sp, client) =>
 {
+    var config = sp.GetRequiredService<IConfiguration>();
     var identityServiceUrl = "http://identityservice";
     client.BaseAddress = new Uri(identityServiceUrl);
     client.Timeout = TimeSpan.FromSeconds(10);
+    var gatewaySecret = config["Gateway:Secret"];
+    if (!string.IsNullOrEmpty(gatewaySecret))
+    {
+        client.DefaultRequestHeaders.Add("X-Gateway-Secret", gatewaySecret);
+        client.DefaultRequestHeaders.Add("X-Gateway-Require-Auth", "false");
+    }
 }).AddServiceDiscovery()
 .AddTransientHttpErrorPolicy(policy =>
     policy.WaitAndRetryAsync(3, retryAttempt => TimeSpan.FromMilliseconds(100 * retryAttempt)));

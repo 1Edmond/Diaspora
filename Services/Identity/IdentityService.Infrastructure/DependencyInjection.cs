@@ -51,11 +51,12 @@ public static class DependencyInjection
        
         
        
+        services.AddScoped<IUserRepository, UserRepository>();
         services.AddScoped<IRoleRepository, RoleRepository>();
         services.AddScoped<IUserPermissionRepository, UserPermissionRepository>();
         services.AddScoped<IResourcePermissionRepository, ResourcePermissionRepository>();
         services.AddScoped<IPermissionService, PermissionService>();
-        services.AddSingleton<ResourcesDeclarationEventHandler>();
+        services.AddScoped<ResourcesDeclarationEventHandler>();
         services.SetCoreInfrastructureServices(configuration, (options) =>
         {
             options.ConfigureIdentityDomainQueues();

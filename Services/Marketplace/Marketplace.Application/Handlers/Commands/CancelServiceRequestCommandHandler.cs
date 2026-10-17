@@ -12,19 +12,10 @@ namespace Marketplace.Application.Handlers.Commands;
 
 public class CancelServiceRequestCommandHandler(
     IServiceRequestRepository _requestRepository,
-    IServiceListingRepository _listingRepository,
     IUnitOfWork _unitOfWork,
-    IMessageBus _messageBus)
+    IMessageBus _messageBus,
+    IServiceListingRepository? _listingRepository = null)
 {
-    // Constructeur de compatibilité pour les tests unitaires existants
-    public CancelServiceRequestCommandHandler(
-        IServiceRequestRepository requestRepository,
-        IUnitOfWork unitOfWork,
-        IMessageBus messageBus)
-        : this(requestRepository, null!, unitOfWork, messageBus)
-    {
-    }
-
     public async Task<Result> Handle(CancelServiceRequestCommand command)
     {
         var request = await _requestRepository.GetByIdAsync(command.Id);
@@ -34,9 +25,11 @@ public class CancelServiceRequestCommandHandler(
         if (request.RequesterId != command.RequestedBy)
             return Result.Failure("Only the requester can cancel a request.");
 
-        var wasAccepted = request.Status == ServiceRequestStatus.Accepted
-                       || request.Status == ServiceRequestStatus.PackageHandedOver
-                       || request.Status == ServiceRequestStatus.InTransit;
+        var wasAccepted = request.Status == ServiceRequestStatus.Accepted;
+
+        var cancelResult = request.Cancel(command.Reason);
+        if (cancelResult.IsFailure)
+            return cancelResult;
 
         if (wasAccepted && request.WeightKg.HasValue && request.WeightKg.Value > 0 && _listingRepository is not null)
         {
@@ -48,14 +41,17 @@ public class CancelServiceRequestCommandHandler(
             }
         }
 
-        request.Cancel(command.Reason);
         await _requestRepository.UpdateAsync(request);
         await _unitOfWork.SaveChangesAsync();
 
         if (request.PaymentStatus == PaymentStatus.Held)
         {
             await _messageBus.PublishAsync(
-                new MarketplacePaymentRefundRequestedIntegrationEvent(request.Id));
+                new MarketplacePaymentRefundRequestedIntegrationEvent(
+                    request.Id,
+                    BuyerProfileId: request.RequesterId,
+                    Amount: request.AgreedPrice ?? 0m,
+                    Currency: request.AgreedCurrency ?? "XOF"));
         }
 
         await _messageBus.PublishAsync(

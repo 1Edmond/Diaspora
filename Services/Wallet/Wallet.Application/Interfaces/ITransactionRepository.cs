@@ -14,11 +14,15 @@ public interface ITransactionRepository : IRepository<Transaction>
         Guid walletId,
         int page,
         int pageSize,
-        CancellationToken cancellationToken = default);
+        CancellationToken cancellationToken = default,
+        TransactionType? type = null,
+        TransactionStatus? status = null);
 
     Task<int> CountByWalletIdAsync(
         Guid walletId,
-        CancellationToken cancellationToken = default);
+        CancellationToken cancellationToken = default,
+        TransactionType? type = null,
+        TransactionStatus? status = null);
 
     Task<IEnumerable<Transaction>> GetByTypeAsync(
         Guid walletId,

@@ -1,4 +1,4 @@
-﻿using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using Shared.Application.Interfaces;
 using Shared.Domain.Commons;
@@ -25,6 +25,13 @@ public class LocalFileStorageService : IFileStorageService
             Directory.CreateDirectory(_basePath);
     }
 
+    private bool IsValidPath(string targetPath, out string fullPath)
+    {
+        var baseFullPath = Path.GetFullPath(_basePath);
+        fullPath = Path.GetFullPath(targetPath);
+        return fullPath.StartsWith(baseFullPath, StringComparison.OrdinalIgnoreCase);
+    }
+
     public async Task<Result<string>> UploadFileAsync(
         Stream fileStream,
         string fileName,
@@ -37,12 +44,15 @@ public class LocalFileStorageService : IFileStorageService
                 return Result.Failure<string>("File stream is empty");
 
             var filePath = Path.Combine(_basePath, fileName);
-            var directory = Path.GetDirectoryName(filePath);
+            if (!IsValidPath(filePath, out var fullPath))
+                return Result.Failure<string>("Invalid file path");
+
+            var directory = Path.GetDirectoryName(fullPath);
 
             if (!string.IsNullOrEmpty(directory) && !Directory.Exists(directory))
                 Directory.CreateDirectory(directory);
 
-            using (var fileStreamOutput = new FileStream(filePath, FileMode.Create, FileAccess.Write))
+            using (var fileStreamOutput = new FileStream(fullPath, FileMode.Create, FileAccess.Write))
             {
                 await fileStream.CopyToAsync(fileStreamOutput, cancellationToken);
             }
@@ -74,6 +84,10 @@ public class LocalFileStorageService : IFileStorageService
             if (fileStream == null || fileStream.Length == 0)
                 return Result.Failure<string>("File stream is empty");
 
+            var filePath = Path.Combine(_basePath, fileName);
+            if (!IsValidPath(filePath, out var fullPath))
+                return Result.Failure<string>("Invalid file path");
+
             _logger.LogInformation(
                 "Encrypting and uploading file: {FileName} for {EntityType}:{EntityId}",
                 fileName,
@@ -93,14 +107,12 @@ public class LocalFileStorageService : IFileStorageService
                 cancellationToken);
 
             // Save encrypted file
-            var encryptedFileName = $"{Path.GetFileNameWithoutExtension(fileName)}.encrypted";
-            var filePath = Path.Combine(_basePath, fileName);
-            var directory = Path.GetDirectoryName(filePath);
+            var directory = Path.GetDirectoryName(fullPath);
 
             if (!string.IsNullOrEmpty(directory) && !Directory.Exists(directory))
                 Directory.CreateDirectory(directory);
 
-            await File.WriteAllBytesAsync(filePath, encryptedBytes, cancellationToken);
+            await File.WriteAllBytesAsync(fullPath, encryptedBytes, cancellationToken);
 
             _logger.LogInformation(
                 "Successfully encrypted and saved file at: {FilePath}",
@@ -126,11 +138,14 @@ public class LocalFileStorageService : IFileStorageService
     {
         try
         {
-            if (!File.Exists(fileUrl))
+            if (!IsValidPath(fileUrl, out var fullPath))
+                return Result.Failure<Stream>("Invalid file path");
+
+            if (!File.Exists(fullPath))
                 return Result.Failure<Stream>("File not found");
 
             var memoryStream = new MemoryStream();
-            using (var fileStream = new FileStream(fileUrl, FileMode.Open, FileAccess.Read))
+            using (var fileStream = new FileStream(fullPath, FileMode.Open, FileAccess.Read))
             {
                 await fileStream.CopyToAsync(memoryStream, cancellationToken);
             }
@@ -158,7 +173,10 @@ public class LocalFileStorageService : IFileStorageService
     {
         try
         {
-            if (!File.Exists(fileUrl))
+            if (!IsValidPath(fileUrl, out var fullPath))
+                return Result.Failure<Stream>("Invalid file path");
+
+            if (!File.Exists(fullPath))
                 return Result.Failure<Stream>("File not found");
 
             _logger.LogInformation(
@@ -168,7 +186,7 @@ public class LocalFileStorageService : IFileStorageService
                 entityId);
 
             // Read encrypted file
-            var encryptedBytes = await File.ReadAllBytesAsync(fileUrl, cancellationToken);
+            var encryptedBytes = await File.ReadAllBytesAsync(fullPath, cancellationToken);
 
             // Decrypt using HashiCorp Vault
             var decryptedBytes = await _encryptionService.DecryptBytesAsync(
@@ -202,9 +220,12 @@ public class LocalFileStorageService : IFileStorageService
     {
         try
         {
-            if (File.Exists(fileUrl))
+            if (!IsValidPath(fileUrl, out var fullPath))
+                return Result.Failure("Invalid file path");
+
+            if (File.Exists(fullPath))
             {
-                await Task.Run(() => File.Delete(fileUrl), cancellationToken);
+                await Task.Run(() => File.Delete(fullPath), cancellationToken);
             }
 
             return Result.Success();

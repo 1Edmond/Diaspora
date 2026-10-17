@@ -30,5 +30,6 @@ public record GetServiceListingsQuery(
     string? ArrivalCountry = null,
     string? ArrivalCity = null,
     decimal? MinRemainingKg = null,
-    DateTime? TravelDate = null
+    DateTime? TravelDate = null,
+    Guid? ProviderId = null
 ) : PagedQuery<Result<PagedList<ServiceListingSummaryDto>>>(PageNumber, PageSize);

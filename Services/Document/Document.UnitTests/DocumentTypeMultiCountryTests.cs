@@ -93,7 +93,7 @@ public class DocumentTypeMultiCountryTests
         transRepo.GetByOwnerIdsAsync(Arg.Any<IEnumerable<Guid>>(), Arg.Any<CancellationToken>()).Returns(translations);
 
         var controller = new DocumentTypeController(repo, transRepo, currentUser, unitOfWork, logger);
-        var actionResult = await controller.GetAll(countryId, CancellationToken.None);
+        var actionResult = await controller.GetAll(profileTypeId: countryId, cancellationToken: CancellationToken.None);
 
         var okResult = actionResult.Should().BeOfType<OkObjectResult>().Subject;
         var dtos = okResult.Value.Should().BeAssignableTo<IEnumerable<DocumentTypeDto>>().Subject.ToList();

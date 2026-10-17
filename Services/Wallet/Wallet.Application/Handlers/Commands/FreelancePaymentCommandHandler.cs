@@ -1,4 +1,5 @@
 using Shared.Domain.Commons;
+using Shared.Domain.Interfaces;
 using System;
 using Wallet.Application.Commands;
 using Wallet.Application.Interfaces;
@@ -6,7 +7,9 @@ using Wallet.Domain.Events;
 
 namespace Wallet.Application.Handlers.Commands;
 
-public sealed class FreelancePaymentCommandHandler(IWalletRepository repository)
+public sealed class FreelancePaymentCommandHandler(
+    IWalletRepository repository,
+    IUnitOfWork unitOfWork)
 {
     public async Task<Result> Handle(
         FreelancePaymentCommand command, CancellationToken cancellationToken)
@@ -34,6 +37,7 @@ public sealed class FreelancePaymentCommandHandler(IWalletRepository repository)
 
         await repository.UpdateAsync(employer, cancellationToken);
         await repository.UpdateAsync(worker, cancellationToken);
+        await unitOfWork.SaveChangesAsync(cancellationToken);
 
         return Result.Success();
     }

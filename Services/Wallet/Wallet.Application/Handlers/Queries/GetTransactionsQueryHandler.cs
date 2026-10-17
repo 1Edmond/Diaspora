@@ -1,4 +1,4 @@
-﻿using Shared.Application.Models;
+using Shared.Application.Models;
 using Shared.Domain.Commons;
 using System;
 using System.Collections.Generic;
@@ -25,14 +25,14 @@ public sealed class GetTransactionsQueryHandler(
             return Result.Failure<PagedList<TransactionDto>>("Wallet not found.");
 
         var transactions = await transactionRepository.GetByWalletIdAsync(
-            wallet.Id, query.PageNumber, query.PageSize, cancellationToken);
+            wallet.Id, query.PageNumber, query.PageSize, cancellationToken, query.Type, query.Status);
 
         var total = await transactionRepository.CountByWalletIdAsync(
-            wallet.Id, cancellationToken);
+            wallet.Id, cancellationToken, query.Type, query.Status);
 
         var dtos = transactions.Select(t => t.ToDto()).ToList();
 
-        var paged = PagedList<TransactionDto>.Create(dtos, query.PageNumber, query.PageSize);
+        var paged = new PagedList<TransactionDto>(dtos, total, query.PageNumber, query.PageSize);
 
         return Result.Success(paged);
     }

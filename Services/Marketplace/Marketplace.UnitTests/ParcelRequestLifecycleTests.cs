@@ -201,7 +201,7 @@ public class ParcelRequestLifecycleTests
     public async Task CancelServiceRequestCommandHandler_WhenAccepted_ShouldReleaseListingCapacity()
     {
         var handler = new CancelServiceRequestCommandHandler(
-            _requestRepository, _listingRepository, _unitOfWork, _messageBus);
+            _requestRepository, _unitOfWork, _messageBus, _listingRepository);
 
         var providerId = Guid.NewGuid();
         var requesterId = Guid.NewGuid();

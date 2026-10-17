@@ -1,4 +1,4 @@
-﻿using KYC.Application.Abstractions;
+using KYC.Application.Abstractions;
 using KYC.Application.Commands;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
@@ -28,12 +28,21 @@ public class UploadKYCDocumentCommandHandler(
         if (verification == null)
             return Result.Failure<Guid>("Verification not found");
 
-        var allowedTypes = new[] { "image/jpeg", "image/png", "application/pdf" };
-        if (!allowedTypes.Contains(command.File.ContentType))
-            return Result.Failure<Guid>("Invalid file type. Only JPG, PNG, and PDF are allowed");
+        if (command.File == null || command.File.Length <= 0 || command.File.Length > 10 * 1024 * 1024) // 10MB
+            return Result.Failure<Guid>("File size must be greater than 0 and must not exceed 10MB");
 
-        if (command.File.Length > 10 * 1024 * 1024) // 10MB
-            return Result.Failure<Guid>("File size must not exceed 10MB");
+        var safeFileName = Path.GetFileName(command.File.FileName);
+        if (string.IsNullOrWhiteSpace(safeFileName))
+            return Result.Failure<Guid>("Invalid file name");
+
+        var allowedExtensions = new[] { ".pdf", ".jpg", ".jpeg", ".png", ".webp" };
+        var extension = Path.GetExtension(safeFileName).ToLowerInvariant();
+        if (!allowedExtensions.Contains(extension))
+            return Result.Failure<Guid>("Invalid file extension. Only PDF, JPG, JPEG, PNG, and WEBP are allowed");
+
+        var allowedTypes = new[] { "image/jpeg", "image/jpg", "image/png", "image/webp", "application/pdf" };
+        if (!allowedTypes.Contains(command.File.ContentType?.ToLowerInvariant() ?? string.Empty))
+            return Result.Failure<Guid>("Invalid file type. Only JPG, PNG, WEBP, and PDF are allowed");
 
         if(_logger.IsEnabled(LogLevel.Information))
             _logger.LogInformation(
@@ -42,12 +51,12 @@ public class UploadKYCDocumentCommandHandler(
 
 
         using var stream = command.File.OpenReadStream();
-        var fileName = $"kyc/{command.VerificationId}/{Guid.NewGuid()}_{command.File.FileName}";
+        var fileName = $"kyc/{command.VerificationId}/{Guid.NewGuid()}_{safeFileName}";
 
         var uploadResult = await _fileStorage.UploadEncryptedFileAsync(
             stream,
             fileName,
-            command.File.ContentType,
+            command.File.ContentType!,
             command.VerificationId.ToString(),
             "KYCDocument",                    
             CancellationToken.None);
@@ -57,7 +66,7 @@ public class UploadKYCDocumentCommandHandler(
 
         var result = verification.AddDocument(
             command.DocumentType,
-            command.File.FileName,
+            safeFileName,
             uploadResult.Value,
             command.File.Length);
 

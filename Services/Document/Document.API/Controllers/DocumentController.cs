@@ -96,14 +96,27 @@ public class DocumentController(
         var key = request.ProfileId;
         var values = await cacheService.GetOrCreateAsync(
             CachedKeyConstants.UpdloadDocumentIdForAwaitingTaskCompletedForKey,
-            () => Task.FromResult(new Dictionary<Guid, List<Guid>>() {
+            () => Task.FromResult(new Dictionary<Guid, List<Guid>>()
+            {
                 [key] = []
             }),
             CachedKeyConstants.UpdloadDocumentIdForAwaitingTaskCompletedForKeyDuration,
-            cancellationToken: cancellationToken);
+            cancellationToken: cancellationToken) ?? new Dictionary<Guid, List<Guid>>();
 
-        values[key].Add(result.Value.DocumentId);
-        await cacheService.SetAsync(CachedKeyConstants.UpdloadDocumentIdForAwaitingTaskCompletedForKey, values);
+        if (!values.ContainsKey(key))
+            values[key] = new List<Guid>();
+
+        if (!values[key].Contains(result.Value.DocumentId))
+            values[key].Add(result.Value.DocumentId);
+
+        if (!values[key].Contains(request.DocumentTypeId))
+            values[key].Add(request.DocumentTypeId);
+
+        await cacheService.SetAsync(
+            CachedKeyConstants.UpdloadDocumentIdForAwaitingTaskCompletedForKey,
+            values,
+            CachedKeyConstants.UpdloadDocumentIdForAwaitingTaskCompletedForKeyDuration,
+            cancellationToken);
 
         return Ok(result.Value);
     }

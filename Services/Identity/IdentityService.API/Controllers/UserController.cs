@@ -1,4 +1,4 @@
-﻿using IdentityService.Application.Commands;
+using IdentityService.Application.Commands;
 using IdentityService.Application.Dtos;
 using IdentityService.Application.Queries;
 using Microsoft.AspNetCore.Authorization;
@@ -8,6 +8,7 @@ using Shared.Application.Models;
 using Shared.Domain.Commons;
 using Shared.Domain.Enums;
 using Shared.Security.Attributes;
+using System.Security.Claims;
 using Wolverine;
 
 namespace IdentityService.API.Controllers;
@@ -29,6 +30,10 @@ public class UserController(IMessageBus _messageBus,
     [HttpGet("{id:guid}")]
     public async Task<IActionResult> GetUser(Guid id)
     {
+        var isStaff = User.IsInRole("Admin") || User.IsInRole("SuperAdmin") || User.IsInRole("Moderator");
+        if (!isStaff && User.FindFirstValue(ClaimTypes.NameIdentifier) != id.ToString())
+            return Forbid();
+
         var query = new GetUserQuery(id);
         var result = await _messageBus.InvokeAsync<Result<UserDto>>(query);
 
@@ -85,7 +90,7 @@ public class UserController(IMessageBus _messageBus,
     public async Task<IActionResult> UpdateUser(Guid id, [FromBody] UpdateUserCommand command)
     {
         var currentUserId = GetCurrentUserId();
-        var isAdmin = User.IsInRole("Admin");
+        var isAdmin = User.IsInRole("Admin") || User.IsInRole("SuperAdmin");
 
         if (id != currentUserId && !isAdmin)
             return Forbid();

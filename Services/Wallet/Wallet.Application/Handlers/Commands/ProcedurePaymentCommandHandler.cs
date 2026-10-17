@@ -1,4 +1,5 @@
-﻿using Shared.Domain.Commons;
+using Shared.Domain.Commons;
+using Shared.Domain.Interfaces;
 using System;
 using System.Collections.Generic;
 using System.Text;
@@ -7,7 +8,9 @@ using Wallet.Application.Interfaces;
 
 namespace Wallet.Application.Handlers.Commands;
 
-public sealed class ProcedurePaymentCommandHandler(IWalletRepository repository)
+public sealed class ProcedurePaymentCommandHandler(
+    IWalletRepository repository,
+    IUnitOfWork unitOfWork)
 {
     public async Task<Result<Guid>> Handle(
         ProcedurePaymentCommand command,
@@ -26,6 +29,7 @@ public sealed class ProcedurePaymentCommandHandler(IWalletRepository repository)
             return Result.Failure<Guid>(result.Error);
 
         await repository.UpdateAsync(wallet, cancellationToken);
+        await unitOfWork.SaveChangesAsync(cancellationToken);
         return Result.Success(result.Value.Id);
     }
 }

@@ -42,7 +42,7 @@ public class GetMyReceivedRequestsQueryHandler(
         {
             profiles.TryGetValue(r.RequesterId, out var req);
             profiles.TryGetValue(r.ProviderId, out var prov);
-            return r.MapToDto(req, prov);
+            return r.MapToDto(req, prov, includeOtpCodes: false);
         }).ToList();
 
         return Result.Success(new PagedList<ServiceRequestDto>(items, totalCount, query.PageNumber, query.PageSize));

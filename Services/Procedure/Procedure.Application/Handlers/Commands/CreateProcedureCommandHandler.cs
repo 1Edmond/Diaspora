@@ -1,4 +1,4 @@
-﻿using Procedure.Application.Commands;
+using Procedure.Application.Commands;
 using Procedure.Application.Extensions;
 using Procedure.Application.Interfaces;
 using Procedure.Application.Requests;
@@ -15,7 +15,8 @@ namespace Procedure.Application.Handlers.Commands;
 
 public sealed class CreateProcedureCommandHandler(
     IProcedureRepository repository,
-    ILocationRepository locationRepository)
+    ILocationRepository locationRepository,
+    IUnitOfWork unitOfWork)
 {
     public async Task<Result<Guid>> Handle(
         CreateProcedureCommand command,
@@ -69,6 +70,7 @@ public sealed class CreateProcedureCommandHandler(
             procedure.AddRequiredDocument(docTypeId);
 
         await repository.AddAsync(procedure, cancellationToken);
+        await unitOfWork.SaveChangesAsync(cancellationToken);
         return Result.Success(procedure.Id);
     }
    

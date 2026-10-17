@@ -43,6 +43,22 @@ public class DisputeController(
 
     [Permission(
         resourceKey: "marketplace.dispute",
+        action: "create",
+        description: "Open a marketplace dispute",
+        recommendedRoles: new[] { "User", "Admin" }
+    )]
+    [HttpPost]
+    public async Task<IActionResult> OpenDispute([FromBody] OpenDisputeCommand command)
+    {
+        var cmd = command with { InitiatorUserId = GetCurrentUserId() };
+        var result = await _messageBus.InvokeAsync<Result<Guid>>(cmd);
+
+        if (result.IsFailure) return BadRequest(new { error = result.Error });
+        return CreatedAtAction(nameof(GetDisputeById), new { id = result.Value }, new { id = result.Value });
+    }
+
+    [Permission(
+        resourceKey: "marketplace.dispute",
         action: "read",
         description: "Get dispute details",
         recommendedRoles: new[] { "Admin", "Moderator" }

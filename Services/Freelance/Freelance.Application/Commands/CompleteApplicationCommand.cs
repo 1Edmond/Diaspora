@@ -4,4 +4,4 @@ using System;
 
 namespace Freelance.Application.Commands;
 
-public record CompleteApplicationCommand(Guid JobApplicationId, Guid WorkerId) : ICommand<Result>;
+public record CompleteApplicationCommand(Guid JobApplicationId, Guid WorkerId, bool IsAdmin = false) : ICommand<Result>;

@@ -36,5 +36,7 @@ public record ServiceRequestDto(
     DateTime? DeliveryConfirmedAt = null,
     string? DeliveryProofUrl = null,
     bool HasHandoverOtp = false,
-    bool HasDeliveryOtp = false
+    bool HasDeliveryOtp = false,
+    string? HandoverOtpCode = null,
+    string? DeliveryOtpCode = null
 );

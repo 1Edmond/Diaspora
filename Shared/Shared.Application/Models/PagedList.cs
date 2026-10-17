@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -27,8 +27,12 @@ public class PagedList<T>
 
     public static PagedList<T> Create(IEnumerable<T> source, int pageNumber, int pageSize)
     {
-        var count = source.Count();
-        var items = source
+        pageNumber = Math.Max(1, pageNumber);
+        pageSize = Math.Max(1, pageSize);
+
+        var list = source as ICollection<T> ?? source.ToList();
+        var count = list.Count;
+        var items = list
             .Skip((pageNumber - 1) * pageSize)
             .Take(pageSize)
             .ToList();
@@ -36,18 +40,22 @@ public class PagedList<T>
         return new PagedList<T>(items, count, pageNumber, pageSize);
     }
 
-    public static async Task<PagedList<T>> CreateAsync(
+    public static Task<PagedList<T>> CreateAsync(
         IQueryable<T> source,
         int pageNumber,
         int pageSize,
         CancellationToken cancellationToken = default)
     {
+        cancellationToken.ThrowIfCancellationRequested();
+        pageNumber = Math.Max(1, pageNumber);
+        pageSize = Math.Max(1, pageSize);
+
         var count = source.Count();
         var items = source
             .Skip((pageNumber - 1) * pageSize)
             .Take(pageSize)
             .ToList();
 
-        return new PagedList<T>(items, count, pageNumber, pageSize);
+        return Task.FromResult(new PagedList<T>(items, count, pageNumber, pageSize));
     }
 }

@@ -41,6 +41,8 @@ public class ServiceRequestConfiguration : BaseEntityConfiguration<ServiceReques
         builder.Property(r => r.DeclaredValue).HasPrecision(18, 2);
         builder.Property(r => r.HandoverOtpHash).HasMaxLength(500);
         builder.Property(r => r.DeliveryOtpHash).HasMaxLength(500);
+        builder.Property(r => r.HandoverOtpCode).HasMaxLength(20);
+        builder.Property(r => r.DeliveryOtpCode).HasMaxLength(20);
         builder.Property(r => r.HandoverProofUrl).HasMaxLength(500);
         builder.Property(r => r.DeliveryProofUrl).HasMaxLength(500);
         builder.Property(r => r.HandoverConfirmedAt).HasColumnType("timestamptz");

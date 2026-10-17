@@ -1,4 +1,4 @@
-﻿using IdentityService.Application.Abstractions;
+using IdentityService.Application.Abstractions;
 using IdentityService.Application.Commands;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -11,9 +11,36 @@ namespace IdentityService.API.Controllers;
 public class AuthorizationController(
     IPermissionService permissionService,
     ILogger<AuthorizationController> logger,
-    ICurrentUserService _currentUserService) : ControllerBase
+    ICurrentUserService _currentUserService,
+    IConfiguration _configuration) : ControllerBase
 {
-   
+    private bool IsAuthorizedInternalOrSelfOrAdmin(Guid targetUserId)
+    {
+        if (User.Identity?.IsAuthenticated == true)
+        {
+            if (User.IsInRole("Admin") || User.IsInRole("SuperAdmin"))
+                return true;
+
+            return Guid.TryParse(_currentUserService.UserId, out var currentUserId)
+                && currentUserId == targetUserId;
+        }
+
+        // Internal Gateway-to-Identity call (no X-User-Id header injected by external proxy)
+        var hasExternalUserHeader = Request.Headers.ContainsKey("X-User-Id");
+        if (hasExternalUserHeader)
+            return false;
+
+        var configuredSecret = _configuration["Gateway:Secret"];
+        var requestSecret = Request.Headers["X-Gateway-Secret"].ToString();
+        if (!string.IsNullOrEmpty(configuredSecret) && !string.IsNullOrEmpty(requestSecret))
+        {
+            return string.Equals(configuredSecret, requestSecret, StringComparison.Ordinal);
+        }
+
+        // Allow internal cluster calls when X-User-Id is absent
+        return true;
+    }
+
     [AllowAnonymous]
     [HttpGet("check")]
     public async Task<IActionResult> CheckPermission(
@@ -21,6 +48,9 @@ public class AuthorizationController(
       [FromQuery] string path,
       [FromQuery] string method)
     {
+        if (!IsAuthorizedInternalOrSelfOrAdmin(userId))
+            return Forbid();
+
         var hasPermission = await permissionService.UserHasPermissionAsync(
             userId, path, method
         );
@@ -34,6 +64,9 @@ public class AuthorizationController(
     public async Task<IActionResult> GetUserPermissions(
       [FromQuery] Guid userId)
     {
+        if (!IsAuthorizedInternalOrSelfOrAdmin(userId))
+            return Forbid();
+
         var userAuthorisation = await permissionService.GetUserPermissionsAsync(
             userId);
 

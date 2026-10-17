@@ -20,8 +20,12 @@ public class CompleteApplicationCommandHandler(
         if (application is null)
             return Result.Failure("Application not found.");
 
-        if (application.WorkerId != command.WorkerId)
-            return Result.Failure("You are not the owner of this application.");
+        var job = application.Posting ?? await _postingRepository.GetByIdAsync(application.JobPostingId);
+        var isWorker = application.WorkerId == command.WorkerId;
+        var isEmployer = job is not null && job.EmployerId == command.WorkerId;
+
+        if (!isWorker && !isEmployer && !command.IsAdmin)
+            return Result.Failure("You are not authorized to complete this application.");
 
         var result = application.Complete();
         if (result.IsFailure)

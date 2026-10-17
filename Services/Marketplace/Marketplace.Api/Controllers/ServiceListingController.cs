@@ -35,14 +35,16 @@ public class ServiceListingController(
         [FromQuery] double? userLatitude = null,
         [FromQuery] double? userLongitude = null,
         [FromQuery] double? maxDistanceKm = null,
-        [FromQuery] bool availableNow = false)
+        [FromQuery] bool availableNow = false,
+        [FromQuery] Guid? providerId = null)
     {
         // Le pageSize est plafonné pour éviter les requêtes abusivement coûteuses
         pageSize = Math.Clamp(pageSize, 1, 50);
 
         var query = new GetServiceListingsQuery(
             page, pageSize, categoryId, search, paymentMode, minPrice, maxPrice,
-            ActiveOnly: true, city, country, sortBy, userLatitude, userLongitude, maxDistanceKm, availableNow);
+            ActiveOnly: true, city, country, sortBy, userLatitude, userLongitude, maxDistanceKm, availableNow,
+            ProviderId: providerId);
 
         var result = await _messageBus.InvokeAsync<Result<PagedList<ServiceListingSummaryDto>>>(query);
 
@@ -286,13 +288,15 @@ public class ServiceListingController(
         [FromQuery] double? userLongitude = null,
         [FromQuery] double? maxDistanceKm = null,
         [FromQuery] bool availableNow = false,
-        [FromQuery] ListingStatus? status = null)
+        [FromQuery] ListingStatus? status = null,
+        [FromQuery] Guid? providerId = null)
     {
         pageSize = Math.Clamp(pageSize, 1, 50);
 
         var query = new GetServiceListingsQuery(
             page, pageSize, categoryId, search, paymentMode, minPrice, maxPrice,
-            ActiveOnly: false, city, country, sortBy, userLatitude, userLongitude, maxDistanceKm, availableNow, status);
+            ActiveOnly: false, city, country, sortBy, userLatitude, userLongitude, maxDistanceKm, availableNow, status,
+            ProviderId: providerId);
 
         var result = await _messageBus.InvokeAsync<Result<PagedList<ServiceListingSummaryDto>>>(query);
 

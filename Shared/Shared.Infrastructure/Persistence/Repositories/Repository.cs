@@ -1,4 +1,4 @@
-﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Caching.Distributed;
 using Microsoft.Extensions.Logging;
 using Shared.Domain.Interfaces;
@@ -40,16 +40,6 @@ public class Repository<T>(
 
     public virtual async Task<T?> GetByIdAsync(Guid id, CancellationToken cancellationToken = default)
     {
-        var cacheKey = BuildCacheKey(id.ToString());
-
-        var cached = await GetFromCacheAsync<T>(cacheKey, cancellationToken);
-        if (cached is not null)
-        {
-            Logger.LogDebug("Cache HIT — {CacheKey}", cacheKey);
-            return cached;
-        }
-
-        Logger.LogDebug("Cache MISS — {CacheKey}", cacheKey);
         var entity = await DbSet.FindAsync(new object[] { id }, cancellationToken);
 
         if (entity is null)
@@ -58,34 +48,18 @@ public class Repository<T>(
         if (_hasSensitiveData)
             await EncryptedValueObjectHelper.DecryptEntityAsync(entity, EncryptionService, cancellationToken);
 
-        if (!_hasSensitiveData)
-            await SetCacheAsync(cacheKey, entity, cancellationToken);
-
         return entity;
     }
 
     public virtual async Task<IEnumerable<T>> GetAllAsync(CancellationToken cancellationToken = default)
     {
-        var cacheKey = BuildCacheKey("all");
-
-        var cached = await GetFromCacheAsync<List<T>>(cacheKey, cancellationToken);
-        if (cached is not null)
-        {
-            Logger.LogDebug("Cache HIT — {CacheKey}", cacheKey);
-            return cached;
-        }
-
-        Logger.LogDebug("Cache MISS — {CacheKey}", cacheKey);
-        var entities = await DbSet.AsNoTracking().ToListAsync(cancellationToken);
+        var entities = await DbSet.ToListAsync(cancellationToken);
 
         if (_hasSensitiveData)
         {
             foreach (var entity in entities)
                 await EncryptedValueObjectHelper.DecryptEntityAsync(entity, EncryptionService, cancellationToken);
         }
-
-        if (!_hasSensitiveData)
-            await SetCacheAsync(cacheKey, entities, cancellationToken);
 
         return entities;
     }
@@ -143,29 +117,27 @@ public class Repository<T>(
 
         return entity;
     }
+
     public virtual async Task AddRangeAsync(List<T> entities, CancellationToken cancellationToken = default)
     {
         if (_hasSensitiveData)
         {
-            entities.ForEach(async entity =>
+            foreach (var entity in entities)
             {
-
                 await EncryptedValueObjectHelper.EncryptEntityAsync(
                     entity,
                     EncryptionService,
                     KeyManagement,
                     MetadataRepository,
                     cancellationToken);
-            });
+            }
         }
 
         await DbSet.AddRangeAsync(entities, cancellationToken);
 
         Logger.LogInformation(
-            "Entity {EntityType} with id added (has sensitive data)",
-            typeof(T).Name);
-
-      
+            "Entity {EntityType} batch of {Count} added (has sensitive data: {HasSensitiveData})",
+            typeof(T).Name, entities.Count, _hasSensitiveData);
     }
 
     public virtual async Task UpdateAsync(T entity, CancellationToken cancellationToken = default)

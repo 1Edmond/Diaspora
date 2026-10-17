@@ -31,6 +31,7 @@ public class GetServiceRequestByIdQueryHandler(
         profiles.TryGetValue(request.RequesterId, out var requesterProfile);
         profiles.TryGetValue(request.ProviderId, out var providerProfile);
 
-        return Result.Success(request.MapToDto(requesterProfile, providerProfile));
+        var includeOtpCodes = request.RequesterId == query.RequestedBy;
+        return Result.Success(request.MapToDto(requesterProfile, providerProfile, includeOtpCodes));
     }
 }

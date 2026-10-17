@@ -21,10 +21,21 @@ public class PermissionAuthorizationFilter : IAuthorizationFilter
 
     public void OnAuthorization(AuthorizationFilterContext context)
     {
+        if (context.ActionDescriptor.EndpointMetadata.OfType<Microsoft.AspNetCore.Authorization.IAllowAnonymous>().Any())
+        {
+            return;
+        }
+
         var httpContext = context.HttpContext;
+        if (httpContext.User.Identity?.IsAuthenticated != true)
+        {
+            context.Result = new UnauthorizedResult();
+            return;
+        }
+
         var requiredPermission = $"{_permission.ResourceKey}.{_permission.Action}";
 
-        // 1. Check if user roles from gateway match recommended roles (e.g. User or Admin)
+        // 1. Check if user roles from gateway or claims match Admin/SuperAdmin or recommended roles
         var userRoles = httpContext.Request.Headers["X-User-Roles"]
             .ToString()
             .Split(',', StringSplitOptions.RemoveEmptyEntries)
@@ -33,10 +44,26 @@ public class PermissionAuthorizationFilter : IAuthorizationFilter
 
         var userId = httpContext.Request.Headers["X-User-Id"].ToString();
 
+        var isAdmin = httpContext.User.IsInRole("Admin")
+            || httpContext.User.IsInRole("SuperAdmin")
+            || userRoles.Any(r => r.Equals("Admin", StringComparison.OrdinalIgnoreCase)
+                               || r.Equals("SuperAdmin", StringComparison.OrdinalIgnoreCase));
+
+        if (isAdmin)
+        {
+            if (_logger.IsEnabled(LogLevel.Debug))
+                _logger.LogDebug(
+                    "[PermissionFilter] ✅ Admin permission granted for {Permission} (User={UserId})",
+                    requiredPermission, userId
+                );
+            return;
+        }
+
         if (_permission.RecommendedRoles != null && _permission.RecommendedRoles.Length > 0)
         {
             var hasMatchingRole = userRoles.Any(r =>
-                _permission.RecommendedRoles.Contains(r, StringComparer.OrdinalIgnoreCase));
+                    _permission.RecommendedRoles.Contains(r, StringComparer.OrdinalIgnoreCase))
+                || _permission.RecommendedRoles.Any(r => httpContext.User.IsInRole(r));
 
             // Authenticated user with explicitly matched role
             if (hasMatchingRole)

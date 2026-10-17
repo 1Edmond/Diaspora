@@ -25,8 +25,10 @@ public class JobCheckInController(
     [HttpGet]
     public async Task<IActionResult> GetMyCheckIns([FromQuery] int page = 1, [FromQuery] int pageSize = 10)
     {
+        var isAdmin = _currentUserService.IsInRole("Admin") || _currentUserService.IsInRole("SuperAdmin") || _currentUserService.IsInRole("Moderator");
+        var userId = Guid.TryParse(_currentUserService.UserId, out var id) ? id : Guid.Empty;
         var result = await _messageBus.InvokeAsync<Result<PagedList<JobCheckInDto>>>(
-            new GetJobCheckInsQuery(GetCurrentUserId(), page, pageSize));
+            new GetJobCheckInsQuery(userId, page, pageSize, isAdmin));
 
         if (result.IsFailure) return BadRequest(new { error = result.Error });
         return Ok(result.Value);

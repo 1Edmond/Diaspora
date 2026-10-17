@@ -1,16 +1,23 @@
-﻿using Microsoft.AspNetCore.Mvc;
-using Procedure.Application.Extensions;
-using Procedure.Application.Interfaces;
-using Procedure.Domain.Entities;
-using Shared.Domain.ValueObjects;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
+using Procedure.Application.Commands;
+using Procedure.Application.DTOs;
+using Procedure.Application.Queries;
+using Procedure.Application.Requests;
+using Shared.Domain.Commons;
+using Shared.Domain.Interfaces;
 using Shared.Security.Attributes;
+using Wolverine;
 
 namespace Procedure.Api.Controllers;
 
 [ApiController]
+[Route("api/locations")]
 [Route("api/[controller]")]
+[Authorize]
 public class LocationController(
-    ILocationRepository _repository,
+    IMessageBus _messageBus,
+    IUnitOfWork _unitOfWork,
     ILogger<LocationController> _logger) : ControllerBase
 {
     [Permission(
@@ -20,10 +27,41 @@ public class LocationController(
         recommendedRoles: new[] { "User", "Admin" }
     )]
     [HttpGet]
-    public async Task<IActionResult> GetAll(CancellationToken cancellationToken)
+    public async Task<IActionResult> GetAll(
+        [FromQuery] string? countryCode = null,
+        [FromQuery] string? city = null,
+        [FromQuery] string? search = null,
+        CancellationToken cancellationToken = default)
     {
-        var locations = await _repository.GetAllActiveAsync(cancellationToken);
-        return Ok(locations.Select(l => l.ToDto()));
+        var result = await _messageBus.InvokeAsync<Result<IReadOnlyList<LocationDto>>>(
+            new GetAllLocationsQuery(countryCode, city, search),
+            cancellationToken);
+
+        if (result.IsFailure)
+            return BadRequest(new { error = result.Error });
+
+        return Ok(result.Value);
+    }
+
+    [Permission(
+        resourceKey: "procedure.location",
+        action: "read",
+        description: "Get a location by ID",
+        recommendedRoles: new[] { "User", "Admin" }
+    )]
+    [HttpGet("{id:guid}")]
+    public async Task<IActionResult> GetById(
+        Guid id,
+        CancellationToken cancellationToken)
+    {
+        var result = await _messageBus.InvokeAsync<Result<LocationDto>>(
+            new GetLocationByIdQuery(id),
+            cancellationToken);
+
+        if (result.IsFailure)
+            return NotFound(new { error = result.Error });
+
+        return Ok(result.Value);
     }
 
     [Permission(
@@ -37,59 +75,139 @@ public class LocationController(
         [FromBody] CreateLocationRequest request,
         CancellationToken cancellationToken)
     {
-        // Construire le Value Object Address depuis Shared.Domain
-        var addressResult = Address.Create(
-            request.Street,
-            request.City,
-            request.State,
-            request.PostalCode,
-            request.Country);
+        var street = !string.IsNullOrWhiteSpace(request.Street)
+            ? request.Street
+            : (!string.IsNullOrWhiteSpace(request.Address) ? request.Address : "-");
 
-        if (addressResult.IsFailure)
-            return BadRequest(new { error = addressResult.Error });
+        var country = !string.IsNullOrWhiteSpace(request.Country)
+            ? request.Country
+            : (!string.IsNullOrWhiteSpace(request.CountryCode) ? request.CountryCode : "-");
 
-        var schedule = request.Schedule.Select(s =>
-            s.IsClosed
-                ? DaySchedule.Closed(s.Day)
-                : DaySchedule.Open(s.Day, s.OpenTime!.Value, s.CloseTime!.Value))
-            .ToList();
-
-        var result = Location.Create(
+        var command = new CreateLocationCommand(
             request.Name,
-            addressResult.Value,
-            request.Latitude,
-            request.Longitude,
+            street,
+            request.City,
+            request.State ?? string.Empty,
+            request.PostalCode ?? string.Empty,
+            country,
+            request.Latitude ?? 0,
+            request.Longitude ?? 0,
             request.PhoneNumber,
-            request.Website,
-            new OpeningHours(schedule));
+            request.Website ?? request.Email,
+            request.Schedule);
+
+        var result = await _messageBus.InvokeAsync<Result<LocationDto>>(
+            command, cancellationToken);
 
         if (result.IsFailure)
             return BadRequest(new { error = result.Error });
 
-        await _repository.AddAsync(result.Value, cancellationToken);
+        await _unitOfWork.SaveChangesAsync(cancellationToken);
 
-        return Ok(result.Value.ToDto());
+        return Ok(result.Value);
+    }
+
+    [Permission(
+        resourceKey: "procedure.location",
+        action: "update",
+        description: "Update a location (admin)",
+        recommendedRoles: new[] { "Admin" }
+    )]
+    [HttpPut("{id:guid}")]
+    public async Task<IActionResult> Update(
+        Guid id,
+        [FromBody] UpdateLocationRequest request,
+        CancellationToken cancellationToken)
+    {
+        var street = !string.IsNullOrWhiteSpace(request.Street)
+            ? request.Street
+            : (!string.IsNullOrWhiteSpace(request.Address) ? request.Address : "-");
+
+        var country = !string.IsNullOrWhiteSpace(request.Country)
+            ? request.Country
+            : (!string.IsNullOrWhiteSpace(request.CountryCode) ? request.CountryCode : "-");
+
+        var command = new UpdateLocationCommand(
+            id,
+            request.Name,
+            street,
+            request.City,
+            request.State ?? string.Empty,
+            request.PostalCode ?? string.Empty,
+            country,
+            request.Latitude ?? 0,
+            request.Longitude ?? 0,
+            request.PhoneNumber,
+            request.Website ?? request.Email,
+            request.Schedule);
+
+        var result = await _messageBus.InvokeAsync<Result<LocationDto>>(
+            command, cancellationToken);
+
+        if (result.IsFailure)
+            return BadRequest(new { error = result.Error });
+
+        await _unitOfWork.SaveChangesAsync(cancellationToken);
+
+        return Ok(result.Value);
+    }
+
+    [Permission(
+        resourceKey: "procedure.location",
+        action: "delete",
+        description: "Delete a location (admin)",
+        recommendedRoles: new[] { "Admin" }
+    )]
+    [HttpDelete("{id:guid}")]
+    public async Task<IActionResult> Delete(
+        Guid id,
+        CancellationToken cancellationToken)
+    {
+        var result = await _messageBus.InvokeAsync<Result>(
+            new DeleteLocationCommand(id),
+            cancellationToken);
+
+        if (result.IsFailure)
+            return NotFound(new { error = result.Error });
+
+        await _unitOfWork.SaveChangesAsync(cancellationToken);
+
+        return Ok(new { message = "Location deleted successfully" });
     }
 }
 
 public sealed record CreateLocationRequest(
     string Name,
-    string Street,
-    string City,
-    string State,
-    string PostalCode,
-    string Country,
-    double Latitude,
-    double Longitude,
-    string? PhoneNumber,
-    string? Website,
-    List<DayScheduleRequest> Schedule
+    string? Street = null,
+    string City = "",
+    string? State = null,
+    string? PostalCode = null,
+    string? Country = null,
+    double? Latitude = 0,
+    double? Longitude = 0,
+    string? PhoneNumber = null,
+    string? Website = null,
+    List<DayScheduleRequest>? Schedule = null,
+    string? Address = null,
+    string? CountryCode = null,
+    string? Email = null,
+    string? OpeningHours = null
 );
 
-public sealed record DayScheduleRequest(
-    DayOfWeek Day,
-    bool IsClosed,
-    TimeOnly? OpenTime,
-    TimeOnly? CloseTime
+public sealed record UpdateLocationRequest(
+    string Name,
+    string? Street = null,
+    string City = "",
+    string? State = null,
+    string? PostalCode = null,
+    string? Country = null,
+    double? Latitude = 0,
+    double? Longitude = 0,
+    string? PhoneNumber = null,
+    string? Website = null,
+    List<DayScheduleRequest>? Schedule = null,
+    string? Address = null,
+    string? CountryCode = null,
+    string? Email = null,
+    string? OpeningHours = null
 );
-

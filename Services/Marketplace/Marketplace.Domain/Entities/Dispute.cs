@@ -82,12 +82,18 @@ public class Dispute : AggregateRoot
         decimal buyerRefundPercentage,
         decimal sellerPayoutPercentage)
     {
+        if (Status is DisputeStatus.ResolvedBuyerRefunded or DisputeStatus.ResolvedSellerPaid or DisputeStatus.ResolvedSplit or DisputeStatus.Dismissed)
+            throw new InvalidOperationException("Ce litige est déjà résolu ou clôturé.");
+
         if (finalStatus == DisputeStatus.Opened || finalStatus == DisputeStatus.UnderReview)
             throw new ArgumentException("Resolution status must be a terminal resolved status.", nameof(finalStatus));
 
         if (buyerRefundPercentage < 0 || buyerRefundPercentage > 100 ||
             sellerPayoutPercentage < 0 || sellerPayoutPercentage > 100)
             throw new ArgumentOutOfRangeException("Percentages must be between 0 and 100.");
+
+        if (finalStatus == DisputeStatus.ResolvedSplit && (buyerRefundPercentage + sellerPayoutPercentage != 100m))
+            throw new ArgumentException("For a split resolution, buyer refund percentage and seller payout percentage must sum to 100.");
 
         ResolvedBy = adminUserId;
         ResolvedAt = DateTime.UtcNow;

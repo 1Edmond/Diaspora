@@ -50,9 +50,13 @@ public sealed class MarketplacePaymentRefundRequestedConsumer(
             return;
         }
 
+        var refundAmount = @event.Amount.HasValue && @event.Amount.Value > 0m
+            ? @event.Amount.Value
+            : (holdTx?.Amount ?? 0m);
+
         var refundResult = buyer.RefundMarketplaceHold(
             @event.ServiceRequestId,
-            holdTx?.Amount ?? 0m,
+            refundAmount,
             $"Marketplace escrow refund for request {@event.ServiceRequestId}");
 
         if (refundResult.IsFailure)

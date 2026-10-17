@@ -19,6 +19,8 @@ public class AdminUserSeeder(
 
     public async Task SeedAsync()
     {
+        await EnsureAdminRoleHasAllPermissionsAsync();
+
         var anyAdminExists = await _context.Users
             .AnyAsync(u => u.UserRoles.Any(ur => ur.Role.Name == DefaultRole.Admin));
 
@@ -30,7 +32,9 @@ public class AdminUserSeeder(
 
         _logger.LogInformation("[AdminUserSeeder] Seeding default admin user: {Email}...", DefaultAdminEmail);
 
-        var adminRole = await _context.Roles.FirstOrDefaultAsync(r => r.Name == DefaultRole.Admin)
+        var adminRole = await _context.Roles
+                .Include(r => r.RolePermissions)
+                .FirstOrDefaultAsync(r => r.Name == DefaultRole.Admin)
             ?? await _context.Roles.FindAsync(DefaultRole.GetRoleId(DefaultRole.Admin));
 
         if (adminRole == null)
@@ -75,5 +79,45 @@ public class AdminUserSeeder(
 
         await _context.SaveChangesAsync();
         _logger.LogInformation("[AdminUserSeeder] Default Admin user created successfully: {Email} with role {Role}", DefaultAdminEmail, DefaultRole.Admin);
+    }
+
+    private async Task EnsureAdminRoleHasAllPermissionsAsync()
+    {
+        var adminRoles = await _context.Roles
+            .Include(r => r.RolePermissions)
+            .Where(r => r.Name == DefaultRole.Admin || r.Name == "SuperAdmin")
+            .ToListAsync();
+
+        if (adminRoles.Count == 0)
+            return;
+
+        var allPermissions = await _context.ResourcePermissions
+            .Where(p => p.IsActive)
+            .ToListAsync();
+
+        var addedCount = 0;
+        foreach (var role in adminRoles)
+        {
+            foreach (var permission in allPermissions)
+            {
+                if (!role.RolePermissions.Any(rp =>
+                        rp.PermissionKey.Equals(permission.PermissionKey, StringComparison.OrdinalIgnoreCase)))
+                {
+                    await _context.RolePermissions.AddAsync(new RolePermission
+                    {
+                        RoleId = role.Id,
+                        PermissionKey = permission.PermissionKey,
+                        GrantedAt = DateTime.UtcNow
+                    });
+                    addedCount++;
+                }
+            }
+        }
+
+        if (addedCount > 0)
+        {
+            await _context.SaveChangesAsync();
+            _logger.LogInformation("[AdminUserSeeder] Synchronized {Count} missing permissions to Admin role(s)", addedCount);
+        }
     }
 }

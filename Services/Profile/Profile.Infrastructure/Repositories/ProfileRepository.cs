@@ -53,11 +53,29 @@ public sealed class ProfileRepository(
             .OrderBy(x => x.CreatedAt)
             .ToListAsync(cancellationToken);
 
+    public override async Task<Domain.Entities.Profile?> GetByIdAsync(
+        Guid id,
+        CancellationToken cancellationToken = default)
+    {
+        var entity = await _context.InternalProfiles
+            .Include(p => p.ProfileType)
+            .FirstOrDefaultAsync(p => p.Id == id, cancellationToken);
+
+        if (entity is null)
+            return null;
+
+        if (Shared.Security.Helpers.EncryptedValueObjectHelper.HasSensitiveData<Domain.Entities.Profile>())
+        {
+            await Shared.Security.Helpers.EncryptedValueObjectHelper.DecryptEntityAsync(
+                entity, EncryptionService, cancellationToken);
+        }
+
+        return entity;
+    }
+
     public async Task<Domain.Entities.Profile?> GetByIdWithProfileTypeAsync(Guid id, CancellationToken cancellationToken = default)
     {
-        return await _context.InternalProfiles
-            .Include(x => x.ProfileType)
-            .FirstOrDefaultAsync(x => x.Id == id, cancellationToken);
+        return await GetByIdAsync(id, cancellationToken);
     }
 
     public async Task<IEnumerable<Domain.Entities.Profile>> GetAllWithProfileTypeAsync(CancellationToken cancellationToken = default)

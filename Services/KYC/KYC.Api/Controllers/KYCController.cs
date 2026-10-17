@@ -57,7 +57,7 @@ public class KYCController(
             return NotFound(new { error = result.Error });
 
         var userId = GetCurrentUserId();
-        var isAdmin = User.IsInRole("Admin");
+        var isAdmin = User.IsInRole("Admin") || User.IsInRole("SuperAdmin") || User.IsInRole("Moderator");
 
         if (result.Value.UserId != userId && !isAdmin)
             return Forbid();
@@ -111,6 +111,10 @@ public class KYCController(
     [HttpGet("user/{userId:guid}/compliance")]
     public async Task<IActionResult> GetUserCompliance(Guid userId, [FromQuery] Guid? profileTypeId = null)
     {
+        var isStaff = User.IsInRole("Admin") || User.IsInRole("SuperAdmin") || User.IsInRole("Moderator");
+        if (!isStaff && userId != GetCurrentUserId())
+            return Forbid();
+
         var query = new GetKycComplianceQuery(userId, profileTypeId);
         var result = await messageBus.InvokeAsync<Result<KycComplianceDto>>(query);
 
@@ -315,7 +319,7 @@ public class KYCController(
             return NotFound(new { error = verification.Error });
 
         var userId = GetCurrentUserId();
-        var isAdmin = User.IsInRole("Admin");
+        var isAdmin = User.IsInRole("Admin") || User.IsInRole("SuperAdmin") || User.IsInRole("Moderator");
 
         if (verification.Value.UserId != userId && !isAdmin)
             return Forbid();

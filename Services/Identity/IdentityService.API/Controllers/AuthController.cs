@@ -95,6 +95,7 @@ public partial class AuthController(IMessageBus _messageBus, ILogger<AuthControl
     }
 
 
+    [AllowAnonymous]
     [HttpPost("resend-verification")]
     public async Task<IActionResult> ResendVerificationCode([FromBody] RegenerateVerificationCodeCommand command)
     {

@@ -58,14 +58,16 @@ public sealed class TransactionController(
         Guid externalProfileId,
         [FromQuery] int pageNumber = 1,
         [FromQuery] int pageSize = 20,
-        CancellationToken cancellationToken = default)
+        CancellationToken cancellationToken = default,
+        [FromQuery] Wallet.Domain.Enums.TransactionType? type = null,
+        [FromQuery] Wallet.Domain.Enums.TransactionStatus? status = null)
     {
         if (!await WalletOwnership.CanReadAsync(
                 _walletRepository, _currentUserService, externalProfileId, cancellationToken))
             return AccessDenied();
 
         var result = await _messageBus.InvokeAsync<Result<PagedList<TransactionDto>>>(
-            new GetTransactionsQuery(externalProfileId, pageNumber, pageSize),
+            new GetTransactionsQuery(externalProfileId, pageNumber, pageSize, type, status),
             cancellationToken);
 
         if (result.IsFailure)

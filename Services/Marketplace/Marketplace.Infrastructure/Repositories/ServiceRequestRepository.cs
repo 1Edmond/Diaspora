@@ -28,6 +28,13 @@ public class ServiceRequestRepository(MarketplaceDbContext _context,
         logger,
         cache), IServiceRequestRepository
 {
+    public override async Task<ServiceRequest?> GetByIdAsync(Guid id, CancellationToken cancellationToken = default)
+        => await _context.ServiceRequests
+            .Include(r => r.Listing)
+                .ThenInclude(l => l.Category)
+                    .ThenInclude(c => c.Policy)
+            .FirstOrDefaultAsync(r => r.Id == id, cancellationToken);
+
     public async Task<IEnumerable<ServiceRequest>> GetByRequesterAsync(Guid requesterId, CancellationToken cancellationToken = default)
         => await _context.ServiceRequests
             .Include(r => r.Listing)

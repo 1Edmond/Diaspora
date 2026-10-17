@@ -1,4 +1,5 @@
-﻿using Shared.Domain.Commons;
+using Shared.Domain.Commons;
+using Shared.Domain.Interfaces;
 using System;
 using System.Collections.Generic;
 using System.Text;
@@ -8,7 +9,9 @@ using Wallet.Application.Responses;
 
 namespace Wallet.Application.Handlers.Commands;
 
-public sealed class DepositCommandHandler(IWalletRepository repository)
+public sealed class DepositCommandHandler(
+    IWalletRepository repository,
+    IUnitOfWork unitOfWork)
 {
     public async Task<Result<DepositResponse>> Handle(
         DepositCommand command,
@@ -26,6 +29,8 @@ public sealed class DepositCommandHandler(IWalletRepository repository)
             return Result.Failure<DepositResponse>(result.Error);
 
         await repository.UpdateAsync(wallet, cancellationToken);
+        await unitOfWork.SaveChangesAsync(cancellationToken);
+
         var response = new DepositResponse
         {
             Id = result.Value.Id,

@@ -19,17 +19,23 @@ public abstract class BaseTranslatableController<TOwner, TEntityDto> : Controlle
         _messageBus = messageBus;
     }
 
+    private bool IsAdminOrSuperAdmin() =>
+        User.IsInRole("Admin") || User.IsInRole("SuperAdmin");
+
     [Permission(
         resourceKey: "translatable",
         action: "create-with-translations",
         description: "Create entity with translations",
-        recommendedRoles: new[] { "User", "Admin" }
+        recommendedRoles: new[] { "Admin" }
     )]
     [HttpPost("with-translations")]
     public virtual async Task<IActionResult> CreateWithTranslations(
         [FromBody] CreateWithTranslationsCommand<TOwner, TEntityDto> command,
         CancellationToken cancellationToken)
     {
+        if (!IsAdminOrSuperAdmin())
+            return Forbid();
+
         var result = await _messageBus.InvokeAsync<Result<Guid>>(command, cancellationToken);
         return result.IsFailure
             ? BadRequest(new { error = result.Error })
@@ -40,7 +46,7 @@ public abstract class BaseTranslatableController<TOwner, TEntityDto> : Controlle
         resourceKey: "translatable",
         action: "update-with-translations",
         description: "Update entity with translations",
-        recommendedRoles: new[] { "User", "Admin" }
+        recommendedRoles: new[] { "Admin" }
     )]
     [HttpPut("{id:guid}/with-translations")]
     public virtual async Task<IActionResult> UpdateWithTranslations(
@@ -48,6 +54,9 @@ public abstract class BaseTranslatableController<TOwner, TEntityDto> : Controlle
         [FromBody] UpdateWithTranslationsCommand<TOwner, TEntityDto> command,
         CancellationToken cancellationToken)
     {
+        if (!IsAdminOrSuperAdmin())
+            return Forbid();
+
         var cmd = command with { EntityId = id };
         var result = await _messageBus.InvokeAsync<Result>(cmd, cancellationToken);
         return result.IsFailure ? BadRequest(new { error = result.Error }) : NoContent();
@@ -57,7 +66,7 @@ public abstract class BaseTranslatableController<TOwner, TEntityDto> : Controlle
         resourceKey: "translatable",
         action: "set-translation",
         description: "Set a single translation",
-        recommendedRoles: new[] { "User", "Admin" }
+        recommendedRoles: new[] { "Admin" }
     )]
     [HttpPost("{id:guid}/translations")]
     public virtual async Task<IActionResult> SetTranslation(
@@ -65,6 +74,9 @@ public abstract class BaseTranslatableController<TOwner, TEntityDto> : Controlle
         [FromBody] SetTranslationCommand<TOwner> command,
         CancellationToken cancellationToken)
     {
+        if (!IsAdminOrSuperAdmin())
+            return Forbid();
+
         var cmd = command with { EntityId = id };
         var result = await _messageBus.InvokeAsync<Result>(cmd, cancellationToken);
         return result.IsFailure ? BadRequest(new { error = result.Error }) : NoContent();
@@ -74,7 +86,7 @@ public abstract class BaseTranslatableController<TOwner, TEntityDto> : Controlle
         resourceKey: "translatable",
         action: "delete-translation",
         description: "Delete a translation",
-        recommendedRoles: new[] { "User", "Admin" }
+        recommendedRoles: new[] { "Admin" }
     )]
     [HttpDelete("{id:guid}/translations/{culture}")]
     public virtual async Task<IActionResult> DeleteTranslation(
@@ -82,6 +94,9 @@ public abstract class BaseTranslatableController<TOwner, TEntityDto> : Controlle
         string culture,
         CancellationToken cancellationToken)
     {
+        if (!IsAdminOrSuperAdmin())
+            return Forbid();
+
         var command = new DeleteTranslationCommand<TOwner>(id, culture);
         var result = await _messageBus.InvokeAsync<Result>(command, cancellationToken);
         return result.IsFailure ? BadRequest(new { error = result.Error }) : NoContent();

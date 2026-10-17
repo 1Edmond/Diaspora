@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Procedure.Application.Commands;
 using Procedure.Application.DTOs;
@@ -15,11 +16,20 @@ namespace Procedure.Api.Controllers;
 
 [ApiController]
 [Route("api/user-procedures")]
+[Authorize]
 public class UserProcedureController(
     IMessageBus _messageBus,
     ICurrentUserService _currentUserService,
     ILogger<UserProcedureController> _logger) : ControllerBase
 {
+    private bool IsAdminOrOfficer() =>
+        _currentUserService.IsInRole("Admin")
+        || _currentUserService.IsInRole("SuperAdmin")
+        || _currentUserService.IsInRole("Officer")
+        || User.IsInRole("Admin")
+        || User.IsInRole("SuperAdmin")
+        || User.IsInRole("Officer");
+
     [Permission(
         resourceKey: "procedure.user",
         action: "list-admin",
@@ -34,6 +44,9 @@ public class UserProcedureController(
         [FromQuery] int pageSize = 20,
         CancellationToken cancellationToken = default)
     {
+        if (!IsAdminOrOfficer())
+            return Forbid();
+
         var result = await _messageBus.InvokeAsync<Result<PagedList<UserProcedureDto>>>(
             new GetAdminUserProceduresQuery(status, procedureId, pageNumber, pageSize),
             cancellationToken);
@@ -43,6 +56,7 @@ public class UserProcedureController(
 
         return Ok(result.Value);
     }
+
     [Permission(
         resourceKey: "procedure.user",
         action: "list",
@@ -56,6 +70,9 @@ public class UserProcedureController(
         [FromQuery] int pageSize = 20,
         CancellationToken cancellationToken = default)
     {
+        if (string.IsNullOrWhiteSpace(_currentUserService.UserId))
+            return Unauthorized();
+
         var result = await _messageBus.InvokeAsync<Result<PagedList<UserProcedureDto>>>(
             new GetUserProceduresQuery(profileId, pageNumber, pageSize),
             cancellationToken);
@@ -77,6 +94,9 @@ public class UserProcedureController(
         Guid profileId,
         CancellationToken cancellationToken)
     {
+        if (string.IsNullOrWhiteSpace(_currentUserService.UserId))
+            return Unauthorized();
+
         var result = await _messageBus.InvokeAsync<Result<ProcedureProgressDto>>(
             new GetProcedureProgressQuery(profileId), cancellationToken);
 
@@ -97,6 +117,9 @@ public class UserProcedureController(
         [FromBody] StartUserProcedureRequest request,
         CancellationToken cancellationToken)
     {
+        if (string.IsNullOrWhiteSpace(_currentUserService.UserId))
+            return Unauthorized();
+
         var command = new StartUserProcedureCommand(request.ProfileId, request.ProcedureId);
 
         var result = await _messageBus.InvokeAsync<Result<StartUserProcedureResponse>>(
@@ -120,7 +143,10 @@ public class UserProcedureController(
         [FromBody] CompleteUserProcedureRequest request,
         CancellationToken cancellationToken)
     {
-        var role = _currentUserService.IsInRole("Admin")
+        if (string.IsNullOrWhiteSpace(_currentUserService.UserId))
+            return Unauthorized();
+
+        var role = IsAdminOrOfficer()
             ? "Admin"
             : "User";
 
@@ -150,6 +176,9 @@ public class UserProcedureController(
         [FromBody] SkipUserProcedureRequest request,
         CancellationToken cancellationToken)
     {
+        if (string.IsNullOrWhiteSpace(_currentUserService.UserId))
+            return Unauthorized();
+
         var result = await _messageBus.InvokeAsync<Result>(
             new SkipUserProcedureCommand(userProcedureId, request.Notes),
             cancellationToken);

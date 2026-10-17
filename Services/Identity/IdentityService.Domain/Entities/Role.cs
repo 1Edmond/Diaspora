@@ -1,4 +1,4 @@
-﻿using Shared.Domain.Primitives;
+using Shared.Domain.Primitives;
 using System;
 using System.Collections.Generic;
 using System.Text;
@@ -13,4 +13,18 @@ public class Role : AggregateRoot
 
     public ICollection<RolePermission> RolePermissions { get; set; } = new List<RolePermission>();
     public ICollection<UserRole> UserRoles { get; set; } = new List<UserRole>();
+
+    public void AddPermission(string permissionKey, Guid? grantedBy = null)
+    {
+        if (RolePermissions.Any(rp => rp.PermissionKey.Equals(permissionKey, StringComparison.OrdinalIgnoreCase)))
+            return;
+
+        RolePermissions.Add(new RolePermission
+        {
+            RoleId = Id,
+            PermissionKey = permissionKey,
+            GrantedBy = grantedBy,
+            GrantedAt = DateTime.UtcNow
+        });
+    }
 }

@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Profile.Application.Commands;
 using Profile.Application.DTOs;
@@ -13,11 +14,18 @@ namespace Profile.Api.Controllers;
 
 [ApiController]
 [Route("api/profiles")]
+[Authorize]
 public class ProfileController(
     IMessageBus _messageBus,
     ICurrentUserService _currentUserService,
     ILogger<ProfileController> _logger) : ControllerBase
 {
+    [Permission(
+        resourceKey: "profile",
+        action: "create",
+        description: "Create a user profile",
+        recommendedRoles: new[] { "User", "Admin" }
+    )]
     [HttpPost]
     public async Task<IActionResult> Create(
         [FromBody] CreateProfileCommand command,
@@ -34,6 +42,12 @@ public class ProfileController(
         return Ok(result.Value);
     }
 
+    [Permission(
+        resourceKey: "profile",
+        action: "read-self",
+        description: "Get current authenticated user's profile",
+        recommendedRoles: new[] { "User", "Admin" }
+    )]
     [HttpGet("me")]
     public async Task<IActionResult> GetMyProfile(CancellationToken cancellationToken)
     {

@@ -479,10 +479,23 @@ public sealed class Wallet : AggregateRoot
     }
 
     /// <summary>Libère le hold côté employeur (appelé sur le wallet de l'employeur, à la complétion).</summary>
-    public Result<Transaction> ReleaseFreelanceHold(decimal amount, Guid jobApplicationId, string description)
+    public Result<Transaction> ReleaseFreelanceHold(
+        decimal amount,
+        Guid jobApplicationId,
+        string description,
+        Wallet? workerWallet = null)
     {
         if (HeldBalance < amount)
             return Result.Failure<Transaction>("Held balance is lower than the amount to release.");
+
+        if (workerWallet is not null)
+        {
+            if (!workerWallet.IsActive)
+                return Result.Failure<Transaction>("Worker wallet is not active.");
+            if (!string.Equals(Currency, workerWallet.Currency, StringComparison.OrdinalIgnoreCase))
+                return Result.Failure<Transaction>(
+                    $"Currency mismatch between employer ({Currency}) and worker ({workerWallet.Currency}).");
+        }
 
         HeldBalance -= amount;
 
@@ -490,6 +503,36 @@ public sealed class Wallet : AggregateRoot
             Id, TransactionType.FreelanceEscrowRelease, TransactionDirection.Debit,
             amount, 0m, Balance, Currency, description,
             jobApplicationId, "JobApplication");
+
+        _transactions.Add(tx);
+
+        if (workerWallet is not null)
+        {
+            var creditResult = workerWallet.CreditFromFreelance(amount, jobApplicationId, description);
+            if (creditResult.IsFailure)
+                return creditResult;
+        }
+
+        return Result.Success(tx);
+    }
+
+    public Result<Transaction> CreditPlatformTransferFee(
+        decimal feeAmount,
+        Guid transferTransactionId,
+        string description = "")
+    {
+        if (!IsActive)
+            return Result.Failure<Transaction>("Platform wallet is not active.");
+        if (feeAmount <= 0)
+            return Result.Failure<Transaction>("Fee amount must be positive.");
+
+        Balance += feeAmount;
+
+        var tx = new Transaction(
+            Id, TransactionType.TransferFee, TransactionDirection.Credit,
+            feeAmount, 0m, Balance, Currency,
+            string.IsNullOrWhiteSpace(description) ? $"Platform transfer fee for transaction {transferTransactionId}" : description,
+            transferTransactionId, "TransferFee");
 
         _transactions.Add(tx);
 

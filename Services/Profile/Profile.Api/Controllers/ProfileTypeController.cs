@@ -24,13 +24,17 @@ public class ProfileTypeController(
     [Permission(
         resourceKey: "profile.type",
         action: "list",
-        description: "List all active profile types",
+        description: "List all profile types",
         recommendedRoles: new[] { "User", "Admin" }
     )]
     [HttpGet]
-    public async Task<IActionResult> GetAll(CancellationToken cancellationToken)
+    public async Task<IActionResult> GetAll(
+        [FromQuery] bool includeInactive = false,
+        CancellationToken cancellationToken = default)
     {
-        var types = await _repository.GetAllActiveAsync(cancellationToken);
+        var types = includeInactive
+            ? await _repository.GetAllAsync(cancellationToken)
+            : await _repository.GetAllActiveAsync(cancellationToken);
         return Ok(types.Select(t => t.ToDto()));
     }
 

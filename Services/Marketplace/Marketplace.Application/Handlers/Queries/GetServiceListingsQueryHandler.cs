@@ -32,6 +32,9 @@ public class GetServiceListingsQueryHandler(
         if (query.CategoryId.HasValue)
             q = q.Where(l => l.CategoryId == query.CategoryId.Value);
 
+        if (query.ProviderId.HasValue)
+            q = q.Where(l => l.ProviderId == query.ProviderId.Value);
+
         if (!string.IsNullOrWhiteSpace(query.SearchTerm))
         {
             var term = query.SearchTerm.ToLower();

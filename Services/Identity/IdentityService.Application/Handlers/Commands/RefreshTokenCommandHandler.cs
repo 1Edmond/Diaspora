@@ -1,9 +1,11 @@
-﻿using IdentityService.Application.Commands;
+using IdentityService.Application.Abstractions;
+using IdentityService.Application.Commands;
 using IdentityService.Application.Dtos;
 using IdentityService.Application.Models;
 using IdentityService.Domain.Entities;
 using Microsoft.Extensions.Logging;
 using Shared.Domain.Commons;
+using Shared.Domain.Enums;
 using Shared.Domain.Interfaces;
 using Shared.Security.Abstractions;
 using System;
@@ -16,23 +18,28 @@ public static class RefreshTokenCommandHandler
 {
     public static async Task<Result<LoginResponse>> Handle(
         RefreshTokenCommand command,
-        IRepository<User> repository,
+        IUserRepository userRepository,
+        IRepository<RefreshToken> refreshRepository,
         IJwtTokenService jwtService,
         IUnitOfWork unitOfWork,
-        ILogger<RefreshTokenCommand> logger)
+        ILogger<RefreshTokenCommand> logger,
+        CancellationToken cancellationToken = default)
     {
-        var users = await repository.GetAllAsync();
-        var user = users.FirstOrDefault(u =>
-            u.RefreshTokens.Any(t => t.Token == command.RefreshToken));
+        var user = await userRepository.GetByRefreshTokenAsync(command.RefreshToken, cancellationToken);
 
         if (user == null)
         {
             return Result.Failure<LoginResponse>("Invalid refresh token");
         }
 
-        var refreshToken = user.RefreshTokens.First(t => t.Token == command.RefreshToken);
+        if (user.Status != UserStatus.Active || user.IsLockedOut())
+        {
+            return Result.Failure<LoginResponse>("User account is not active or is locked out");
+        }
 
-        if (!refreshToken.IsActive)
+        var refreshToken = user.RefreshTokens.FirstOrDefault(t => t.Token == command.RefreshToken);
+
+        if (refreshToken == null || !refreshToken.IsActive)
         {
             return Result.Failure<LoginResponse>("Invalid refresh token");
         }
@@ -41,12 +48,12 @@ public static class RefreshTokenCommandHandler
         var newRefreshTokenExpiry = DateTime.UtcNow.AddDays(7);
 
         user.RevokeRefreshToken(command.RefreshToken, command.IpAddress, newRefreshToken);
-        user.AddRefreshToken(newRefreshToken, command.IpAddress, newRefreshTokenExpiry);
-
+        var addedToken = user.AddRefreshToken(newRefreshToken, command.IpAddress, newRefreshTokenExpiry);
 
         user.RemoveOldRefreshTokens(ttlDays: 30);
 
-        await unitOfWork.SaveChangesAsync();
+        await refreshRepository.AddAsync(addedToken, cancellationToken);
+        await unitOfWork.SaveChangesAsync(cancellationToken);
 
         var accessToken = jwtService.GenerateAccessToken(
             user.Id.ToString(),

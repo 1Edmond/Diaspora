@@ -47,10 +47,11 @@ public class CreateJobReviewCommandHandler(
         await _reviewRepository.AddAsync(review);
 
         // Mettre à jour la réputation du subject
-        var reputation = await _reputationRepository.GetBySubjectAsync(subjectId, (ReputationRole)command.RaterRole);
+        var subjectRole = command.RaterRole == RaterRole.Worker ? ReputationRole.Employer : ReputationRole.Worker;
+        var reputation = await _reputationRepository.GetBySubjectAsync(subjectId, subjectRole);
         if (reputation is null)
         {
-            reputation = FreelanceReputation.CreateEmpty(subjectId, (ReputationRole)command.RaterRole);
+            reputation = FreelanceReputation.CreateEmpty(subjectId, subjectRole);
             await _reputationRepository.AddAsync(reputation);
         }
         reputation.ApplyNewReview(command.Rating, command.Punctuality, command.Quality, command.Communication);

@@ -24,21 +24,36 @@ public class DocumentTypeController(
         [FromQuery] Guid? profileTypeId,
         CancellationToken cancellationToken)
     {
-        return await GetAll(profileTypeId, cancellationToken);
+        return await GetAll(profileTypeId, includeInactive: false, cancellationToken);
     }
 
     [Permission(
         resourceKey: "document.type",
         action: "list",
-        description: "List all active document types",
+        description: "List all document types",
         recommendedRoles: new[] { "User", "Admin" }
     )]
     [HttpGet]
     public async Task<IActionResult> GetAll(
         [FromQuery] Guid? profileTypeId,
-        CancellationToken cancellationToken)
+        [FromQuery] bool includeInactive = false,
+        CancellationToken cancellationToken = default)
     {
-        var types = (await _repository.GetActiveByProfileTypeAsync(profileTypeId, cancellationToken)).ToList();
+        List<DocumentType> types;
+        if (includeInactive)
+        {
+            var all = await _repository.GetAllAsync(cancellationToken);
+            if (profileTypeId.HasValue && profileTypeId.Value != Guid.Empty)
+            {
+                all = all.Where(x => x.ProfileTypeId == profileTypeId.Value || x.ProfileTypeId == Guid.Empty);
+            }
+            types = all.OrderBy(x => x.Name).ToList();
+        }
+        else
+        {
+            types = (await _repository.GetActiveByProfileTypeAsync(profileTypeId, cancellationToken)).ToList();
+        }
+
         var typeIds = types.Select(t => t.Id).ToList();
         var translations = await _translationRepo.GetByOwnerIdsAsync(typeIds, cancellationToken);
         var preferredLang = _currentUserService.DataLanguage;
@@ -94,6 +109,7 @@ public class DocumentTypeController(
             return BadRequest(new { error = result.Error });
 
         await _repository.AddAsync(result.Value, cancellationToken);
+        await _unitOfWork.SaveChangesAsync(cancellationToken);
 
         return Ok(result.Value.ToDto());
     }
@@ -115,10 +131,39 @@ public class DocumentTypeController(
 
         docType.Deactivate();
         await _repository.UpdateAsync(docType, cancellationToken);
+        await _unitOfWork.SaveChangesAsync(cancellationToken);
 
         return Ok(new { message = "Document type deactivated." });
     }
 
+    [Permission(
+        resourceKey: "document.type",
+        action: "activate",
+        description: "Activate a document type (admin)",
+        recommendedRoles: new[] { "Admin" }
+    )]
+    [HttpPost("{id:guid}/activate")]
+    public async Task<IActionResult> Activate(
+        Guid id,
+        CancellationToken cancellationToken)
+    {
+        var docType = await _repository.GetByIdAsync(id, cancellationToken);
+        if (docType is null)
+            return NotFound(new { error = "Document type not found." });
+
+        docType.Activate();
+        await _repository.UpdateAsync(docType, cancellationToken);
+        await _unitOfWork.SaveChangesAsync(cancellationToken);
+
+        return Ok(new { message = "Document type activated." });
+    }
+
+    [Permission(
+        resourceKey: "document.type",
+        action: "read",
+        description: "Get translations for a document type",
+        recommendedRoles: new[] { "User", "Admin" }
+    )]
     [HttpGet("{id:guid}/translations")]
     public async Task<IActionResult> GetTranslations(Guid id, CancellationToken cancellationToken)
     {

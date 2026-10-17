@@ -20,8 +20,8 @@ public class AuthorizationMiddleware
         "/api/auth/refresh",
         "/api/auth/refresh-token",
         "/api/auth/verify-email",
+        "/api/auth/resend-verification",
         "/api/auth/ping",
-        "/api/authorization/check",
         "/api/profile-types/public",
         "/api/document-types/public",
         "/api/config/mobile",
@@ -40,6 +40,13 @@ public class AuthorizationMiddleware
         IConfiguration configuration,
         IAuthorizationService authorizationService)
     {
+        context.Request.Headers.Remove("X-User-Id");
+        context.Request.Headers.Remove("X-User-Email");
+        context.Request.Headers.Remove("X-User-Roles");
+        context.Request.Headers.Remove("X-Granted-Permission");
+        context.Request.Headers.Remove("X-Gateway-Require-Auth");
+        context.Request.Headers.Remove("X-Gateway-Secret");
+
         var path = context.Request.Path.Value ?? "";
 
         // 1. Si l'utilisateur est authentifié avec un jeton valide, propager son identité et ses permissions

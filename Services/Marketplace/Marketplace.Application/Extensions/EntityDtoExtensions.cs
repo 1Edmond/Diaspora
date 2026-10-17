@@ -10,7 +10,8 @@ public static class EntityDtoExtensions
     public static ServiceRequestDto MapToDto(
         this ServiceRequest r,
         ProfileDirectoryEntry? requesterProfile = null,
-        ProfileDirectoryEntry? providerProfile = null) => new(
+        ProfileDirectoryEntry? providerProfile = null,
+        bool includeOtpCodes = false) => new(
         r.Id,
         r.ListingId,
         r.Listing?.Title ?? string.Empty,
@@ -41,6 +42,8 @@ public static class EntityDtoExtensions
         r.DeliveryConfirmedAt,
         r.DeliveryProofUrl,
         !string.IsNullOrWhiteSpace(r.HandoverOtpHash),
-        !string.IsNullOrWhiteSpace(r.DeliveryOtpHash)
+        !string.IsNullOrWhiteSpace(r.DeliveryOtpHash),
+        includeOtpCodes ? r.HandoverOtpCode : null,
+        includeOtpCodes ? r.DeliveryOtpCode : null
     );
 }

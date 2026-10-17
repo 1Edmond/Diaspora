@@ -101,10 +101,14 @@ public sealed class MarketplacePaymentReleaseRequestedConsumer(
             }
         }
 
+        var releaseAmount = @event.Amount.HasValue && @event.Amount.Value > 0m
+            ? @event.Amount.Value
+            : (holdTx?.Amount ?? 0m);
+
         var releaseResult = buyer.ReleaseMarketplaceHold(
             @event.ServiceRequestId,
             seller,
-            holdTx?.Amount ?? 0m,
+            releaseAmount,
             @event.CommissionAmount,
             platformWallet,
             $"Marketplace escrow release for request {@event.ServiceRequestId}");
