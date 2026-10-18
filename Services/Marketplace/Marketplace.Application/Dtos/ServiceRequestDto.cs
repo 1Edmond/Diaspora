@@ -38,5 +38,11 @@ public record ServiceRequestDto(
     bool HasHandoverOtp = false,
     bool HasDeliveryOtp = false,
     string? HandoverOtpCode = null,
-    string? DeliveryOtpCode = null
+    string? DeliveryOtpCode = null,
+    PaymentSettlementType SettlementType = PaymentSettlementType.WalletEscrow,
+    DirectCashTiming? CashTiming = null,
+    decimal PlatformDirectFeeAmount = 0m,
+    bool IsDirectFeePaid = false,
+    bool IsDirectCashSettled = false,
+    DateTime? DirectCashSettledAt = null
 );

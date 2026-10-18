@@ -23,6 +23,14 @@ public class ServiceRequest : AggregateRoot
     public Guid? WalletTransactionId { get; private set; }   // Référence vers Wallet Service
     public PaymentStatus PaymentStatus { get; private set; }
 
+    // Mode de règlement & Frais directs
+    public PaymentSettlementType SettlementType { get; private set; } = PaymentSettlementType.WalletEscrow;
+    public DirectCashTiming? CashTiming { get; private set; }
+    public decimal PlatformDirectFeeAmount { get; private set; } = 0m;
+    public bool IsDirectFeePaid { get; private set; } = false;
+    public bool IsDirectCashSettled { get; private set; } = false;
+    public DateTime? DirectCashSettledAt { get; private set; }
+
     // Colis & Suivi physique
     public decimal? WeightKg { get; private set; }
     public string? PackageDescription { get; private set; }
@@ -64,7 +72,10 @@ public class ServiceRequest : AggregateRoot
         decimal? weightKg = null,
         string? packageDescription = null,
         string? packageContentCategory = null,
-        decimal? declaredValue = null)
+        decimal? declaredValue = null,
+        PaymentSettlementType settlementType = PaymentSettlementType.WalletEscrow,
+        DirectCashTiming? cashTiming = null,
+        decimal platformDirectFeeAmount = 0m)
     {
         var request = new ServiceRequest
         {
@@ -80,17 +91,37 @@ public class ServiceRequest : AggregateRoot
             WeightKg = weightKg,
             PackageDescription = packageDescription,
             PackageContentCategory = packageContentCategory,
-            DeclaredValue = declaredValue
+            DeclaredValue = declaredValue,
+            SettlementType = settlementType,
+            CashTiming = cashTiming,
+            PlatformDirectFeeAmount = platformDirectFeeAmount,
+            IsDirectFeePaid = false,
+            IsDirectCashSettled = false,
+            DirectCashSettledAt = null
         };
 
         request.AddDomainEvent(new ServiceRequestCreatedEvent(request.Id, listingId, requesterId, providerId));
         return request;
     }
 
+    public void MarkDirectFeePaid()
+    {
+        IsDirectFeePaid = true;
+    }
+
     public void Accept()
     {
         Status = ServiceRequestStatus.Accepted;
         AcceptedAt = DateTime.UtcNow;
+
+        if (SettlementType == PaymentSettlementType.DirectHandover)
+        {
+            if (WeightKg.HasValue && string.IsNullOrWhiteSpace(HandoverOtpHash))
+            {
+                GenerateOtps(out _, out _);
+            }
+        }
+
         AddDomainEvent(new ServiceRequestAcceptedEvent(Id, ListingId, RequesterId, ProviderId));
     }
 
@@ -175,6 +206,13 @@ public class ServiceRequest : AggregateRoot
         HandoverProofUrl = proofPhotoUrl;
         HandoverOtpCode = null;
 
+        if (SettlementType == PaymentSettlementType.DirectHandover &&
+            (CashTiming == DirectCashTiming.AtPickup || CashTiming == DirectCashTiming.FreeChoice))
+        {
+            IsDirectCashSettled = true;
+            DirectCashSettledAt = DateTime.UtcNow;
+        }
+
         return Result.Success();
     }
 
@@ -225,6 +263,12 @@ public class ServiceRequest : AggregateRoot
         CompletedAt = DateTime.UtcNow;
         DeliveryOtpCode = null;
 
+        if (SettlementType == PaymentSettlementType.DirectHandover && CashTiming == DirectCashTiming.AtDelivery)
+        {
+            IsDirectCashSettled = true;
+            DirectCashSettledAt = DateTime.UtcNow;
+        }
+
         AddDomainEvent(new ServiceRequestCompletedEvent(
             Id, ListingId, RequesterId, ProviderId, AgreedPrice, AgreedCurrency));
 
@@ -236,8 +280,24 @@ public class ServiceRequest : AggregateRoot
         PaymentStatus = PaymentStatus.Processing;
     }
 
-    public void MarkPaymentHeld(Guid transactionId)
+    public void MarkPaymentHeld(Guid? transactionId = null)
     {
+        if (SettlementType == PaymentSettlementType.DirectHandover)
+        {
+            if (transactionId.HasValue && transactionId.Value != Guid.Empty)
+            {
+                WalletTransactionId = transactionId.Value;
+            }
+            Status = ServiceRequestStatus.Accepted;
+            AcceptedAt ??= DateTime.UtcNow;
+
+            if (WeightKg.HasValue && string.IsNullOrWhiteSpace(HandoverOtpHash))
+            {
+                GenerateOtps(out _, out _);
+            }
+            return;
+        }
+
         WalletTransactionId = transactionId;
         PaymentStatus = PaymentStatus.Held;
 

@@ -18,16 +18,30 @@ public class CreateServiceRequestCommandHandlerTests
     private readonly IServiceListingRepository _listingRepository = Substitute.For<IServiceListingRepository>();
     private readonly ICategoryRepository _categoryRepository = Substitute.For<ICategoryRepository>();
     private readonly IProfileDirectoryRepository _profileDirectory = Substitute.For<IProfileDirectoryRepository>();
+    private readonly IProfileTypePaymentPolicyRepository _paymentPolicyRepository = Substitute.For<IProfileTypePaymentPolicyRepository>();
     private readonly IUnitOfWork _unitOfWork = Substitute.For<IUnitOfWork>();
     private readonly CreateServiceRequestCommandHandler _handler;
 
     public CreateServiceRequestCommandHandlerTests()
     {
+        _paymentPolicyRepository.GetOrDefaultAsync(Arg.Any<Guid>(), Arg.Any<string?>(), Arg.Any<System.Threading.CancellationToken>())
+            .Returns(ProfileTypePaymentPolicy.Create(
+                Guid.NewGuid(),
+                "TG",
+                AllowedSettlementPolicy.Both,
+                DirectCashTiming.AtPickup,
+                false,
+                0m,
+                0m,
+                "XOF",
+                true));
+
         _handler = new CreateServiceRequestCommandHandler(
             _requestRepository,
             _listingRepository,
             _categoryRepository,
             _profileDirectory,
+            _paymentPolicyRepository,
             _unitOfWork);
     }
 

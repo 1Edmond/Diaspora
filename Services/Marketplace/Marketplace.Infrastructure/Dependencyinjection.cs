@@ -50,6 +50,7 @@ public static class DependencyInjection
         services.AddScoped<IFavoriteRepository, FavoriteRepository>();
         services.AddScoped<IProfileDirectoryRepository, ProfileDirectoryRepository>();
         services.AddScoped<IDisputeRepository, DisputeRepository>();
+        services.AddScoped<IProfileTypePaymentPolicyRepository, ProfileTypePaymentPolicyRepository>();
         services.AddScoped<Shared.Application.Abstractions.ITranslationRepository<Marketplace.Domain.Entities.Category>>(sp =>
             new Shared.Infrastructure.Persistence.Translations.TranslationRepository<Marketplace.Domain.Entities.Category>(
                 sp.GetRequiredService<MarketplaceDbContext>(),

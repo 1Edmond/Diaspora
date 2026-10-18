@@ -34,6 +34,33 @@ public class ServiceRequestConfiguration : BaseEntityConfiguration<ServiceReques
         builder.Property(r => r.WalletTransactionId);
         builder.Property(r => r.CancellationReason).HasMaxLength(500);
 
+        // Bi-mode de règlement & Frais plateforme directs
+        builder.Property(r => r.SettlementType)
+            .HasConversion<string>()
+            .HasMaxLength(50)
+            .IsRequired()
+            .HasDefaultValue(PaymentSettlementType.WalletEscrow);
+
+        builder.Property(r => r.CashTiming)
+            .HasConversion<string>()
+            .HasMaxLength(50);
+
+        builder.Property(r => r.PlatformDirectFeeAmount)
+            .HasPrecision(18, 2)
+            .IsRequired()
+            .HasDefaultValue(0m);
+
+        builder.Property(r => r.IsDirectFeePaid)
+            .IsRequired()
+            .HasDefaultValue(false);
+
+        builder.Property(r => r.IsDirectCashSettled)
+            .IsRequired()
+            .HasDefaultValue(false);
+
+        builder.Property(r => r.DirectCashSettledAt)
+            .HasColumnType("timestamptz");
+
         // Colis & Suivi physique
         builder.Property(r => r.WeightKg).HasPrecision(18, 2);
         builder.Property(r => r.PackageDescription).HasMaxLength(1000);

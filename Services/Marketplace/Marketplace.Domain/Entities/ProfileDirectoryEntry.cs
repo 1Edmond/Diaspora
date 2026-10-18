@@ -69,7 +69,7 @@ public class ProfileDirectoryEntry : AggregateRoot
             Currency = currency.Trim().ToUpperInvariant();
     }
 
-    public void ApplyVerification(VerificationLevel level = VerificationLevel.L1_IdentityDeclared)
+    public void ApplyVerification(VerificationLevel level = VerificationLevel.L2_IdentityVerified)
     {
         IsVerified = true;
         if (level > Level)

@@ -14,6 +14,7 @@ public class CreateServiceRequestCommandHandler(
     IServiceListingRepository _listingRepository,
     ICategoryRepository _categoryRepository,
     IProfileDirectoryRepository _profileDirectory,
+    IProfileTypePaymentPolicyRepository _paymentPolicyRepository,
     IUnitOfWork _unitOfWork)
 {
     public async Task<Result<Guid>> Handle(CreateServiceRequestCommand command)
@@ -57,6 +58,36 @@ public class CreateServiceRequestCommandHandler(
             }
         }
 
+        // Charge la politique du pays (via IProfileTypePaymentPolicyRepository ou fallback par défaut)
+        var countryCode = listing.ArrivalCountryCode ?? listing.Country ?? provider.CountryCode ?? requester.CountryCode;
+        var policy = await _paymentPolicyRepository.GetOrDefaultAsync(provider.Id, countryCode);
+
+        // Valide que le SettlementType demandé est autorisé par policy.AllowedPolicy
+        var isAllowed = policy.AllowedPolicy switch
+        {
+            Marketplace.Domain.Enums.AllowedSettlementPolicy.Both => true,
+            Marketplace.Domain.Enums.AllowedSettlementPolicy.WalletEscrowOnly => command.SettlementType == Marketplace.Domain.Enums.PaymentSettlementType.WalletEscrow,
+            Marketplace.Domain.Enums.AllowedSettlementPolicy.DirectHandoverOnly => command.SettlementType == Marketplace.Domain.Enums.PaymentSettlementType.DirectHandover,
+            _ => true
+        };
+
+        if (!isAllowed)
+        {
+            return Result.Failure<Guid>("Ce mode de règlement n'est pas autorisé pour ce corridor/pays.");
+        }
+
+        var cashTiming = command.CashTiming;
+        decimal directFeeAmount = 0m;
+
+        if (command.SettlementType == Marketplace.Domain.Enums.PaymentSettlementType.DirectHandover)
+        {
+            cashTiming ??= policy.DefaultCashTiming;
+            if (agreedPrice.HasValue && agreedPrice.Value > 0m)
+            {
+                directFeeAmount = policy.CalculateDirectPlatformFee(agreedPrice.Value);
+            }
+        }
+
         var request = ServiceRequest.Create(
             command.ListingId,
             command.RequesterId,
@@ -67,7 +98,10 @@ public class CreateServiceRequestCommandHandler(
             command.WeightKg,
             command.PackageDescription,
             command.PackageContentCategory,
-            command.DeclaredValue
+            command.DeclaredValue,
+            command.SettlementType,
+            cashTiming,
+            directFeeAmount
         );
 
         await _requestRepository.AddAsync(request);

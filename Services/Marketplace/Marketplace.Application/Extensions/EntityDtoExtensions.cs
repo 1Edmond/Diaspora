@@ -44,6 +44,12 @@ public static class EntityDtoExtensions
         !string.IsNullOrWhiteSpace(r.HandoverOtpHash),
         !string.IsNullOrWhiteSpace(r.DeliveryOtpHash),
         includeOtpCodes ? r.HandoverOtpCode : null,
-        includeOtpCodes ? r.DeliveryOtpCode : null
+        includeOtpCodes ? r.DeliveryOtpCode : null,
+        r.SettlementType,
+        r.CashTiming,
+        r.PlatformDirectFeeAmount,
+        r.IsDirectFeePaid,
+        r.IsDirectCashSettled,
+        r.DirectCashSettledAt
     );
 }
