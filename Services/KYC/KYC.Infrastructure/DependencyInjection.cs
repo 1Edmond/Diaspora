@@ -109,7 +109,6 @@ public static class DependencyInjection
         string? serviceVersion = null)
     {
         hostBuilder.AddCoreInfrastructure(configuration, serviceVersion);
-        hostBuilder.UseResourceSetupOnStartup();
     }
 
     public static async Task UseInfrastructure(this IApplicationBuilder app)

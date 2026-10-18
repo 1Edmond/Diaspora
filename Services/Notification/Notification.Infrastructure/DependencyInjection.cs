@@ -150,7 +150,11 @@ public static class DependencyInjection
             var config = sp.GetRequiredService<IConfiguration>();
             var cs = config.GetConnectionString("redis")
                 ?? throw new InvalidOperationException("Redis connection string 'redis' not found in configuration.");
-            return ConnectionMultiplexer.Connect(cs);
+            var redisOptions = ConfigurationOptions.Parse(cs);
+            redisOptions.AbortOnConnectFail = false;
+            redisOptions.ConnectRetry = 5;
+            redisOptions.ConnectTimeout = 10000;
+            return ConnectionMultiplexer.Connect(redisOptions);
         });
 
     }
@@ -159,7 +163,6 @@ public static class DependencyInjection
         string? serviceVersion = null)
     {
         hostBuilder.AddCoreInfrastructure(configuration, serviceVersion);
-        hostBuilder.UseResourceSetupOnStartup();
     }
 
     public static async Task PublishNotificationResources<T>(this WebApplication app)

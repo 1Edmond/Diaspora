@@ -91,13 +91,20 @@ public static class DependencyInjection
 
 
         var redisConnectionString = configuration.GetConnectionString("redis");
-        services.AddStackExchangeRedisCache(options => { 
-            options.Configuration = redisConnectionString;
-            options.InstanceName = serviceName;
-        });
-        services.AddScoped<ICacheService, RedisCacheService>();
-        services.AddSingleton<IConnectionMultiplexer>(
-    _ => ConnectionMultiplexer.Connect(redisConnectionString!));
+        if (!string.IsNullOrEmpty(redisConnectionString))
+        {
+            var redisOptions = ConfigurationOptions.Parse(redisConnectionString);
+            redisOptions.AbortOnConnectFail = false;
+            redisOptions.ConnectRetry = 5;
+            redisOptions.ConnectTimeout = 10000;
+
+            services.AddStackExchangeRedisCache(options => { 
+                options.ConfigurationOptions = redisOptions;
+                options.InstanceName = serviceName;
+            });
+            services.AddScoped<ICacheService, RedisCacheService>();
+            services.AddSingleton<IConnectionMultiplexer>(_ => ConnectionMultiplexer.Connect(redisOptions));
+        }
 
         return options;
     }
