@@ -22,6 +22,11 @@ public class CreateCategoryCommandHandler(
             return Result.Failure<Guid>("A category with this name already exists.");
 
         var category = Category.Create(command.Name, command.Description, command.IconUrl, command.DisplayOrder);
+        if (command.AllowedProfileTypeIds is not null)
+        {
+            category.SetAllowedProfileTypes(command.AllowedProfileTypeIds);
+        }
+
         await _categoryRepository.AddAsync(category);
         await _unitOfWork.SaveChangesAsync();
 

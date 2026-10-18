@@ -7,5 +7,6 @@ public record JobCategoryDto(
     string Name,
     string? Description,
     bool IsActive,
-    int DisplayOrder
+    int DisplayOrder,
+    List<Guid>? AllowedProfileTypeIds = null
 );

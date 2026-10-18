@@ -42,6 +42,22 @@ public class GetAllServiceRequestsQueryHandler(
         if (query.DateTo.HasValue)
             q = q.Where(r => r.CreatedAt <= query.DateTo.Value);
 
+        if (!string.IsNullOrWhiteSpace(query.Search))
+        {
+            var search = query.Search.Trim().ToLower();
+            var matchingUserIds = await _context.ProfileDirectory
+                .Where(p => p.DisplayName != null && p.DisplayName.ToLower().Contains(search))
+                .Select(p => p.UserId)
+                .ToListAsync();
+
+            q = q.Where(r =>
+                (r.Listing != null && r.Listing.Title.ToLower().Contains(search)) ||
+                (r.PackageDescription != null && r.PackageDescription.ToLower().Contains(search)) ||
+                (r.Message != null && r.Message.ToLower().Contains(search)) ||
+                matchingUserIds.Contains(r.RequesterId) ||
+                matchingUserIds.Contains(r.ProviderId));
+        }
+
         var totalCount = await q.CountAsync();
 
         var requests = await q

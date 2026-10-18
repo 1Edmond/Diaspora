@@ -25,10 +25,10 @@ public sealed class GetTransactionsQueryHandler(
             return Result.Failure<PagedList<TransactionDto>>("Wallet not found.");
 
         var transactions = await transactionRepository.GetByWalletIdAsync(
-            wallet.Id, query.PageNumber, query.PageSize, cancellationToken, query.Type, query.Status);
+            wallet.Id, query.PageNumber, query.PageSize, cancellationToken, query.Type, query.Status, query.Search);
 
         var total = await transactionRepository.CountByWalletIdAsync(
-            wallet.Id, cancellationToken, query.Type, query.Status);
+            wallet.Id, cancellationToken, query.Type, query.Status, query.Search);
 
         var dtos = transactions.Select(t => t.ToDto()).ToList();
 

@@ -5,4 +5,4 @@ using System;
 
 namespace Freelance.Application.Queries;
 
-public record GetJobCategoriesQuery(bool ActiveOnly = true) : IQuery<Result<List<JobCategoryDto>>>;
+public record GetJobCategoriesQuery(bool ActiveOnly = true, Guid? ProfileTypeId = null) : IQuery<Result<List<JobCategoryDto>>>;

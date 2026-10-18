@@ -249,7 +249,7 @@ public class ParcelRequestLifecycleTests
 
         _requestRepository.GetByIdAsync(request.Id).Returns(request);
 
-        var command = new ConfirmDeliveryCommand(request.Id, requesterId, deliveryOtp, "https://proof.jpg");
+        var command = new ConfirmDeliveryCommand(request.Id, providerId, deliveryOtp, "https://proof.jpg");
         var result = await handler.Handle(command, CancellationToken.None);
 
         result.IsSuccess.Should().BeTrue();

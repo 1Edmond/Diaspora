@@ -10,7 +10,7 @@ namespace Freelance.Application.Extensions;
 public static class EntityDtoExtensions
 {
     public static JobCategoryDto MapToDto(this JobCategory c) => new(
-        c.Id, c.Name, c.Description, c.IsActive, c.DisplayOrder
+        c.Id, c.Name, c.Description, c.IsActive, c.DisplayOrder, c.AllowedProfileTypeIds
     );
 
     public static JobTemplateDto MapToDto(this JobTemplate t) => new(

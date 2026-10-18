@@ -22,6 +22,11 @@ public class UpdateCategoryCommandHandler(
             return Result.Failure("Category not found.");
 
         category.Update(command.Name, command.Description, command.IconUrl, command.DisplayOrder);
+        if (command.AllowedProfileTypeIds is not null)
+        {
+            category.SetAllowedProfileTypes(command.AllowedProfileTypeIds);
+        }
+
         await _categoryRepository.UpdateAsync(category);
         await _unitOfWork.SaveChangesAsync();
 

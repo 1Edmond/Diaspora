@@ -36,13 +36,14 @@ public sealed class TransactionController(
         [FromQuery] DateTime? toDate = null,
         [FromQuery] int pageNumber = 1,
         [FromQuery] int pageSize = 20,
+        [FromQuery] string? search = null,
         CancellationToken cancellationToken = default)
     {
         if (!_currentUserService.IsInRole("Admin"))
             return AccessDenied();
 
         var result = await _messageBus.InvokeAsync<Result<PagedList<TransactionDto>>>(
-            new GetTransactionsAdminQuery(walletId, type, status, currency, fromDate, toDate, pageNumber, pageSize),
+            new GetTransactionsAdminQuery(walletId, type, status, currency, fromDate, toDate, pageNumber, pageSize, search),
             cancellationToken);
 
         if (result.IsFailure)
@@ -60,14 +61,15 @@ public sealed class TransactionController(
         [FromQuery] int pageSize = 20,
         CancellationToken cancellationToken = default,
         [FromQuery] Wallet.Domain.Enums.TransactionType? type = null,
-        [FromQuery] Wallet.Domain.Enums.TransactionStatus? status = null)
+        [FromQuery] Wallet.Domain.Enums.TransactionStatus? status = null,
+        [FromQuery] string? search = null)
     {
         if (!await WalletOwnership.CanReadAsync(
                 _walletRepository, _currentUserService, externalProfileId, cancellationToken))
             return AccessDenied();
 
         var result = await _messageBus.InvokeAsync<Result<PagedList<TransactionDto>>>(
-            new GetTransactionsQuery(externalProfileId, pageNumber, pageSize, type, status),
+            new GetTransactionsQuery(externalProfileId, pageNumber, pageSize, type, status, search),
             cancellationToken);
 
         if (result.IsFailure)

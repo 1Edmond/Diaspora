@@ -31,6 +31,7 @@ public class GetAllCategoriesQueryHandler(
                 c.IconUrl,
                 c.IsActive,
                 c.DisplayOrder,
+                c.AllowedProfileTypeIds,
                 ActiveListingCount = c.Listings.Count(l => l.IsActive),
                 Policy = c.Policy == null ? null : new CategoryPolicyDto(
                     c.Policy.MinPublishLevel,
@@ -43,6 +44,15 @@ public class GetAllCategoriesQueryHandler(
                 )
             })
             .ToListAsync();
+
+        if (query.ProfileTypeId.HasValue)
+        {
+            rawCategories = rawCategories
+                .Where(c => c.AllowedProfileTypeIds == null 
+                         || !c.AllowedProfileTypeIds.Any() 
+                         || c.AllowedProfileTypeIds.Contains(query.ProfileTypeId.Value))
+                .ToList();
+        }
 
         var categoryIds = rawCategories.Select(c => c.Id).ToList();
         var translations = await _translationRepo.GetByOwnerIdsAsync(categoryIds);
@@ -63,7 +73,8 @@ public class GetAllCategoriesQueryHandler(
                 c.IsActive,
                 c.DisplayOrder,
                 c.ActiveListingCount,
-                c.Policy
+                c.Policy,
+                c.AllowedProfileTypeIds
             );
         }).ToList();
 

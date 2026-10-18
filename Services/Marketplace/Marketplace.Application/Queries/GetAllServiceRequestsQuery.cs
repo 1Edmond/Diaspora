@@ -16,5 +16,6 @@ public record GetAllServiceRequestsQuery(
     Guid? ProviderId = null,
     Guid? RequesterId = null,
     DateTime? DateFrom = null,
-    DateTime? DateTo = null
+    DateTime? DateTo = null,
+    string? Search = null
 ) : PagedQuery<Result<PagedList<ServiceRequestDto>>>(PageNumber, PageSize);

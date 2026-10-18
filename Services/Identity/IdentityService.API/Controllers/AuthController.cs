@@ -40,16 +40,28 @@ public partial class AuthController(IMessageBus _messageBus, ILogger<AuthControl
 
     [AllowAnonymous]
     [HttpPost("login")]
-    public async Task<IActionResult> Login(LoginCommand command)
+    public async Task<IActionResult> Login([FromBody] LoginCommand command, CancellationToken cancellationToken = default)
     {
-        command = command with { IpAddress = GetIpAddress() };
-        var result = await _messageBus.InvokeAsync<Result<LoginResponse>>(command);
+        try
+        {
+            command = command with { IpAddress = GetIpAddress() };
+            var result = await _messageBus.InvokeAsync<Result<LoginResponse>>(command, cancellationToken);
 
-        if (result.IsFailure)
-            return Unauthorized(new { error = result.Error });
+            if (result.IsFailure)
+                return Unauthorized(new { error = result.Error });
 
-        SetRefreshTokenCookie(result.Value.RefreshToken);
-        return Ok(result.Value);
+            SetRefreshTokenCookie(result.Value.RefreshToken);
+            return Ok(result.Value);
+        }
+        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+        {
+            return StatusCode(499);
+        }
+        catch (Exception ex)
+        {
+            logger.LogError(ex, "Unexpected error occurred during login for email {Email}", command?.Email);
+            return BadRequest(new { error = ex.Message });
+        }
     }
 
     [AllowAnonymous]

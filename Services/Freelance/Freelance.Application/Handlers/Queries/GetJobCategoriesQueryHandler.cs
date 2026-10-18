@@ -17,11 +17,21 @@ public class GetJobCategoriesQueryHandler(IApplicationDbContext _context)
         if (query.ActiveOnly)
             q = q.Where(c => c.IsActive);
 
-        var items = await q
+        var categories = await q
             .OrderBy(c => c.DisplayOrder)
             .ThenBy(c => c.Name)
-            .Select(c => c.MapToDto())
             .ToListAsync();
+
+        if (query.ProfileTypeId.HasValue)
+        {
+            categories = categories
+                .Where(c => c.AllowedProfileTypeIds == null 
+                         || !c.AllowedProfileTypeIds.Any() 
+                         || c.AllowedProfileTypeIds.Contains(query.ProfileTypeId.Value))
+                .ToList();
+        }
+
+        var items = categories.Select(c => c.MapToDto()).ToList();
 
         return Result.Success(items);
     }

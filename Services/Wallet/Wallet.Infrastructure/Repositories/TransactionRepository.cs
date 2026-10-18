@@ -32,7 +32,8 @@ public sealed class TransactionRepository(WalletDbContext context,
         Guid walletId, int page, int pageSize,
         CancellationToken cancellationToken = default,
         TransactionType? type = null,
-        TransactionStatus? status = null)
+        TransactionStatus? status = null,
+        string? search = null)
     {
         var query = _context.Transactions.Where(t => t.WalletId == walletId);
 
@@ -41,6 +42,16 @@ public sealed class TransactionRepository(WalletDbContext context,
 
         if (status.HasValue)
             query = query.Where(t => t.Status == status.Value);
+
+        if (!string.IsNullOrWhiteSpace(search))
+        {
+            var s = search.Trim().ToLower();
+            query = query.Where(t =>
+                (t.Description != null && t.Description.ToLower().Contains(s)) ||
+                (t.ReferenceType != null && t.ReferenceType.ToLower().Contains(s)) ||
+                (t.ReferenceId != null && t.ReferenceId.ToString().ToLower().Contains(s)) ||
+                t.Id.ToString().ToLower().Contains(s));
+        }
 
         return await query
             .OrderByDescending(t => t.CreatedAt)
@@ -53,7 +64,8 @@ public sealed class TransactionRepository(WalletDbContext context,
         Guid walletId,
         CancellationToken cancellationToken = default,
         TransactionType? type = null,
-        TransactionStatus? status = null)
+        TransactionStatus? status = null,
+        string? search = null)
     {
         var query = _context.Transactions.Where(t => t.WalletId == walletId);
 
@@ -62,6 +74,16 @@ public sealed class TransactionRepository(WalletDbContext context,
 
         if (status.HasValue)
             query = query.Where(t => t.Status == status.Value);
+
+        if (!string.IsNullOrWhiteSpace(search))
+        {
+            var s = search.Trim().ToLower();
+            query = query.Where(t =>
+                (t.Description != null && t.Description.ToLower().Contains(s)) ||
+                (t.ReferenceType != null && t.ReferenceType.ToLower().Contains(s)) ||
+                (t.ReferenceId != null && t.ReferenceId.ToString().ToLower().Contains(s)) ||
+                t.Id.ToString().ToLower().Contains(s));
+        }
 
         return await query.CountAsync(cancellationToken);
     }
@@ -92,7 +114,8 @@ public sealed class TransactionRepository(WalletDbContext context,
         DateTime? toDate = null,
         int pageNumber = 1,
         int pageSize = 20,
-        CancellationToken cancellationToken = default)
+        CancellationToken cancellationToken = default,
+        string? search = null)
     {
         var query = _context.Transactions.AsNoTracking();
 
@@ -116,6 +139,16 @@ public sealed class TransactionRepository(WalletDbContext context,
 
         if (toDate.HasValue)
             query = query.Where(t => t.CreatedAt <= toDate.Value);
+
+        if (!string.IsNullOrWhiteSpace(search))
+        {
+            var s = search.Trim().ToLower();
+            query = query.Where(t =>
+                (t.Description != null && t.Description.ToLower().Contains(s)) ||
+                (t.ReferenceType != null && t.ReferenceType.ToLower().Contains(s)) ||
+                (t.ReferenceId != null && t.ReferenceId.ToString().ToLower().Contains(s)) ||
+                t.Id.ToString().ToLower().Contains(s));
+        }
 
         query = query.OrderByDescending(t => t.CreatedAt);
 

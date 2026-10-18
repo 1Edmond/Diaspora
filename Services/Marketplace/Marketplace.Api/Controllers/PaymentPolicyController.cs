@@ -19,7 +19,7 @@ public class PaymentPolicyController(
     IMessageBus _messageBus,
     ILogger<PaymentPolicyController> _logger) : ControllerBase
 {
-    [AllowAnonymous]
+    [Permission("PaymentPolicies.View", "Consulter les politiques de règlement")]
     [HttpGet]
     public async Task<IActionResult> GetAll()
     {
@@ -32,7 +32,7 @@ public class PaymentPolicyController(
         return Ok(result.Value);
     }
 
-    [AllowAnonymous]
+    [Permission("PaymentPolicies.View", "Consulter les politiques de règlement")]
     [HttpGet("by-profile-type/{profileTypeId:guid}")]
     public async Task<IActionResult> GetByProfileType(Guid profileTypeId)
     {
@@ -66,14 +66,22 @@ public class PaymentPolicyController(
     }
 
     [Authorize(Roles = "Admin,SuperAdmin")]
-    [Permission(
-        resourceKey: "marketplace.payment-policy",
-        action: "update",
-        description: "Configure payment settlement policies per profile type / country",
-        recommendedRoles: new[] { "Admin", "SuperAdmin" }
-    )]
+    [Permission("PaymentPolicies.Create", "Créer une politique de règlement")]
+    [HttpPost]
+    public async Task<IActionResult> Create([FromBody] CreatePaymentPolicyCommand command, CancellationToken ct)
+    {
+        var result = await _messageBus.InvokeAsync<Result<Guid>>(command, ct);
+
+        if (result.IsFailure)
+            return BadRequest(new { error = result.Error });
+
+        return CreatedAtAction(nameof(GetByProfileType), new { profileTypeId = command.ProfileTypeId }, new { id = result.Value });
+    }
+
+    [Authorize(Roles = "Admin,SuperAdmin")]
+    [Permission("PaymentPolicies.Update", "Modifier une politique de règlement")]
     [HttpPut("{profileTypeId:guid}")]
-    public async Task<IActionResult> Update(Guid profileTypeId, [FromBody] UpdateProfileTypePaymentPolicyRequest request)
+    public async Task<IActionResult> Update(Guid profileTypeId, [FromBody] UpdateProfileTypePaymentPolicyRequest request, CancellationToken ct = default)
     {
         var command = new UpdatePaymentPolicyCommand(
             profileTypeId,
@@ -87,7 +95,7 @@ public class PaymentPolicyController(
             request.IsActive
         );
 
-        var result = await _messageBus.InvokeAsync<Result>(command);
+        var result = await _messageBus.InvokeAsync<Result>(command, ct);
 
         if (result.IsFailure)
             return BadRequest(new { error = result.Error });

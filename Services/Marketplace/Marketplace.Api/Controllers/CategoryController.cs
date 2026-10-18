@@ -18,10 +18,10 @@ public class CategoryController(
     IUnitOfWork _unitOfWork) : ControllerBase
 {
     [HttpGet]
-    public async Task<IActionResult> GetAll([FromQuery] bool activeOnly = true)
+    public async Task<IActionResult> GetAll([FromQuery] bool activeOnly = true, [FromQuery] Guid? profileTypeId = null)
     {
         var result = await _messageBus.InvokeAsync<Result<List<Application.Dtos.CategoryDto>>>(
-            new GetAllCategoriesQuery(activeOnly));
+            new GetAllCategoriesQuery(activeOnly, profileTypeId));
 
         if (result.IsFailure) return BadRequest(new { error = result.Error });
         return Ok(result.Value);

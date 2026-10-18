@@ -19,11 +19,17 @@ public class Category : AggregateRoot, ITranslatable
     public bool IsActive { get; private set; }
     public int DisplayOrder { get; private set; }
     public CategoryPolicy? Policy { get; private set; }
+    public List<Guid>? AllowedProfileTypeIds { get; private set; }
 
     private readonly List<ServiceListing> _listings = new();
     public IReadOnlyCollection<ServiceListing> Listings => _listings.AsReadOnly();
 
     public void SetPolicy(CategoryPolicy policy) => Policy = policy;
+
+    public void SetAllowedProfileTypes(List<Guid>? profileTypeIds)
+    {
+        AllowedProfileTypeIds = profileTypeIds;
+    }
 
     private Category() { }
 

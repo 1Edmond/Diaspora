@@ -9,6 +9,12 @@ public class JobCategory : AggregateRoot
     public string? Description { get; private set; }
     public bool IsActive { get; private set; }
     public int DisplayOrder { get; private set; }
+    public List<Guid>? AllowedProfileTypeIds { get; private set; }
+
+    public void SetAllowedProfileTypes(List<Guid>? profileTypeIds)
+    {
+        AllowedProfileTypeIds = profileTypeIds;
+    }
 
     private JobCategory() { }
 

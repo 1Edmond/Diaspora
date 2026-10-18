@@ -16,13 +16,15 @@ public interface ITransactionRepository : IRepository<Transaction>
         int pageSize,
         CancellationToken cancellationToken = default,
         TransactionType? type = null,
-        TransactionStatus? status = null);
+        TransactionStatus? status = null,
+        string? search = null);
 
     Task<int> CountByWalletIdAsync(
         Guid walletId,
         CancellationToken cancellationToken = default,
         TransactionType? type = null,
-        TransactionStatus? status = null);
+        TransactionStatus? status = null,
+        string? search = null);
 
     Task<IEnumerable<Transaction>> GetByTypeAsync(
         Guid walletId,
@@ -42,5 +44,6 @@ public interface ITransactionRepository : IRepository<Transaction>
         DateTime? toDate = null,
         int pageNumber = 1,
         int pageSize = 20,
-        CancellationToken cancellationToken = default);
+        CancellationToken cancellationToken = default,
+        string? search = null);
 }

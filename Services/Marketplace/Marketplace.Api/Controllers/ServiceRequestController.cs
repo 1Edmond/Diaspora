@@ -198,11 +198,12 @@ public class ServiceRequestController(
         [FromQuery] Guid? providerId = null,
         [FromQuery] Guid? requesterId = null,
         [FromQuery] DateTime? dateFrom = null,
-        [FromQuery] DateTime? dateTo = null)
+        [FromQuery] DateTime? dateTo = null,
+        [FromQuery] string? search = null)
     {
         pageSize = Math.Clamp(pageSize, 1, 50);
 
-        var query = new GetAllServiceRequestsQuery(page, pageSize, status, paymentStatus, providerId, requesterId, dateFrom, dateTo);
+        var query = new GetAllServiceRequestsQuery(page, pageSize, status, paymentStatus, providerId, requesterId, dateFrom, dateTo, search);
 
         var result = await _messageBus.InvokeAsync<Result<PagedList<ServiceRequestDto>>>(query);
 

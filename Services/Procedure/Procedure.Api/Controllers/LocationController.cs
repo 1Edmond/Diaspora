@@ -20,12 +20,7 @@ public class LocationController(
     IUnitOfWork _unitOfWork,
     ILogger<LocationController> _logger) : ControllerBase
 {
-    [Permission(
-        resourceKey: "procedure.location",
-        action: "list",
-        description: "List all active locations",
-        recommendedRoles: new[] { "User", "Admin" }
-    )]
+    [Permission("Locations.View", "Consulter les lieux et consulats")]
     [HttpGet]
     public async Task<IActionResult> GetAll(
         [FromQuery] string? countryCode = null,
@@ -43,12 +38,7 @@ public class LocationController(
         return Ok(result.Value);
     }
 
-    [Permission(
-        resourceKey: "procedure.location",
-        action: "read",
-        description: "Get a location by ID",
-        recommendedRoles: new[] { "User", "Admin" }
-    )]
+    [Permission("Locations.View", "Consulter les lieux et consulats")]
     [HttpGet("{id:guid}")]
     public async Task<IActionResult> GetById(
         Guid id,
@@ -64,12 +54,7 @@ public class LocationController(
         return Ok(result.Value);
     }
 
-    [Permission(
-        resourceKey: "procedure.location",
-        action: "create",
-        description: "Create a location (admin)",
-        recommendedRoles: new[] { "Admin" }
-    )]
+    [Permission("Locations.Create", "Créer un lieu ou consulat")]
     [HttpPost]
     public async Task<IActionResult> Create(
         [FromBody] CreateLocationRequest request,
@@ -107,12 +92,7 @@ public class LocationController(
         return Ok(result.Value);
     }
 
-    [Permission(
-        resourceKey: "procedure.location",
-        action: "update",
-        description: "Update a location (admin)",
-        recommendedRoles: new[] { "Admin" }
-    )]
+    [Permission("Locations.Update", "Modifier un lieu ou consulat")]
     [HttpPut("{id:guid}")]
     public async Task<IActionResult> Update(
         Guid id,
@@ -152,12 +132,7 @@ public class LocationController(
         return Ok(result.Value);
     }
 
-    [Permission(
-        resourceKey: "procedure.location",
-        action: "delete",
-        description: "Delete a location (admin)",
-        recommendedRoles: new[] { "Admin" }
-    )]
+    [Permission("Locations.Delete", "Supprimer un lieu ou consulat")]
     [HttpDelete("{id:guid}")]
     public async Task<IActionResult> Delete(
         Guid id,

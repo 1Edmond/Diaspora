@@ -24,5 +24,6 @@ public record CategoryDto(
     bool IsActive,
     int DisplayOrder,
     int ListingCount,
-    CategoryPolicyDto? Policy = null
+    CategoryPolicyDto? Policy = null,
+    List<Guid>? AllowedProfileTypeIds = null
 );

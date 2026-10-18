@@ -30,6 +30,7 @@ public class GetCategoryByIdQueryHandler(
                 c.IconUrl,
                 c.IsActive,
                 c.DisplayOrder,
+                c.AllowedProfileTypeIds,
                 ActiveListingCount = c.Listings.Count(l => l.IsActive),
                 Policy = c.Policy == null ? null : new CategoryPolicyDto(
                     c.Policy.MinPublishLevel,
@@ -63,7 +64,8 @@ public class GetCategoryByIdQueryHandler(
             category.IsActive,
             category.DisplayOrder,
             category.ActiveListingCount,
-            category.Policy
+            category.Policy,
+            category.AllowedProfileTypeIds
         );
 
         return Result.Success(dto);

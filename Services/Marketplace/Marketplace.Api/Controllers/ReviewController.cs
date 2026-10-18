@@ -65,12 +65,7 @@ public class ReviewController(
         return NoContent();
     }
 
-    [Permission(
-        resourceKey: "marketplace.review",
-        action: "read-admin",
-        description: "View all marketplace reviews for moderation",
-        recommendedRoles: new[] { "Admin", "Moderator", "SuperAdmin" }
-    )]
+    [Permission("Reviews.View", "Consulter les avis")]
     [HttpGet("/api/marketplace/reviews/admin")]
     public async Task<IActionResult> GetAllAdmin(
         [FromQuery] int page = 1,
@@ -86,12 +81,7 @@ public class ReviewController(
         return Ok(result.Value);
     }
 
-    [Permission(
-        resourceKey: "marketplace.review",
-        action: "delete",
-        description: "Delete a review",
-        recommendedRoles: new[] { "User", "Admin", "Moderator" }
-    )]
+    [Permission("Reviews.Moderate", "Modérer un avis")]
     [HttpDelete("{reviewId:guid}")]
     [HttpDelete("/api/marketplace/reviews/{reviewId:guid}")]
     public async Task<IActionResult> Delete(Guid reviewId)

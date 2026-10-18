@@ -15,16 +15,49 @@ public class ExceptionHandlingMiddleware(RequestDelegate next, ILogger<Exception
         {
             await _next(context);
         }
+        catch (Exception exception) when (exception is OperationCanceledException or TaskCanceledException)
+        {
+            if (context.RequestAborted.IsCancellationRequested)
+            {
+                _logger.LogInformation("Requête HTTP ou tâche annulée par le client ({Path})", context.Request.Path);
+                if (!context.Response.HasStarted)
+                {
+                    context.Response.StatusCode = 499;
+                }
+                return;
+            }
+
+            LogException(exception);
+            if (!context.Response.HasStarted)
+            {
+                await HandleExceptionAsync(context, exception);
+            }
+        }
         catch (Exception exception)
         {
+            if (exception is OperationCanceledException or TaskCanceledException && context.RequestAborted.IsCancellationRequested)
+            {
+                _logger.LogInformation("Requête HTTP ou tâche annulée par le client ({Path})", context.Request.Path);
+                if (!context.Response.HasStarted)
+                {
+                    context.Response.StatusCode = 499;
+                }
+                return;
+            }
+
             LogException(exception);
-            await HandleExceptionAsync(context, exception);
+            if (!context.Response.HasStarted)
+            {
+                await HandleExceptionAsync(context, exception);
+            }
         }
     }
 
     private void LogException(Exception exception)
     {
-        if (exception is DomainException)
+        if (exception is OperationCanceledException or TaskCanceledException)
+            _logger.LogInformation("Task or operation was canceled.");
+        else if (exception is DomainException)
             _logger.LogWarning(exception, "A business rule exception occurred.");
         else
             _logger.LogError(exception, "An unhandled exception occurred.");
@@ -34,7 +67,10 @@ public class ExceptionHandlingMiddleware(RequestDelegate next, ILogger<Exception
     {
         context.Response.ContentType = "application/json";
 
-        var response = new ErrorResponse();
+        var response = new ErrorResponse
+        {
+            Success = false
+        };
 
         switch (exception)
         {
@@ -55,6 +91,11 @@ public class ExceptionHandlingMiddleware(RequestDelegate next, ILogger<Exception
                 break;
 
             case BusinessRuleException:
+                context.Response.StatusCode = StatusCodes.Status400BadRequest;
+                response.Message = exception.Message;
+                break;
+
+            case DomainException:
                 context.Response.StatusCode = StatusCodes.Status400BadRequest;
                 response.Message = exception.Message;
                 break;
@@ -95,6 +136,7 @@ public class ExceptionHandlingMiddleware(RequestDelegate next, ILogger<Exception
 
 public class ErrorResponse
 {
+    public bool Success { get; set; } = false;
     public string Message { get; set; } = string.Empty;
     public string? Error { get; set; }
     public IDictionary<string, string[]>? Errors { get; set; }

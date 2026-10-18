@@ -14,5 +14,6 @@ public sealed record GetTransactionsAdminQuery(
     DateTime? FromDate = null,
     DateTime? ToDate = null,
     int PageNumber = 1,
-    int PageSize = 20
+    int PageSize = 20,
+    string? Search = null
 ) : PagedQuery<Result<PagedList<TransactionDto>>>(PageNumber, PageSize);

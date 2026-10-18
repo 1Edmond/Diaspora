@@ -25,7 +25,8 @@ public sealed class GetTransactionsAdminQueryHandler(ITransactionRepository repo
             query.ToDate,
             query.PageNumber,
             query.PageSize,
-            cancellationToken);
+            cancellationToken,
+            query.Search);
 
         var dtos = pagedTransactions.Items.Select(t => t.ToDto()).ToList();
 

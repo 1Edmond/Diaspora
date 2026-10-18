@@ -12,5 +12,6 @@ public record UpdateCategoryCommand(
     string? Description,
     string? IconUrl,
     int DisplayOrder,
-    Dictionary<string, Dictionary<string, string>>? Translations = null
+    Dictionary<string, Dictionary<string, string>>? Translations = null,
+    List<Guid>? AllowedProfileTypeIds = null
 ) : ICommand<Result>;

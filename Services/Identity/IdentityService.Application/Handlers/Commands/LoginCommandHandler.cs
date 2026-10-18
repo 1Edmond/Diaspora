@@ -37,6 +37,11 @@ public static class LoginCommandHandler
             return Result.Failure<LoginResponse>($"Account locked until {user.LockedUntil:yyyy-MM-dd HH:mm:ss} UTC");
         }
 
+        if (user.IsDeleted || user.Status != Shared.Domain.Enums.UserStatus.Active)
+        {
+            return Result.Failure<LoginResponse>($"User account is {user.Status}");
+        }
+
         if (!hashingService.VerifyPassword(command.Password, user.PasswordHash))
         {
             var failureResult = user.RecordFailedLogin();
