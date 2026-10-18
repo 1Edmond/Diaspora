@@ -16,5 +16,6 @@ public record ReviewDto(
     bool IsVerified,
     DateTime CreatedAt,
     string? ProviderReply,
-    DateTime? ProviderRepliedAt
+    DateTime? ProviderRepliedAt,
+    string? ListingTitle = null
 );

@@ -35,6 +35,23 @@ public class JobTemplateController(
 
     [Permission(
         resourceKey: "freelance.job-template",
+        action: "read-admin",
+        description: "View all job templates as admin",
+        recommendedRoles: new[] { "Admin", "SuperAdmin" }
+    )]
+    [HttpGet("admin/all")]
+    public async Task<IActionResult> GetAllAdmin([FromQuery] int page = 1, [FromQuery] int pageSize = 10)
+    {
+        pageSize = Math.Clamp(pageSize, 1, 50);
+        var result = await _messageBus.InvokeAsync<Result<PagedList<JobTemplateDto>>>(
+            new GetJobTemplatesQuery(Guid.Empty, page, pageSize, IsAdmin: true));
+
+        if (result.IsFailure) return BadRequest(new { error = result.Error });
+        return Ok(result.Value);
+    }
+
+    [Permission(
+        resourceKey: "freelance.job-template",
         action: "create",
         description: "Create a job template",
         recommendedRoles: new[] { "User", "Admin" }

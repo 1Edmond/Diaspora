@@ -1,4 +1,4 @@
-﻿using Marketplace.Domain.Entities;
+using Marketplace.Domain.Entities;
 using Shared.Domain.Interfaces;
 using System;
 using System.Collections.Generic;
@@ -17,4 +17,12 @@ public interface IReviewRepository : IRepository<Review>
 
     /// <summary>Nombre d'avis créés par cet utilisateur depuis la date donnée (anti-spam).</summary>
     Task<int> CountCreatedSinceAsync(Guid reviewerId, DateTime since, CancellationToken cancellationToken = default);
+
+    /// <summary>Recherche administrative paginée de tous les avis de la plateforme avec filtres.</summary>
+    Task<(IReadOnlyList<Review> Items, int TotalCount)> GetPagedReviewsAdminAsync(
+        int page,
+        int pageSize,
+        int? rating = null,
+        string? search = null,
+        CancellationToken cancellationToken = default);
 }

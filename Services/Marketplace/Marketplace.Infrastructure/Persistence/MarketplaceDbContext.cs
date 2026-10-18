@@ -30,6 +30,7 @@ public class MarketplaceDbContext(
     public DbSet<CategoryPolicy> CategoryPolicies => Set<CategoryPolicy>();
     public DbSet<Dispute> Disputes => Set<Dispute>();
     public DbSet<ProfileTypePaymentPolicy> PaymentPolicies => Set<ProfileTypePaymentPolicy>();
+    public DbSet<MarketplaceParameter> Parameters => Set<MarketplaceParameter>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {

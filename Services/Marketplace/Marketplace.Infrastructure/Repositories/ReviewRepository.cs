@@ -61,4 +61,38 @@ public class ReviewRepository(MarketplaceDbContext _context,
     public async Task<int> CountCreatedSinceAsync(Guid reviewerId, DateTime since, CancellationToken cancellationToken = default)
         => await _context.Reviews
             .CountAsync(r => r.ReviewerId == reviewerId && r.CreatedAt >= since, cancellationToken);
+
+    public async Task<(IReadOnlyList<Review> Items, int TotalCount)> GetPagedReviewsAdminAsync(
+        int page,
+        int pageSize,
+        int? rating = null,
+        string? search = null,
+        CancellationToken cancellationToken = default)
+    {
+        var query = _context.Reviews
+            .Include(r => r.Listing)
+            .AsNoTracking();
+
+        if (rating.HasValue && rating.Value >= 1 && rating.Value <= 5)
+        {
+            query = query.Where(r => r.Rating == rating.Value);
+        }
+
+        if (!string.IsNullOrWhiteSpace(search))
+        {
+            var s = search.Trim().ToLower();
+            query = query.Where(r => r.Comment.ToLower().Contains(s)
+                || (r.Listing != null && r.Listing.Title.ToLower().Contains(s))
+                || (r.ProviderReply != null && r.ProviderReply.ToLower().Contains(s)));
+        }
+
+        var totalCount = await query.CountAsync(cancellationToken);
+        var items = await query
+            .OrderByDescending(r => r.CreatedAt)
+            .Skip((page - 1) * pageSize)
+            .Take(pageSize)
+            .ToListAsync(cancellationToken);
+
+        return (items, totalCount);
+    }
 }

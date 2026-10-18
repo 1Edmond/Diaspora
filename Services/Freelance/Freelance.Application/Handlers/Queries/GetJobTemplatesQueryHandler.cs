@@ -15,7 +15,12 @@ public class GetJobTemplatesQueryHandler(IApplicationDbContext _context)
     {
         var q = _context.JobTemplates
             .Include(t => t.Category)
-            .Where(t => t.EmployerId == query.EmployerId);
+            .AsQueryable();
+
+        if (!query.IsAdmin && query.EmployerId != Guid.Empty)
+        {
+            q = q.Where(t => t.EmployerId == query.EmployerId);
+        }
 
         var totalCount = await q.CountAsync();
 

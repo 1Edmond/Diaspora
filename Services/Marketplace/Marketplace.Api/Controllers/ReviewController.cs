@@ -67,11 +67,33 @@ public class ReviewController(
 
     [Permission(
         resourceKey: "marketplace.review",
+        action: "read-admin",
+        description: "View all marketplace reviews for moderation",
+        recommendedRoles: new[] { "Admin", "Moderator", "SuperAdmin" }
+    )]
+    [HttpGet("/api/marketplace/reviews/admin")]
+    public async Task<IActionResult> GetAllAdmin(
+        [FromQuery] int page = 1,
+        [FromQuery] int pageSize = 10,
+        [FromQuery] int? rating = null,
+        [FromQuery] string? search = null)
+    {
+        pageSize = Math.Clamp(pageSize, 1, 50);
+        var result = await _messageBus.InvokeAsync<Result<PagedList<ReviewDto>>>(
+            new GetReviewsAdminQuery(page, pageSize, rating, search));
+
+        if (result.IsFailure) return BadRequest(new { error = result.Error });
+        return Ok(result.Value);
+    }
+
+    [Permission(
+        resourceKey: "marketplace.review",
         action: "delete",
         description: "Delete a review",
         recommendedRoles: new[] { "User", "Admin", "Moderator" }
     )]
     [HttpDelete("{reviewId:guid}")]
+    [HttpDelete("/api/marketplace/reviews/{reviewId:guid}")]
     public async Task<IActionResult> Delete(Guid reviewId)
     {
         // Le statut admin/modérateur est déterminé côté serveur à partir des rôles

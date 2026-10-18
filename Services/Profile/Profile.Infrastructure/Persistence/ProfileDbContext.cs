@@ -1,4 +1,4 @@
-﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using Profile.Domain.Entities;
 using Shared.Application.Interfaces;
@@ -19,6 +19,7 @@ public sealed class ProfileDbContext(
 {
     public DbSet<ProfileType> ProfileTypes => Set<ProfileType>();
     public DbSet<Domain.Entities.Profile> InternalProfiles => Set<Domain.Entities.Profile>();
+    public DbSet<ProfileTypeMobileConfig> MobileConfigs => Set<ProfileTypeMobileConfig>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {

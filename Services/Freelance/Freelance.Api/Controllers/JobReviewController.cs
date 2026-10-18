@@ -1,5 +1,6 @@
 using Freelance.Application.Commands;
 using Freelance.Application.Dtos;
+using Freelance.Application.Interfaces;
 using Freelance.Application.Queries;
 using Microsoft.AspNetCore.Mvc;
 using Shared.Application.Interfaces;
@@ -32,18 +33,43 @@ public class JobReviewController(
 
     [Permission(
         resourceKey: "freelance.job-review",
-        action: "create",
-        description: "Submit a job review",
-        recommendedRoles: new[] { "User", "Admin" }
+        action: "read-admin",
+        description: "View all freelance job reviews for moderation",
+        recommendedRoles: new[] { "Admin", "SuperAdmin", "Moderator" }
     )]
-    [HttpPost]
-    public async Task<IActionResult> Create([FromBody] CreateJobReviewCommand command)
+    [HttpGet("admin")]
+    public async Task<IActionResult> GetAllAdmin(
+        [FromQuery] int page = 1,
+        [FromQuery] int pageSize = 10,
+        [FromQuery] int? rating = null,
+        [FromQuery] string? search = null)
     {
-        var cmd = command with { RaterId = GetCurrentUserId() };
-        var result = await _messageBus.InvokeAsync<Result<Guid>>(cmd);
+        pageSize = Math.Clamp(pageSize, 1, 50);
+        var result = await _messageBus.InvokeAsync<Result<PagedList<JobReviewDto>>>(
+            new GetJobReviewsAdminQuery(page, pageSize, rating, search));
 
         if (result.IsFailure) return BadRequest(new { error = result.Error });
-        return Ok(new { id = result.Value });
+        return Ok(result.Value);
+    }
+
+    [Permission(
+        resourceKey: "freelance.job-review",
+        action: "delete",
+        description: "Delete an abusive freelance review",
+        recommendedRoles: new[] { "Admin", "SuperAdmin", "Moderator" }
+    )]
+    [HttpDelete("{id:guid}")]
+    public async Task<IActionResult> Delete(
+        Guid id,
+        [FromServices] IJobReviewRepository reviewRepo,
+        [FromServices] Shared.Domain.Interfaces.IUnitOfWork uow)
+    {
+        var review = await reviewRepo.GetByIdAsync(id);
+        if (review == null) return NotFound(new { error = "Review not found." });
+
+        await reviewRepo.DeleteAsync(review);
+        await uow.SaveChangesAsync();
+        return NoContent();
     }
 
     private Guid GetCurrentUserId() => Guid.Parse(_currentUserService.UserId!);

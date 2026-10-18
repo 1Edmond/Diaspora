@@ -46,6 +46,7 @@ public static class DependencyInjection
         // ── Repositories ──────────────────────────────────────────────────────
         services.AddScoped<IProfileRepository, ProfileRepository>();
         services.AddScoped<IProfileTypeRepository, ProfileTypeRepository>();
+        services.AddScoped<IMobileConfigRepository, MobileConfigRepository>();
 
         // ── Integration Event Mapper (Outbox) ─────────────────────────────────
         services.AddScoped<IIntegrationEventMapper, ProfileIntegrationEventMapper>();
