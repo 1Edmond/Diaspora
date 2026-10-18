@@ -19,6 +19,7 @@ public class PaymentPolicyController(
     IMessageBus _messageBus,
     ILogger<PaymentPolicyController> _logger) : ControllerBase
 {
+    [AllowAnonymous]
     [HttpGet]
     public async Task<IActionResult> GetAll()
     {
@@ -31,6 +32,7 @@ public class PaymentPolicyController(
         return Ok(result.Value);
     }
 
+    [AllowAnonymous]
     [HttpGet("by-profile-type/{profileTypeId:guid}")]
     public async Task<IActionResult> GetByProfileType(Guid profileTypeId)
     {
@@ -39,6 +41,26 @@ public class PaymentPolicyController(
 
         if (result.IsFailure)
             return NotFound(new { error = result.Error });
+
+        return Ok(result.Value);
+    }
+
+    [AllowAnonymous]
+    [HttpGet("by-country/{countryCode}")]
+    public async Task<IActionResult> GetByCountry(string countryCode)
+    {
+        var result = await _messageBus.InvokeAsync<Result<ProfileTypePaymentPolicyDto>>(
+            new ResolvePaymentPolicyQuery(null, countryCode));
+
+        return Ok(result.Value);
+    }
+
+    [AllowAnonymous]
+    [HttpGet("resolve")]
+    public async Task<IActionResult> Resolve([FromQuery] Guid? profileTypeId, [FromQuery] string? countryCode)
+    {
+        var result = await _messageBus.InvokeAsync<Result<ProfileTypePaymentPolicyDto>>(
+            new ResolvePaymentPolicyQuery(profileTypeId, countryCode));
 
         return Ok(result.Value);
     }

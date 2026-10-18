@@ -25,6 +25,7 @@ public class AuthorizationMiddleware
         "/api/profile-types/public",
         "/api/document-types/public",
         "/api/config/mobile",
+        "/api/marketplace/payment-policies",
         "/health",
         "/alive"
     };
