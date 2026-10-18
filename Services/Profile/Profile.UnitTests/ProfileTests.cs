@@ -24,14 +24,24 @@ public class ProfileTests
     }
 
     [Fact]
-    public void Activate_WhenStatusIsPendingVerification_ShouldSucceedAndEmitDomainEvent()
+    public void Activate_WhenStatusIsPendingVerification_ShouldFailWithInformativeError()
     {
         var profile = CreateTestProfile();
         profile.Status.Should().Be(ProfileStatus.PendingVerification);
 
         var result = profile.Activate();
 
-        result.IsSuccess.Should().BeTrue();
+        result.IsFailure.Should().BeTrue();
+        result.Error.Should().Contain("doit d'abord être vérifié");
+    }
+
+    [Fact]
+    public void Activate_WhenVerifiedAndKycL2Approved_ShouldSucceedAndEmitDomainEvent()
+    {
+        var profile = CreateTestProfile();
+        profile.Verify("admin-1");
+        profile.ApplyKycApproval(Shared.Domain.Enums.VerificationLevel.L2_IdentityVerified);
+
         profile.Status.Should().Be(ProfileStatus.Activate);
         profile.DomainEvents.Should().ContainSingle(e => e is ProfileActivatedDomainEvent);
     }
@@ -46,7 +56,7 @@ public class ProfileTests
         var result = profile.Activate();
 
         result.IsFailure.Should().BeTrue();
-        result.Error.Should().Be("Profil suspendu, impossible d'activer.");
+        result.Error.Should().Be("Ce profil est suspendu et ne peut pas être activé.");
         profile.Status.Should().Be(ProfileStatus.Suspended);
     }
 
@@ -54,12 +64,14 @@ public class ProfileTests
     public void Activate_WhenStatusIsAlreadyActivate_ShouldFail()
     {
         var profile = CreateTestProfile();
-        profile.Activate();
+        profile.Verify("admin-1");
+        profile.ApplyKycApproval(Shared.Domain.Enums.VerificationLevel.L2_IdentityVerified);
+        profile.Status.Should().Be(ProfileStatus.Activate);
 
         var result = profile.Activate();
 
         result.IsFailure.Should().BeTrue();
-        result.Error.Should().Contain("already activated");
+        result.Error.Should().Be("Ce profil est déjà actif.");
     }
 
     [Fact]

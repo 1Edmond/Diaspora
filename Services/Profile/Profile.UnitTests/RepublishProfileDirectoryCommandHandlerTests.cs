@@ -44,7 +44,7 @@ public class RepublishProfileDirectoryCommandHandlerTests
 
         if (status == ProfileStatus.Activate)
         {
-            profile.Activate();
+            profile.ApplyKycApproval(Shared.Domain.Enums.VerificationLevel.L2_IdentityVerified);
         }
         else if (status == ProfileStatus.Suspended)
         {

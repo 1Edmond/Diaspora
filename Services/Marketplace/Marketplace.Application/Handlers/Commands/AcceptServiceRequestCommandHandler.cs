@@ -7,12 +7,16 @@ using System.Collections.Generic;
 using System.Text;
 using System.Threading.Tasks;
 
+using Shared.Messaging.Events.Marketplace;
+using Wolverine;
+
 namespace Marketplace.Application.Handlers.Commands;
 
 public class AcceptServiceRequestCommandHandler(
     IServiceRequestRepository _requestRepository,
     IServiceListingRepository? _listingRepository,
-    IUnitOfWork _unitOfWork)
+    IUnitOfWork _unitOfWork,
+    IMessageBus? _messageBus = null)
 {
     public async Task<Result> Handle(AcceptServiceRequestCommand command)
     {
@@ -39,6 +43,25 @@ public class AcceptServiceRequestCommandHandler(
         request.Accept();
         await _requestRepository.UpdateAsync(request);
         await _unitOfWork.SaveChangesAsync();
+
+        if (_messageBus is not null)
+        {
+            await _messageBus.PublishAsync(new ServiceRequestAcceptedIntegrationEvent(
+                request.Id,
+                request.RequesterId,
+                request.ProviderId));
+
+            if (request.SettlementType == Domain.Enums.PaymentSettlementType.DirectHandover && request.PlatformDirectFeeAmount > 0m)
+            {
+                await _messageBus.PublishAsync(new MarketplacePaymentReleaseRequestedIntegrationEvent(
+                    request.Id,
+                    BuyerProfileId: request.RequesterId,
+                    SellerProfileId: request.ProviderId,
+                    CommissionAmount: request.PlatformDirectFeeAmount,
+                    Amount: request.PlatformDirectFeeAmount,
+                    Currency: request.AgreedCurrency ?? "EUR"));
+            }
+        }
 
         return Result.Success();
     }

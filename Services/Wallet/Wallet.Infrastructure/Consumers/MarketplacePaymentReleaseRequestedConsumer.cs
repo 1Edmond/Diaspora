@@ -122,7 +122,10 @@ public sealed class MarketplacePaymentReleaseRequestedConsumer(
         }
 
         await _walletRepository.UpdateAsync(buyer, cancellationToken);
-        await _walletRepository.UpdateAsync(seller, cancellationToken);
+        if (seller is not null)
+        {
+            await _walletRepository.UpdateAsync(seller, cancellationToken);
+        }
         if (platformWallet is not null && @event.CommissionAmount > 0m)
         {
             await _walletRepository.UpdateAsync(platformWallet, cancellationToken);

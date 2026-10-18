@@ -23,8 +23,8 @@ public class ConfirmDeliveryCommandHandler(
         if (request is null)
             return Result.Failure("Request not found.");
 
-        if (request.ProviderId != command.RequestedBy && request.RequesterId != command.RequestedBy)
-            return Result.Failure("Access denied.");
+        if (request.ProviderId != command.RequestedBy)
+            return Result.Failure("Seul le transporteur prestataire peut confirmer la livraison finale du colis.");
 
         var result = request.ConfirmDelivery(command.Otp, command.ProofPhotoUrl);
         if (result.IsFailure)
