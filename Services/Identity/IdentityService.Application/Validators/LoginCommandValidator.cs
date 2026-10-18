@@ -1,4 +1,4 @@
-﻿using FluentValidation;
+using FluentValidation;
 using IdentityService.Application.Commands;
 using System;
 using System.Collections.Generic;
@@ -16,9 +16,5 @@ public class LoginCommandValidator : AbstractValidator<LoginCommand>
 
         RuleFor(x => x.Password)
             .NotEmpty();
-
-        RuleFor(x => x.IpAddress)
-            .Empty()
-            ;
     }
 }

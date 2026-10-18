@@ -176,4 +176,4 @@ public partial class AuthController(IMessageBus _messageBus, ILogger<AuthControl
     }
 }
 
-public record RefreshTokenRequest(string? RefreshToken);
+public record RefreshTokenRequest(string? RefreshToken);
