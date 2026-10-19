@@ -6,4 +6,5 @@ namespace IdentityService.Application.Abstractions;
 public interface IUserRepository : IRepository<User>
 {
     Task<User?> GetByRefreshTokenAsync(string token, CancellationToken cancellationToken = default);
+    Task<User?> GetByEmailWithRolesAsync(string email, CancellationToken cancellationToken = default);
 }

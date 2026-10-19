@@ -74,6 +74,11 @@ public class ExceptionHandlingMiddleware(RequestDelegate next, ILogger<Exception
 
         switch (exception)
         {
+            case OperationCanceledException or TaskCanceledException:
+                context.Response.StatusCode = context.RequestAborted.IsCancellationRequested ? 499 : StatusCodes.Status408RequestTimeout;
+                response.Message = "L'opération a été interrompue ou a expiré.";
+                break;
+
             case NotFoundException:
                 context.Response.StatusCode = StatusCodes.Status404NotFound;
                 response.Message = exception.Message;

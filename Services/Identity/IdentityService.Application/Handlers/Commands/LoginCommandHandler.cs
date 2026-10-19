@@ -1,3 +1,4 @@
+using IdentityService.Application.Abstractions;
 using IdentityService.Application.Commands;
 using IdentityService.Application.Dtos;
 using IdentityService.Application.Models;
@@ -8,6 +9,7 @@ using Shared.Domain.Interfaces;
 using Shared.Security.Abstractions;
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Text;
 
 namespace IdentityService.Application.Handlers.Commands;
@@ -16,14 +18,14 @@ public static class LoginCommandHandler
 {
     public static async Task<Result<LoginResponse>> HandleAsync(
         LoginCommand command,
-        IRepository<User> repository,
+        IUserRepository userRepository,
         IRepository<RefreshToken> refreshRepository,
         IHashingService hashingService,
         IJwtTokenService jwtService,
         IUnitOfWork unitOfWork,
         ILogger<LoginCommand> logger)
     {
-        var user = await repository.FirstOrDefaultAsync(u => u.Email.Value.ToLower() == command.Email.ToLower());
+        var user = await userRepository.GetByEmailWithRolesAsync(command.Email);
 
         if (user == null)
         {
@@ -79,7 +81,7 @@ public static class LoginCommandHandler
         user.AddRefreshToken(refreshToken, command.IpAddress, refreshTokenExpiry);
         user.RemoveOldRefreshTokens(ttlDays: 30);
 
-        await repository.UpdateAsync(user);
+        await userRepository.UpdateAsync(user);
         await refreshRepository.AddAsync(user.RefreshTokens.First(
             x => x.Token == refreshToken
             ));

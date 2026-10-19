@@ -47,4 +47,26 @@ public class UserRepository(
 
         return user;
     }
+
+    public async Task<User?> GetByEmailWithRolesAsync(
+        string email,
+        CancellationToken cancellationToken = default)
+    {
+        var normalizedEmail = email.Trim().ToLowerInvariant();
+        var user = await _context.Users
+            .Include(u => u.RefreshTokens)
+            .Include(u => u.UserRoles)
+                .ThenInclude(ur => ur.Role)
+            .FirstOrDefaultAsync(
+                u => u.Email.Value.ToLower() == normalizedEmail,
+                cancellationToken);
+
+        if (user is not null)
+        {
+            await EncryptedValueObjectHelper.DecryptEntityAsync(
+                user, EncryptionService, cancellationToken);
+        }
+
+        return user;
+    }
 }
