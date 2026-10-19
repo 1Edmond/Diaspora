@@ -17,7 +17,7 @@ namespace Freelance.Api.Controllers;
 public class JobCategoryController(
     IMessageBus _messageBus) : ControllerBase
 {
-    [Permission("FreelanceCategories.View", "Consulter les catégories freelance")]
+    [Permission(resourceKey: "freelance.category", action: "read", description: "Consulter les catégories freelance", recommendedRoles: new[] { "Admin", "User", "Moderator" })]
     [HttpGet]
     public async Task<IActionResult> GetAll([FromQuery] bool activeOnly = true, [FromQuery] Guid? profileTypeId = null)
     {
@@ -28,7 +28,7 @@ public class JobCategoryController(
         return Ok(result.Value);
     }
 
-    [Permission("FreelanceCategories.Manage", "Gérer les catégories freelance")]
+    [Permission(resourceKey: "freelance.category", action: "manage", description: "Créer une catégorie freelance", recommendedRoles: new[] { "Admin" })]
     [HttpPost]
     public async Task<IActionResult> Create([FromBody] CreateJobCategoryCommand command, CancellationToken cancellationToken)
     {
@@ -37,7 +37,7 @@ public class JobCategoryController(
         return Ok(new { id = result.Value });
     }
 
-    [Permission("FreelanceCategories.Manage", "Gérer les catégories freelance")]
+    [Permission(resourceKey: "freelance.category", action: "manage", description: "Modifier une catégorie freelance", recommendedRoles: new[] { "Admin" })]
     [HttpPut("{id:guid}")]
     public async Task<IActionResult> Update(Guid id, [FromBody] UpdateJobCategoryCommand command, CancellationToken cancellationToken)
     {
@@ -47,7 +47,7 @@ public class JobCategoryController(
         return NoContent();
     }
 
-    [Permission("FreelanceCategories.Manage", "Gérer les catégories freelance")]
+    [Permission(resourceKey: "freelance.category", action: "manage", description: "Supprimer une catégorie freelance", recommendedRoles: new[] { "Admin" })]
     [HttpDelete("{id:guid}")]
     public async Task<IActionResult> Delete(Guid id, CancellationToken cancellationToken)
     {
@@ -56,7 +56,7 @@ public class JobCategoryController(
         return NoContent();
     }
 
-    [Permission("FreelanceCategories.Manage", "Gérer les catégories freelance")]
+    [Permission(resourceKey: "freelance.category", action: "manage", description: "Activer ou désactiver une catégorie freelance", recommendedRoles: new[] { "Admin" })]
     [HttpPatch("{id:guid}/status")]
     public async Task<IActionResult> ToggleStatus(Guid id, [FromBody] bool isActive, CancellationToken cancellationToken)
     {
@@ -65,7 +65,7 @@ public class JobCategoryController(
         return NoContent();
     }
 
-    [Permission("FreelanceCategories.Manage", "Gérer les catégories freelance")]
+    [Permission(resourceKey: "freelance.category", action: "manage", description: "Gérer les traductions d'une catégorie freelance", recommendedRoles: new[] { "Admin" })]
     [HttpPut("{id:guid}/translations/{cultureCode}")]
     public IActionResult UpdateTranslation(Guid id, string cultureCode, [FromBody] Dictionary<string, string> fields)
     {

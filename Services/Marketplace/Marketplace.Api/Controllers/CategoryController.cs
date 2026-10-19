@@ -1,5 +1,6 @@
 using Marketplace.Application.Commands;
 using Marketplace.Application.Queries;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Shared.Application.Abstractions;
 using Shared.Domain.Commons;
@@ -17,6 +18,7 @@ public class CategoryController(
     ITranslationRepository<Marketplace.Domain.Entities.Category> _translationRepo,
     IUnitOfWork _unitOfWork) : ControllerBase
 {
+    [AllowAnonymous]
     [HttpGet]
     public async Task<IActionResult> GetAll([FromQuery] bool activeOnly = true, [FromQuery] Guid? profileTypeId = null)
     {
@@ -27,6 +29,7 @@ public class CategoryController(
         return Ok(result.Value);
     }
 
+    [AllowAnonymous]
     [HttpGet("{id:guid}")]
     public async Task<IActionResult> GetById(Guid id)
     {
@@ -95,6 +98,7 @@ public class CategoryController(
         return NoContent();
     }
 
+    [AllowAnonymous]
     [HttpGet("{id:guid}/translations")]
     public async Task<IActionResult> GetTranslations(Guid id, CancellationToken cancellationToken)
     {

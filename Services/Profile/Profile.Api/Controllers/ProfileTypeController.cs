@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Profile.Application.Extensions;
 using Profile.Application.Interfaces;
@@ -13,7 +14,7 @@ public class ProfileTypeController(
     IProfileTypeRepository _repository,
     ILogger<ProfileTypeController> _logger) : ControllerBase
 {
-    [Microsoft.AspNetCore.Authorization.AllowAnonymous]
+    [AllowAnonymous]
     [HttpGet("public")]
     public async Task<IActionResult> GetPublic(CancellationToken cancellationToken)
     {

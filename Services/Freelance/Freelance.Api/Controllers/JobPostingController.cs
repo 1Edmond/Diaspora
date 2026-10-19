@@ -2,6 +2,7 @@ using Freelance.Application.Commands;
 using Freelance.Application.Dtos;
 using Freelance.Application.Queries;
 using Freelance.Domain.Enums;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
 using Shared.Application.Interfaces;
@@ -20,6 +21,7 @@ public class JobPostingController(
     ILogger<JobPostingController> _logger) : ControllerBase
 {
     // Public — consultation libre sans authentification
+    [AllowAnonymous]
     [HttpGet]
     public async Task<IActionResult> GetAll(
         [FromQuery] int page = 1,
@@ -53,6 +55,7 @@ public class JobPostingController(
         return Ok(result.Value);
     }
 
+    [AllowAnonymous]
     [HttpGet("{id:guid}")]
     public async Task<IActionResult> GetById(Guid id)
     {

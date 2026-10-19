@@ -20,6 +20,7 @@ namespace Profile.Api.Controllers;
 public class MobileConfigController(
     IMobileConfigRepository _configRepository,
     IProfileTypeRepository _profileTypeRepository,
+    IProfileRepository _profileRepository,
     IConfiguration _configuration,
     ICurrentUserService _currentUserService,
     ILogger<MobileConfigController> _logger) : ControllerBase
@@ -46,6 +47,25 @@ public class MobileConfigController(
         [FromQuery] string? countryCode = null,
         CancellationToken cancellationToken = default)
     {
+        if ((!profileTypeId.HasValue || profileTypeId.Value == Guid.Empty) && !string.IsNullOrWhiteSpace(_currentUserService.UserId))
+        {
+            if (Guid.TryParse(_currentUserService.UserId, out var userId))
+            {
+                var profiles = await _profileRepository.GetByUserIdAsync(userId, cancellationToken);
+                var userProfile = profiles?.FirstOrDefault(p => p.Status == Domain.Enums.ProfileStatus.Activate || p.Status == Domain.Enums.ProfileStatus.Verified)
+                    ?? profiles?.FirstOrDefault();
+
+                if (userProfile != null && userProfile.ProfileTypeId != Guid.Empty)
+                {
+                    profileTypeId = userProfile.ProfileTypeId;
+                    if (string.IsNullOrWhiteSpace(countryCode) && userProfile.ProfileType != null)
+                    {
+                        countryCode = userProfile.ProfileType.CountryCode;
+                    }
+                }
+            }
+        }
+
         _logger.LogInformation("[MobileConfig] Serving bootstrap config (profileTypeId={ProfileTypeId}, countryCode={CountryCode})",
             profileTypeId, countryCode);
 

@@ -3,6 +3,7 @@ using IdentityService.Application.Commands;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Shared.Application.Interfaces;
+using Shared.Security.Attributes;
 
 namespace IdentityService.API.Controllers;
 
@@ -81,7 +82,8 @@ public class AuthorizationController(
     }
 
     [HttpGet("permissions")]
-    [Authorize(Roles = "Admin")]
+    [Authorize(Roles = "Admin,SuperAdmin")]
+    [Permission(resourceKey: "authorization.permissions", action: "read", description: "Consulter toutes les permissions système", recommendedRoles: new[] { "Admin" })]
     public async Task<IActionResult> GetAllPermissions()
     {
         var permissions = await permissionService.GetAllPermissionsAsync();
@@ -101,7 +103,8 @@ public class AuthorizationController(
     }
 
     [HttpPost("roles/{roleId:guid}/permissions")]
-    [Authorize(Roles = "Admin")]
+    [Authorize(Roles = "Admin,SuperAdmin")]
+    [Permission(resourceKey: "authorization.roles.permissions", action: "manage", description: "Assigner des permissions à un rôle", recommendedRoles: new[] { "Admin" })]
     public async Task<IActionResult> AssignPermissionToRole(
         Guid roleId,
         [FromBody] AssignPermissionsCommand request)
@@ -118,7 +121,8 @@ public class AuthorizationController(
     }
 
     [HttpDelete("roles/{roleId:guid}/permissions/{permissionKey}")]
-    [Authorize(Roles = "Admin")]
+    [Authorize(Roles = "Admin,SuperAdmin")]
+    [Permission(resourceKey: "authorization.roles.permissions", action: "manage", description: "Retirer une permission d'un rôle", recommendedRoles: new[] { "Admin" })]
     public async Task<IActionResult> RemovePermissionFromRole(
         Guid roleId,
         string permissionKey)

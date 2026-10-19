@@ -1,6 +1,7 @@
 using Marketplace.Application.Commands;
 using Marketplace.Application.Dtos;
 using Marketplace.Application.Queries;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Shared.Application.Interfaces;
 using Shared.Application.Models;
@@ -17,6 +18,7 @@ public class ReviewController(
     ICurrentUserService _currentUserService) : ControllerBase
 {
     // Public — consultation libre
+    [AllowAnonymous]
     [HttpGet]
     public async Task<IActionResult> GetReviews(
         Guid listingId,
@@ -65,7 +67,7 @@ public class ReviewController(
         return NoContent();
     }
 
-    [Permission("Reviews.View", "Consulter les avis")]
+    [Permission(resourceKey: "marketplace.review", action: "read-admin", description: "Consulter les avis marketplace (administration)", recommendedRoles: new[] { "Admin", "Moderator" })]
     [HttpGet("/api/marketplace/reviews/admin")]
     public async Task<IActionResult> GetAllAdmin(
         [FromQuery] int page = 1,
@@ -81,7 +83,7 @@ public class ReviewController(
         return Ok(result.Value);
     }
 
-    [Permission("Reviews.Moderate", "Modérer un avis")]
+    [Permission(resourceKey: "marketplace.review", action: "moderate", description: "Modérer ou supprimer un avis marketplace", recommendedRoles: new[] { "Admin", "Moderator" })]
     [HttpDelete("{reviewId:guid}")]
     [HttpDelete("/api/marketplace/reviews/{reviewId:guid}")]
     public async Task<IActionResult> Delete(Guid reviewId)

@@ -3,6 +3,7 @@ using Document.Application.Extensions;
 using Document.Application.Interfaces;
 using Document.Application.Requests;
 using Document.Domain.Entities;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Shared.Domain.Interfaces;
 using Shared.Security.Attributes;
@@ -18,7 +19,7 @@ public class DocumentTypeController(
     IUnitOfWork _unitOfWork,
     ILogger<DocumentTypeController> _logger) : ControllerBase
 {
-    [Microsoft.AspNetCore.Authorization.AllowAnonymous]
+    [AllowAnonymous]
     [HttpGet("public")]
     public async Task<IActionResult> GetPublic(
         [FromQuery] Guid? profileTypeId,

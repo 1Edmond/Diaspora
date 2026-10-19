@@ -20,6 +20,7 @@ public class ServiceListingController(
     ILogger<ServiceListingController> _logger) : ControllerBase
 {
     // Public — consultation libre sans authentification
+    [AllowAnonymous]
     [HttpGet]
     public async Task<IActionResult> GetAll(
         [FromQuery] int page = 1,
@@ -52,6 +53,7 @@ public class ServiceListingController(
         return Ok(result.Value);
     }
 
+    [AllowAnonymous]
     [HttpGet("{id:guid}")]
     public async Task<IActionResult> GetById(Guid id)
     {

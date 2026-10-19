@@ -14,7 +14,7 @@ namespace Marketplace.Api.Controllers;
 public sealed class MarketplaceParameterController(
     IMarketplaceParameterRepository _repository) : ControllerBase
 {
-    [Permission("MarketplaceParameters.View", "Consulter les paramètres marketplace")]
+    [Permission(resourceKey: "marketplace.parameter", action: "read", description: "Consulter les paramètres marketplace", recommendedRoles: new[] { "Admin" })]
     [HttpGet]
     public async Task<IActionResult> GetAll(CancellationToken cancellationToken)
     {
@@ -23,7 +23,7 @@ public sealed class MarketplaceParameterController(
         return Ok(dtos);
     }
 
-    [Permission("MarketplaceParameters.Update", "Modifier les paramètres marketplace")]
+    [Permission(resourceKey: "marketplace.parameter", action: "manage", description: "Modifier les paramètres marketplace", recommendedRoles: new[] { "Admin" })]
     [HttpPut("{key}")]
     public async Task<IActionResult> Update(
         string key,

@@ -1,7 +1,8 @@
-﻿using Azure;
+using Azure;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Notification.Application.Abstractions;
+using Shared.Security.Attributes;
 using System.Security.Claims;
 
 namespace Notification.Api.Controllers;
@@ -23,6 +24,7 @@ public sealed class NotificationStreamController : ControllerBase
 
     [HttpGet("stream")]
     [Authorize]
+    [Permission(resourceKey: "notification.stream", action: "listen", description: "Écouter le flux SSE des notifications", recommendedRoles: new[] { "User", "Admin" })]
     public async Task StreamAsync(CancellationToken ct)
     {
         var userId = GetUserIdFromClaims();

@@ -19,7 +19,7 @@ public class PaymentPolicyController(
     IMessageBus _messageBus,
     ILogger<PaymentPolicyController> _logger) : ControllerBase
 {
-    [Permission("PaymentPolicies.View", "Consulter les politiques de règlement")]
+    [Permission(resourceKey: "marketplace.payment-policy", action: "read", description: "Consulter les politiques de règlement", recommendedRoles: new[] { "Admin" })]
     [HttpGet]
     public async Task<IActionResult> GetAll()
     {
@@ -32,7 +32,7 @@ public class PaymentPolicyController(
         return Ok(result.Value);
     }
 
-    [Permission("PaymentPolicies.View", "Consulter les politiques de règlement")]
+    [Permission(resourceKey: "marketplace.payment-policy", action: "read", description: "Consulter les politiques de règlement par type de profil", recommendedRoles: new[] { "Admin" })]
     [HttpGet("by-profile-type/{profileTypeId:guid}")]
     public async Task<IActionResult> GetByProfileType(Guid profileTypeId)
     {
@@ -66,7 +66,7 @@ public class PaymentPolicyController(
     }
 
     [Authorize(Roles = "Admin,SuperAdmin")]
-    [Permission("PaymentPolicies.Create", "Créer une politique de règlement")]
+    [Permission(resourceKey: "marketplace.payment-policy", action: "manage", description: "Créer une politique de règlement", recommendedRoles: new[] { "Admin" })]
     [HttpPost]
     public async Task<IActionResult> Create([FromBody] CreatePaymentPolicyCommand command, CancellationToken ct)
     {
@@ -79,7 +79,7 @@ public class PaymentPolicyController(
     }
 
     [Authorize(Roles = "Admin,SuperAdmin")]
-    [Permission("PaymentPolicies.Update", "Modifier une politique de règlement")]
+    [Permission(resourceKey: "marketplace.payment-policy", action: "manage", description: "Modifier une politique de règlement", recommendedRoles: new[] { "Admin" })]
     [HttpPut("{profileTypeId:guid}")]
     public async Task<IActionResult> Update(Guid profileTypeId, [FromBody] UpdateProfileTypePaymentPolicyRequest request, CancellationToken ct = default)
     {
