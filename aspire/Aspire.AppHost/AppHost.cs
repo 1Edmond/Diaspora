@@ -64,7 +64,7 @@ IResourceBuilder<ContainerResource> AddVaultAgent(string name, string service) =
 var identityVaultAgent = AddVaultAgent("identity-vault-agent", "identity");
 var kycVaultAgent = AddVaultAgent("kyc-vault-agent", "kyc");
 var documentVaultAgent = AddVaultAgent("document-vault-agent", "document");
-var marketplaceVaultAgent = AddVaultAgent("marketplace-vault-agent", "marketplace");
+//var marketplaceVaultAgent = AddVaultAgent("marketplace-vault-agent", "marketplace");
 //var freelanceVaultAgent = AddVaultAgent("freelance-vault-agent", "freelance");
 
 

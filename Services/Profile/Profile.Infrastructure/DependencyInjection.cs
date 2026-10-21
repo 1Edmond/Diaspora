@@ -126,7 +126,11 @@ public static class DependencyInjection
         using var scope = app.ApplicationServices.CreateScope();
         var context = scope.ServiceProvider.GetRequiredService<ProfileDbContext>();
 
-        await context.Database.EnsureCreatedAsync();
+        var strategy = context.Database.CreateExecutionStrategy();
+        await strategy.ExecuteAsync(async () =>
+        {
+            await context.Database.EnsureCreatedAsync();
+        });
     }
 
     public static async Task PublishProfileResources<T>(this WebApplication app)

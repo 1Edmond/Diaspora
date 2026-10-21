@@ -118,7 +118,11 @@ public static class DependencyInjection
         using var scope = app.ApplicationServices.CreateScope();
         var db = scope.ServiceProvider.GetRequiredService<KYCDbContext>();
 
-        await db.Database.EnsureCreatedAsync();
+        var strategy = db.Database.CreateExecutionStrategy();
+        await strategy.ExecuteAsync(async () =>
+        {
+            await db.Database.EnsureCreatedAsync();
+        });
     }
 
     public static async Task PublishKYCResources<T>(this WebApplication app)

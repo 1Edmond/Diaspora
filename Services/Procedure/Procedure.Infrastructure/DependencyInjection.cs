@@ -124,7 +124,11 @@ public static class DependencyInjection
         var context = scope.ServiceProvider.GetRequiredService<ProcedureDbContext>();
 
 
-        await context.Database.EnsureCreatedAsync();
+        var strategy = context.Database.CreateExecutionStrategy();
+        await strategy.ExecuteAsync(async () =>
+        {
+            await context.Database.EnsureCreatedAsync();
+        });
 
         var seeder = new ProcedureSeeder(context, scope.ServiceProvider.GetRequiredService<ILogger<ProcedureSeeder>>());
         await seeder.SeedAsync();

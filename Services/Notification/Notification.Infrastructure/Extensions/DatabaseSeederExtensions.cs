@@ -17,7 +17,11 @@ public static class DatabaseSeederExtensions
         try
         {
             var context = services.GetRequiredService<NotificationDbContext>();
-            await context.Database.EnsureCreatedAsync();
+            var strategy = context.Database.CreateExecutionStrategy();
+            await strategy.ExecuteAsync(async () =>
+            {
+                await context.Database.EnsureCreatedAsync();
+            });
             
             var seeder = new NotificationRuleSeeder(context, logger);
             await seeder.SeedAsync();

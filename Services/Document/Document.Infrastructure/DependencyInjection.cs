@@ -136,7 +136,11 @@ public static class DependencyInjection
 
         using var scope = app.ApplicationServices.CreateScope();
         var context = scope.ServiceProvider.GetRequiredService<DocumentDbContext>();
-        await context.Database.EnsureCreatedAsync();
+        var strategy = context.Database.CreateExecutionStrategy();
+        await strategy.ExecuteAsync(async () =>
+        {
+            await context.Database.EnsureCreatedAsync();
+        });
     }
 
     public static async Task PublishDocumentResources<T>(this WebApplication app)
