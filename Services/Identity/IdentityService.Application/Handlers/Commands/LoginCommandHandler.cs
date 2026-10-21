@@ -78,13 +78,13 @@ public static class LoginCommandHandler
         var refreshTokenExpiry = DateTime.UtcNow.AddDays(7);
 
         user.RevokeAllActiveTokens(command.IpAddress, "Single session policy: superseded by new login");
-        user.AddRefreshToken(refreshToken, command.IpAddress, refreshTokenExpiry);
+        var addedToken = user.AddRefreshToken(refreshToken, command.IpAddress, refreshTokenExpiry);
         user.RemoveOldRefreshTokens(ttlDays: 30);
 
-        await userRepository.UpdateAsync(user);
-        await refreshRepository.AddAsync(user.RefreshTokens.First(
-            x => x.Token == refreshToken
-            ));
+
+        await refreshRepository.AddAsync(addedToken);
+
+
         await unitOfWork.SaveChangesAsync();
 
         logger.LogInformation("User {UserId} ({Email}) logged in successfully",

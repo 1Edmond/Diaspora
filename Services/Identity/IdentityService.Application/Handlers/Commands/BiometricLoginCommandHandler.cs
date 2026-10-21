@@ -64,13 +64,13 @@ public class BiometricLoginCommandHandler(
         var refreshTokenExpiry = DateTime.UtcNow.AddDays(7);
 
         user.RevokeAllActiveTokens(command.IpAddress, "Single session policy: superseded by new biometric login");
-        user.AddRefreshToken(refreshToken, command.IpAddress, refreshTokenExpiry);
+        var addedToken = user.AddRefreshToken(refreshToken, command.IpAddress, refreshTokenExpiry);
         user.RemoveOldRefreshTokens(ttlDays: 30);
 
-        await _userRepository.UpdateAsync(user);
-        await _refreshRepository.AddAsync(user.RefreshTokens.First(
-            x => x.Token == refreshToken
-            ));
+
+        await _refreshRepository.AddAsync(addedToken);
+
+
         await _unitOfWork.SaveChangesAsync();
 
         _logger.LogInformation("User {UserId} ({Email}) logged in successfully",

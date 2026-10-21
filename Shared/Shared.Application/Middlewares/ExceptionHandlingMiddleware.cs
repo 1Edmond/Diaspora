@@ -57,6 +57,8 @@ public class ExceptionHandlingMiddleware(RequestDelegate next, ILogger<Exception
     {
         if (exception is OperationCanceledException or TaskCanceledException)
             _logger.LogInformation("Task or operation was canceled.");
+        else if (exception is FluentValidation.ValidationException or ValidationException)
+            _logger.LogWarning("Validation failed: {Message}", exception.Message);
         else if (exception is DomainException)
             _logger.LogWarning(exception, "A business rule exception occurred.");
         else
@@ -82,6 +84,14 @@ public class ExceptionHandlingMiddleware(RequestDelegate next, ILogger<Exception
             case NotFoundException:
                 context.Response.StatusCode = StatusCodes.Status404NotFound;
                 response.Message = exception.Message;
+                break;
+
+            case FluentValidation.ValidationException fluentValidationException:
+                context.Response.StatusCode = StatusCodes.Status400BadRequest;
+                response.Message = "Une ou plusieurs erreurs de validation se sont produites.";
+                response.Errors = fluentValidationException.Errors
+                    .GroupBy(e => e.PropertyName)
+                    .ToDictionary(g => g.Key, g => g.Select(e => e.ErrorMessage).ToArray());
                 break;
 
             case ValidationException validationException:

@@ -1,4 +1,4 @@
-﻿using FluentValidation;
+using FluentValidation;
 using IdentityService.Application.Commands;
 using System;
 using System.Collections.Generic;
@@ -17,14 +17,15 @@ public class RegisterUserValidator : AbstractValidator<RegisterUserCommand>
 
         RuleFor(x => x.Password)
             .NotEmpty()
-            .MinimumLength(8)
-            .Matches(@"[A-Z]").WithMessage("Password must contain at least one uppercase letter")
-            .Matches(@"[a-z]").WithMessage("Password must contain at least one lowercase letter")
-            .Matches(@"[0-9]").WithMessage("Password must contain at least one digit")
-            .Matches(@"[\W_]").WithMessage("Password must contain at least one special character");
+            .MinimumLength(4);
 
-        RuleFor(x => x.Role)
-            .IsInEnum();
+
+
+
+
+        RuleForEach(x => x.Role)
+            .NotEmpty()
+            .When(x => x.Role != null);
 
         RuleFor(x => x.FirstName)
             .MaximumLength(100)
