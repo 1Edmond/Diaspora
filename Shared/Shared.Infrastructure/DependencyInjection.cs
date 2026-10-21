@@ -125,7 +125,11 @@ public static class DependencyInjection
                     npgsqlOptions.MigrationsAssembly(
                         migrationsAssembly.GetName().Name);
                 }
-                npgsqlOptions.CommandTimeout(30);
+                npgsqlOptions.EnableRetryOnFailure(
+                    maxRetryCount: 5,
+                    maxRetryDelay: TimeSpan.FromSeconds(10),
+                    errorCodesToAdd: null);
+                npgsqlOptions.CommandTimeout(60);
             });
 
             

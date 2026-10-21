@@ -1,4 +1,4 @@
-﻿using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection;
 using Serilog;
 using Serilog.Events;
 using Serilog.Sinks.Elasticsearch;
@@ -19,7 +19,18 @@ public static class LoggingConfiguration
         string? serviceVersion = null)
     {
         var elasticsearchConnectionString = configuration.GetConnectionString("elasticsearch");
-        var elasticConfig = ElasticsearchConfiguration.FromConnectionString(elasticsearchConnectionString!);
+        ElasticsearchConfiguration? elasticConfig = null;
+        if (!string.IsNullOrWhiteSpace(elasticsearchConnectionString))
+        {
+            try
+            {
+                elasticConfig = ElasticsearchConfiguration.FromConnectionString(elasticsearchConnectionString);
+            }
+            catch
+            {
+                elasticConfig = null;
+            }
+        }
 
 
         var loggingConfig = new ServiceLoggingConfiguration
@@ -43,7 +54,7 @@ public static class LoggingConfiguration
 
     private static void ConfigureSerilog(
         LoggerConfiguration loggerConfiguration,
-        ElasticsearchConfiguration elasticConfig,
+        ElasticsearchConfiguration? elasticConfig,
         ServiceLoggingConfiguration loggingConfig,
         IServiceProvider services)
     {
@@ -82,6 +93,8 @@ public static class LoggingConfiguration
                 retainedFileCountLimit: 7);
         }
 
+        if (elasticConfig != null && !string.IsNullOrWhiteSpace(elasticConfig.Url))
+        {
         var elasticOptions = new ElasticsearchSinkOptions(new Uri(elasticConfig.Url))
         {
             AutoRegisterTemplate = elasticConfig.AutoRegisterTemplate,
@@ -108,5 +121,6 @@ public static class LoggingConfiguration
         };
 
         loggerConfiguration.WriteTo.Elasticsearch(elasticOptions);
+        }
     }
 }

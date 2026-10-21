@@ -81,13 +81,12 @@ var postgres = builder.AddPostgres("postgres", password: pgPassword, userName: p
         "-c", "work_mem=16MB",
         "-c", "maintenance_work_mem=64MB",
         "-c", "wal_buffers=8MB",
-        "-c", "checkpoint_completion_target=0.9",
-        "-c", "log_statement=all"
+        "-c", "checkpoint_completion_target=0.9"
     )
     .WithVolume("postgres_data", "/var/lib/postgresql/data")
 #if DEBUG
     .WithPgWeb(x => x.WithImageTag("0.17.0"))
-    .WithPgAdmin(x => x.WithImageTag("9.12.0"))
+    //.WithPgAdmin(x => x.WithImageTag("9.12.0"))
 #endif
     ;
 
@@ -107,17 +106,18 @@ var rabbitmq = builder.AddRabbitMQ("rabbitmq", userName: rabbitUser, password: r
     .WithVolume("rabbitmq_data", "/var/lib/rabbitmq")
     .WithHttpEndpoint(targetPort: 15672, name: "management");
 
-var elasticsearch = builder.AddElasticsearch("elasticsearch", password: elasticPassword)
-    .WithImage("elasticsearch:9.3.0")
-    .WithVolume("es_data", "/usr/share/elasticsearch/data");
+// Elasticsearch et Kibana commentes pour optimiser les performances CPU/RAM locales
+// var elasticsearch = builder.AddElasticsearch("elasticsearch", password: elasticPassword)
+//     .WithImage("elasticsearch:9.3.0")
+//     .WithVolume("es_data", "/usr/share/elasticsearch/data");
 
-var kibana = builder.AddContainer("kibana", "docker.elastic.co/kibana/kibana:9.3.0")
-    .WithHttpEndpoint(targetPort: 5601, name: "http")
-    .WithEnvironment("ELASTICSEARCH_HOSTS", elasticsearch.GetEndpoint("http"))
-    .WithEnvironment("ELASTICSEARCH_USERNAME", "kibana_system")
-    .WithEnvironment("ELASTICSEARCH_PASSWORD", kibanaPassword)
-    .WithParentRelationship(elasticsearch)
-    .WaitFor(elasticsearch);
+// var kibana = builder.AddContainer("kibana", "docker.elastic.co/kibana/kibana:9.3.0")
+//     .WithHttpEndpoint(targetPort: 5601, name: "http")
+//     .WithEnvironment("ELASTICSEARCH_HOSTS", elasticsearch.GetEndpoint("http"))
+//     .WithEnvironment("ELASTICSEARCH_USERNAME", "kibana_system")
+//     .WithEnvironment("ELASTICSEARCH_PASSWORD", kibanaPassword)
+//     .WithParentRelationship(elasticsearch)
+//     .WaitFor(elasticsearch);
 
 void AddSharedConfig(IResourceBuilder<ProjectResource> svc, string serviceName) =>
     svc
@@ -146,13 +146,10 @@ var identityApi = builder.AddProject<IdentityService_API>("identityservice")
     .WithReference(identityDb)
     .WithReference(rabbitmq)
     .WithReference(cache)
-    .WithReference(elasticsearch)
     .WaitFor(identityDb)
     .WaitFor(rabbitmq)
     .WaitFor(identityVaultAgent)
-    .WaitFor(elasticsearch)
-    .WaitFor(cache)
-    .WithHttpHealthCheck("/health");
+    .WaitFor(cache);
 AddSharedConfig(identityApi, "IdentityService");
 
 var notificationApi = builder.AddProject<Projects.Notification_Api>("notificationservice")
@@ -162,14 +159,10 @@ var notificationApi = builder.AddProject<Projects.Notification_Api>("notificatio
     .WithEnvironment("Vault__KeyName", "identity")
     .WithReference(notificationDb)
     .WithReference(rabbitmq)
-    .WithReference(elasticsearch)
     .WithReference(cache)
     .WaitFor(notificationDb)
-    .WaitFor(identityApi)
     .WaitFor(cache)
-    .WaitFor(rabbitmq)
-    .WaitFor(elasticsearch)
-    .WithHttpHealthCheck("/health");
+    .WaitFor(rabbitmq);
 AddSharedConfig(notificationApi, "NotificationService");
 
 var profileApi = builder.AddProject<Projects.Profile_Api>("profileservice")
@@ -179,14 +172,10 @@ var profileApi = builder.AddProject<Projects.Profile_Api>("profileservice")
     .WithEnvironment("Vault__KeyName", "identity")
     .WithReference(profileDb)
     .WithReference(rabbitmq)
-    .WithReference(elasticsearch)
     .WithReference(cache)
     .WaitFor(profileDb)
-    .WaitFor(identityApi)
     .WaitFor(rabbitmq)
-    .WaitFor(cache)
-    .WaitFor(elasticsearch)
-    .WithHttpHealthCheck("/health");
+    .WaitFor(cache);
 AddSharedConfig(profileApi, "ProfileService");
 
 var documentApi = builder.AddProject<Projects.Document_API>("documentservice")
@@ -197,15 +186,11 @@ var documentApi = builder.AddProject<Projects.Document_API>("documentservice")
     .WithEnvironment("FileStorage__BasePath", "/app/uploads")
     .WithReference(documentDb)
     .WithReference(rabbitmq)
-    .WithReference(elasticsearch)
     .WithReference(cache)
     .WaitFor(documentDb)
-    .WaitFor(identityApi)
     .WaitFor(rabbitmq)
     .WaitFor(cache)
-    .WaitFor(documentVaultAgent)
-    .WaitFor(elasticsearch)
-    .WithHttpHealthCheck("/health");
+    .WaitFor(documentVaultAgent);
 AddSharedConfig(documentApi, "DocumentService");
 
 var kycApi = builder.AddProject<Projects.KYC_Api>("kycservice")
@@ -216,48 +201,37 @@ var kycApi = builder.AddProject<Projects.KYC_Api>("kycservice")
     .WithReference(kycDb)
     .WithReference(rabbitmq)
     .WithReference(cache)
-    .WithReference(elasticsearch)
     .WaitFor(kycDb)
-    .WaitFor(identityApi)
     .WaitFor(rabbitmq)
-    .WaitFor(cache)
-    .WaitFor(elasticsearch)
-    .WithHttpHealthCheck("/health");
+    .WaitFor(cache);
 AddSharedConfig(kycApi, "KycService");
 
-var procedureApi = builder.AddProject<Projects.Procedure_Api>("procedureservice")
-    .WithEnvironment("ASPNETCORE_ENVIRONMENT", "Docker")
-   .WithEnvironment("Vault__TokenPath", Path.Combine(sharedVaultPath, "identity", "token"))
-    .WithEnvironment("Vault__Url", vault.GetEndpoint("http"))
-    .WithEnvironment("Vault__KeyName", "identity")
-    .WithReference(procedureDb)
-    .WithReference(rabbitmq)
-    .WithReference(elasticsearch)
-    .WithReference(cache)
-    .WaitFor(procedureDb)
-    .WaitFor(identityApi)
-    .WaitFor(rabbitmq)
-    .WaitFor(cache)
-    .WaitFor(elasticsearch)
-    .WithHttpHealthCheck("/health");
-AddSharedConfig(procedureApi, "ProcedureService");
+// Procedure & Freelance commentes selon la demande pour economiser les ressources
+// var procedureApi = builder.AddProject<Projects.Procedure_Api>("procedureservice")
+//     .WithEnvironment("ASPNETCORE_ENVIRONMENT", "Docker")
+//     .WithEnvironment("Vault__TokenPath", Path.Combine(sharedVaultPath, "identity", "token"))
+//     .WithEnvironment("Vault__Url", vault.GetEndpoint("http"))
+//     .WithEnvironment("Vault__KeyName", "identity")
+//     .WithReference(procedureDb)
+//     .WithReference(rabbitmq)
+//     .WithReference(cache)
+//     .WaitFor(procedureDb)
+//     .WaitFor(rabbitmq)
+//     .WaitFor(cache);
+// AddSharedConfig(procedureApi, "ProcedureService");
 
-var freelanceApi = builder.AddProject<Projects.Freelance_Api>("freelanceservice")
-    .WithEnvironment("ASPNETCORE_ENVIRONMENT", "Docker")
-    .WithEnvironment("Vault__TokenPath", Path.Combine(sharedVaultPath, "identity", "token"))
-    .WithEnvironment("Vault__Url", vault.GetEndpoint("http"))
-    .WithEnvironment("Vault__KeyName", "identity")
-    .WithReference(freelanceDb)
-    .WithReference(rabbitmq)
-    .WithReference(elasticsearch)
-    .WithReference(cache)
-    .WaitFor(freelanceDb)
-    .WaitFor(identityApi)
-    .WaitFor(rabbitmq)
-    .WaitFor(cache)
-    .WaitFor(elasticsearch)
-    .WithHttpHealthCheck("/health");
-AddSharedConfig(freelanceApi, "FreelanceService");
+// var freelanceApi = builder.AddProject<Projects.Freelance_Api>("freelanceservice")
+//     .WithEnvironment("ASPNETCORE_ENVIRONMENT", "Docker")
+//     .WithEnvironment("Vault__TokenPath", Path.Combine(sharedVaultPath, "identity", "token"))
+//     .WithEnvironment("Vault__Url", vault.GetEndpoint("http"))
+//     .WithEnvironment("Vault__KeyName", "identity")
+//     .WithReference(freelanceDb)
+//     .WithReference(rabbitmq)
+//     .WithReference(cache)
+//     .WaitFor(freelanceDb)
+//     .WaitFor(rabbitmq)
+//     .WaitFor(cache);
+// AddSharedConfig(freelanceApi, "FreelanceService");
 
 
 var walletApi = builder.AddProject<Projects.Wallet_Api>("walletservice")
@@ -267,14 +241,10 @@ var walletApi = builder.AddProject<Projects.Wallet_Api>("walletservice")
     .WithEnvironment("Vault__KeyName", "identity")
     .WithReference(walletDb)
     .WithReference(rabbitmq)
-    .WithReference(elasticsearch)
     .WithReference(cache)
     .WaitFor(walletDb)
-    .WaitFor(identityApi)
     .WaitFor(rabbitmq)
-    .WaitFor(cache)
-    .WaitFor(elasticsearch)
-    .WithHttpHealthCheck("/health");
+    .WaitFor(cache);
 AddSharedConfig(walletApi, "WalletService");
 
 var chatApi = builder.AddProject<Projects.Chat_Api>("chatservice")
@@ -284,15 +254,10 @@ var chatApi = builder.AddProject<Projects.Chat_Api>("chatservice")
     .WithEnvironment("Vault__KeyName", "identity")
     .WithReference(chatDb)
     .WithReference(rabbitmq)
-    .WithReference(elasticsearch)
     .WithReference(cache)
     .WaitFor(chatDb)
-    .WaitFor(identityApi)
     .WaitFor(rabbitmq)
-    .WaitFor(cache)
-    .WaitFor(elasticsearch)
-    .WithHttpHealthCheck("/health");
-
+    .WaitFor(cache);
 AddSharedConfig(chatApi, "ChatService");
 
 var marketplaceApi = builder.AddProject<Projects.Marketplace_Api>("marketplaceservice")
@@ -302,15 +267,10 @@ var marketplaceApi = builder.AddProject<Projects.Marketplace_Api>("marketplacese
     .WithEnvironment("Vault__KeyName", "identity")
     .WithReference(marketPlaceDb)
     .WithReference(rabbitmq)
-    .WithReference(elasticsearch)
     .WithReference(cache)
     .WaitFor(marketPlaceDb)
-    .WaitFor(identityApi)
     .WaitFor(rabbitmq)
-    .WaitFor(cache)
-    .WaitFor(elasticsearch)
-    .WithHttpHealthCheck("/health");
-
+    .WaitFor(cache);
 AddSharedConfig(marketplaceApi, "MarketplaceService");
 
 
@@ -324,10 +284,10 @@ var gateway = builder.AddProject<Projects.ServcicesGateway>("servcicesgateway")
     .WithEnvironment("AuthorizationCache__DefaultExpirationMinutes", "5")
     .WithReference(identityApi)
     .WithReference(profileApi)
-    .WithReference(procedureApi)
+    //.WithReference(procedureApi)
     .WithReference(notificationApi)
     .WithReference(documentApi)
-    .WithReference(freelanceApi)
+    //.WithReference(freelanceApi)
     .WithReference(marketplaceApi)
     .WithReference(kycApi)
     .WithReference(walletApi)
@@ -335,25 +295,16 @@ var gateway = builder.AddProject<Projects.ServcicesGateway>("servcicesgateway")
     .WithReference(cache)
     .WithChildRelationship(identityApi)
     .WithChildRelationship(profileApi)
-    .WithChildRelationship(procedureApi)
+    //.WithChildRelationship(procedureApi)
     .WithChildRelationship(notificationApi)
     .WithChildRelationship(documentApi)
-    .WithChildRelationship(freelanceApi)
+    //.WithChildRelationship(freelanceApi)
     .WithChildRelationship(marketplaceApi)
     .WithChildRelationship(kycApi)
     .WithChildRelationship(walletApi)
     .WithChildRelationship(chatApi)
     .WaitFor(cache)
-    .WaitFor(identityApi)
-    .WaitFor(profileApi)
-    .WaitFor(procedureApi)
-    .WaitFor(notificationApi)
-    .WaitFor(documentApi)
-    .WaitFor(freelanceApi)
-    .WaitFor(marketplaceApi)
-    .WaitFor(kycApi)
-    .WaitFor(walletApi)
-    .WaitFor(chatApi);
+    .WaitFor(identityApi);
 
 //var backoffice = builder.AddProject<Projects.Diaspora_Backoffice>("backoffice")
 //    .WithReference(gateway)
