@@ -1,4 +1,4 @@
-﻿using Shared.Domain.Primitives;
+using Shared.Domain.Primitives;
 using Shared.Domain.ValueObjects;
 using Shared.Security.Abstractions;
 using Shared.Domain.Attributes;
@@ -94,7 +94,7 @@ public static class EncryptedValueObjectHelper
         finally
         {
             // 4. Nettoyer la clé de la mémoire pour la sécurité
-            Array.Clear(dataKey, 0, dataKey.Length);
+            if (dataKey != null) { Array.Clear(dataKey, 0, dataKey.Length); }
         }
     }
 

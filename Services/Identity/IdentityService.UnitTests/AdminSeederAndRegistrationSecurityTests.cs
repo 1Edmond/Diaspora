@@ -1,3 +1,4 @@
+using IdentityService.Application.Abstractions;
 using FluentAssertions;
 using IdentityService.Application.Commands;
 using IdentityService.Application.Handlers.Commands;
@@ -148,5 +149,59 @@ public class AdminSeederAndRegistrationSecurityTests
         // Assert
         var users = await context.Users.ToListAsync();
         users.Should().ContainSingle();
+    }
+
+    [Fact]
+    public async Task AdminLogin_AfterSeeding_ShouldSucceedAndReturnValidLoginResponse()
+    {
+        // Arrange
+        using var context = CreateInMemoryContext(Guid.NewGuid().ToString());
+        var hashingService = Substitute.For<IHashingService>();
+        hashingService.HashPassword("1234").Returns("valid_hash");
+        hashingService.VerifyPassword("1234", "valid_hash").Returns(true);
+        var seederLogger = Substitute.For<ILogger<AdminUserSeeder>>();
+
+        var adminRole = new Role
+        {
+            Id = DefaultRole.GetRoleId(DefaultRole.Admin),
+            Name = DefaultRole.Admin,
+            Description = "Administrator"
+        };
+        await context.Roles.AddAsync(adminRole);
+        await context.SaveChangesAsync();
+
+        var seeder = new AdminUserSeeder(context, hashingService, seederLogger);
+        await seeder.SeedAsync();
+
+        var userRepo = Substitute.For<IUserRepository>();
+        var seededAdmin = await context.Users.Include(u => u.UserRoles).ThenInclude(ur => ur.Role).Include(u => u.RefreshTokens).FirstAsync();
+        userRepo.GetByEmailWithRolesAsync(AdminUserSeeder.DefaultAdminEmail).Returns(seededAdmin);
+
+        var refreshRepo = Substitute.For<IRepository<RefreshToken>>();
+        var jwtService = Substitute.For<IJwtTokenService>();
+        jwtService.GenerateAccessToken(Arg.Any<string>(), Arg.Any<string>(), Arg.Any<IEnumerable<string>>(), Arg.Any<string>(), Arg.Any<string>())
+            .Returns("access_token_123");
+        jwtService.GenerateRefreshToken().Returns("refresh_token_123");
+
+        var unitOfWork = Substitute.For<IUnitOfWork>();
+        var loginLogger = Substitute.For<ILogger<LoginCommand>>();
+
+        var command = new LoginCommand(AdminUserSeeder.DefaultAdminEmail, "1234", "127.0.0.1");
+
+        // Act
+        var result = await LoginCommandHandler.HandleAsync(
+            command,
+            userRepo,
+            refreshRepo,
+            hashingService,
+            jwtService,
+            unitOfWork,
+            loginLogger);
+
+        // Assert
+        result.IsSuccess.Should().BeTrue();
+        result.Value.AccessToken.Should().Be("access_token_123");
+        result.Value.Role.Should().Contain(DefaultRole.Admin);
+        await unitOfWork.Received(1).SaveChangesAsync(Arg.Any<CancellationToken>());
     }
 }

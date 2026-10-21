@@ -1,4 +1,4 @@
-﻿using IdentityService.Domain.Entities;
+using IdentityService.Domain.Entities;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 using Shared.Domain.Enums;
@@ -82,6 +82,7 @@ public class UserConfiguration : BaseEntityConfiguration<User>
         builder.HasMany(x => x.RefreshTokens)
             .WithOne()
             .HasForeignKey("UserId")
+            .IsRequired()
             .OnDelete(DeleteBehavior.Cascade);
 
         builder.HasMany(x => x.UserRoles)

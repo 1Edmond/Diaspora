@@ -1,4 +1,4 @@
-using IdentityService.Application.Commands;
+﻿using IdentityService.Application.Commands;
 using IdentityService.Application.Models;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -29,12 +29,25 @@ public partial class AuthController(IMessageBus _messageBus, ILogger<AuthControl
     [HttpPost("register")]
     public async Task<IActionResult> Register([FromBody] RegisterUserCommand command, CancellationToken cancellationToken)
     {
-        var result = await _messageBus.InvokeAsync<Result<Guid>>(command, cancellationToken);
+        try
+        {
+            var result = await _messageBus.InvokeAsync<Result<Guid>>(command, cancellationToken);
 
-        if (result.IsFailure)
-            return BadRequest(new { error = result.Error });
+            if (result.IsFailure)
+                return BadRequest(new { error = result.Error });
 
-        return Ok();
+            return Ok(new { id = result.Value });
+        }
+        catch (FluentValidation.ValidationException ex)
+        {
+            var errors = ex.Errors.Select(e => e.ErrorMessage).ToList();
+            return BadRequest(new { error = errors.FirstOrDefault() ?? "Données d'inscription invalides", details = errors });
+        }
+        catch (Exception ex)
+        {
+            logger.LogError(ex, "Registration failed for email {Email}", command?.Email);
+            return BadRequest(new { error = ex.Message });
+        }
     }
 
 
@@ -56,6 +69,16 @@ public partial class AuthController(IMessageBus _messageBus, ILogger<AuthControl
         catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
         {
             return StatusCode(499);
+        }
+        catch (FluentValidation.ValidationException ex)
+        {
+            var errors = ex.Errors.Select(e => e.ErrorMessage).ToList();
+            return BadRequest(new { error = errors.FirstOrDefault() ?? "Données de connexion invalides", details = errors });
+        }
+        catch (Microsoft.EntityFrameworkCore.DbUpdateConcurrencyException ex)
+        {
+            logger.LogWarning(ex, "Concurrency conflict during login for email {Email}", command?.Email);
+            return Unauthorized(new { error = "Session expirée ou conflit de mise à jour. Veuillez réessayer." });
         }
         catch (Exception ex)
         {
